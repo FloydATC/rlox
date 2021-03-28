@@ -2,17 +2,17 @@
 use super::callframe::CallFrame;
 use super::stack::Stack;
 use super::value::Value;
-use super::obj::Obj;
+//use super::obj::Obj;
 use super::closure::Closure;
 use super::function::Function;
 use super::compiler::Compiler;
 
 
-#[allow(dead_code)]
+//#[allow(dead_code)]
 pub struct VM {
   callframes: Vec<CallFrame>,
   stack: Stack<Value>,
-  objects: Vec<Obj>,
+  //objects: Vec<Obj>,
 }
 
 
@@ -21,21 +21,22 @@ impl VM {
         VM {
             callframes: 	vec![],
             stack: 		Stack::new(), 
-            objects: 		vec![],
+            //objects: 		vec![],
         }
     }
 }
 
 
-#[allow(dead_code)]
+#[allow(unused_mut)]
 impl VM {
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
-        //println!("VM.compile() code={}", code);
+        println!("VM.compile() code={}", code);
+        
+        let mut function = Function::new();    
         let mut compiler = Compiler::new();
-        let mut function = Function::new();
-        let result = compiler.compile(&code, &mut function);
+        let result = compiler.compile(&code, function);
         match result {
-            Ok(()) => {
+            Ok(function) => {
                 return self.setup_initial_callframe(function);
             }
             Err(msg) => {
@@ -43,6 +44,19 @@ impl VM {
             }
         }
     }
+}
+
+
+impl VM {
+    pub fn execute(&mut self) {
+        //println!("VM.execute()");
+        
+    }
+}
+
+
+//#[allow(dead_code)]
+impl VM {
     fn push(&mut self, value: Value) {
         self.stack.push(value);
     }
@@ -59,14 +73,8 @@ impl VM {
     // Stack: Value to be called
     fn call_value(&mut self, _args: u8) {
         let value = self.pop();
-        let _callframe = CallFrame::new(value.as_rc_object());
-    }
-}
-
-
-impl VM {
-    pub fn execute(&mut self) {
-        //println!("VM.execute()");
+        let callframe = CallFrame::new(value.as_rc_object());
+        self.callframes.push(callframe);
     }
 }
 
