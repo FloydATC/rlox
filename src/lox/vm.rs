@@ -3,6 +3,10 @@ use super::callframe::CallFrame;
 use super::stack::Stack;
 use super::value::Value;
 use super::obj::Obj;
+use super::closure::Closure;
+use super::function::Function;
+use super::compiler::Compiler;
+
 
 #[allow(dead_code)]
 pub struct VM {
@@ -23,9 +27,39 @@ impl VM {
 }
 
 
+#[allow(dead_code)]
 impl VM {
-    pub fn compile(&mut self, _code: &str) {
+    pub fn compile(&mut self, code: &str) -> Result<(), String> {
         //println!("VM.compile() code={}", code);
+        let mut compiler = Compiler::new();
+        let mut function = Function::new();
+        let result = compiler.compile(&code, &mut function);
+        match result {
+            Ok(()) => {
+                return self.setup_initial_callframe(function);
+            }
+            Err(msg) => {
+                return Err(msg);
+            }
+        }
+    }
+    fn push(&mut self, value: Value) {
+        self.stack.push(value);
+    }
+    fn pop(&mut self) -> Value {
+        return self.stack.pop();
+    }
+    fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
+        let closure = Closure::new(function);
+        self.push(Value::closure(closure));
+        self.call_value(0); // Main function takes zero arguments
+        return Ok(());
+    }
+    
+    // Stack: Value to be called
+    fn call_value(&mut self, _args: u8) {
+        let value = self.pop();
+        let _callframe = CallFrame::new(value.as_rc_object());
     }
 }
 

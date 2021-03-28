@@ -57,19 +57,19 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             loop {
                 let line = read_stdin();
                 if line == "exit" { break; }
-                vm.compile(&line);
+                vm.compile(&line)?;
                 vm.execute();
             }
         }
         Mode::Line => {
             let code = config.line.unwrap();
-            vm.compile(&code);
+            vm.compile(&code)?;
             vm.execute();
         }
         Mode::File => {
             let filename = config.filename.unwrap();
             let code = read_file(&filename);
-            vm.compile(&code);
+            vm.compile(&code)?;
             vm.execute();
         }
     }

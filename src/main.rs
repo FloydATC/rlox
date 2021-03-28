@@ -14,7 +14,7 @@ fn main() {
     });
 
     if let Err(e) = rlox::run(config) {
-        println!("Application error: {}", e);
+        println!("ERROR: {}", e);
 
         process::exit(1);
     }
