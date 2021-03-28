@@ -1,10 +1,10 @@
 
 use std::io;
-//use std::env;
 use std::fs;
 use std::process;
 use std::error::Error;
 
+mod lox;
 
 
 pub enum Mode {
@@ -46,42 +46,10 @@ impl Config {
 }
 
 
-pub struct Interpreter {
-}
-
-
-impl Interpreter {
-    pub fn new() -> Interpreter {
-        Interpreter {}
-    }
-}
-
-
-impl Interpreter {
-    pub fn compile(&mut self, _code: &str) {
-        //println!("Interpreter.compile() code={}", code);
-    }
-}
-
-
-impl Interpreter {
-    pub fn execute(&mut self) {
-        //println!("Interpreter.execute()");
-    }
-}
-
-
-impl Drop for Interpreter {
-    fn drop(&mut self) {
-        //println!("Interpreter.drop()");
-    }
-}
-
-
 
 // Called from main() after parsing command line
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let mut interpreter = Interpreter::new();
+    let mut vm = lox::VM::new();
 
     match config.mode {
         Mode::Repl => {
@@ -89,20 +57,20 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             loop {
                 let line = read_stdin();
                 if line == "exit" { break; }
-                interpreter.compile(&line);
-                interpreter.execute();
+                vm.compile(&line);
+                vm.execute();
             }
         }
         Mode::Line => {
             let code = config.line.unwrap();
-            interpreter.compile(&code);
-            interpreter.execute();
+            vm.compile(&code);
+            vm.execute();
         }
         Mode::File => {
             let filename = config.filename.unwrap();
             let code = read_file(&filename);
-            interpreter.compile(&code);
-            interpreter.execute();
+            vm.compile(&code);
+            vm.execute();
         }
     }
     
