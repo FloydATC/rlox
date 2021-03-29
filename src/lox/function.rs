@@ -20,3 +20,23 @@ impl Function {
         &mut self.chunk
     }
 }
+
+
+impl std::fmt::Debug for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Function")
+            .field("arity", &self.arity)
+            .field("chunk", &self.chunk)
+            .finish()
+    }
+}
+
+
+impl Drop for Function {
+    fn drop(&mut self) {
+        println!("Function.drop()");
+    }
+}
+
+
+

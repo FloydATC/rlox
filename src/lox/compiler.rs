@@ -1,6 +1,7 @@
 
 use super::scanner::Scanner;
 use super::parser::Parser;
+use super::opcode::OpCode;
 use super::function::Function;
 
 
@@ -8,6 +9,7 @@ use super::function::Function;
 mod test;
 
 
+// ======== Layout ========
 //#[allow(dead_code)]
 pub struct Compiler {
     //enclosing: 	Option<&mut Compiler>,
@@ -16,6 +18,7 @@ pub struct Compiler {
 }
 
 
+// ======== Public interface ========
 //#[allow(dead_code)]
 #[allow(unused_mut)]
 impl Compiler {
@@ -34,15 +37,45 @@ impl Compiler {
         
         let mut scanner = Scanner::new(&code);
         self.parser = Some(Parser::new(scanner));
-        //self.function = Some(&mut function);
-        //Err("Not yet implemented.".to_string())
-        //self.function = None;
+        
+        // Debug
+        self.emit(OpCode::RETURN);
+        self.emit(OpCode::RETURN);
+        self.emit(OpCode::RETURN);
+        self.emit_byte(0xff);
+        
         self.parser = None;
         
-        let f = self.function.take().unwrap();
-        return Ok(f);
+        let function = self.function.take().unwrap();
+        println!("{:?}", function);
+
+        //return Err("Not yet implemented.".to_string());
+        return Ok(function);
     }
 }
+
+
+#[allow(dead_code)]
+impl Compiler {
+    fn emit(&mut self, opcode: OpCode) {
+        self.emit_byte(opcode as u8);
+    }
+    fn emit_byte(&mut self, byte: u8) {
+        self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .chunk()
+            .append_byte(byte);
+    }
+    fn emit_word(&mut self, word: u16) {
+        self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .chunk()
+            .append_word(word);
+    }
+}
+
 
 impl Drop for Compiler {
     fn drop(&mut self) {
