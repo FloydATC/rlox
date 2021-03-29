@@ -27,12 +27,12 @@ impl VM {
 }
 
 
-#[allow(unused_mut)]
+//#[allow(unused_mut)]
 impl VM {
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
         println!("VM.compile() code={}", code);
         
-        let mut function = Function::new();    
+        let function = Function::new("__main__", 0);    
         let mut compiler = Compiler::new();
         let result = compiler.compile(&code, function);
         match result {

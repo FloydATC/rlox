@@ -1,7 +1,23 @@
 
 #[allow(dead_code)]
 pub enum TokenKind {
-    Return,
+    // Single symbol
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+
+    // Double symbol
+
+    // Literals
+    BASE10NUMBER,
+    
+    // Keywords
+    RETURN,
+    
+    // Internal
+    ERROR,
+    EOF,
 }
 
 
@@ -35,6 +51,16 @@ impl Token {
             kind,
             lexeme:	lexeme.to_string(),
             at:		Some(at),
+        }
+    }
+}
+
+
+impl std::fmt::Debug for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::RETURN => write!(f, "RETURN"),
+            _ => write!(f, "**BAD**"),
         }
     }
 }

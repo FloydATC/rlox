@@ -40,9 +40,6 @@ impl Compiler {
         
         // Debug
         self.emit(OpCode::RETURN);
-        self.emit(OpCode::RETURN);
-        self.emit(OpCode::RETURN);
-        self.emit_byte(0xff);
         
         self.parser = None;
         
