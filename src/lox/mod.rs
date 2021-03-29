@@ -8,6 +8,7 @@ mod obj;
 mod stack;
 mod value;
 mod scanner;
+mod tokenizer;
 mod token;
 mod parser;
 mod compiler;

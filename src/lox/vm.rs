@@ -5,6 +5,9 @@ use super::value::Value;
 //use super::obj::Obj;
 use super::closure::Closure;
 use super::function::Function;
+use super::scanner::Scanner;
+use super::tokenizer::Tokenizer;
+use super::parser::Parser;
 use super::compiler::Compiler;
 
 
@@ -32,11 +35,20 @@ impl VM {
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
         println!("VM.compile() code={}", code);
         
-        let function = Function::new("__main__", 0);    
-        let mut compiler = Compiler::new();
-        let result = compiler.compile(&code, function);
+        
+        let scanner = Scanner::new(code);
+        let tokenizer = Tokenizer::new(scanner);
+        let mut function = Function::new("__main__", 0);    
+        let mut compiler = Compiler::new(function);
+        
+        let mut parser = Parser::new(tokenizer, compiler);
+        let result = parser.parse();
+        
+        compiler = parser.take_compiler();
+        function = compiler.take_function();
+        
         match result {
-            Ok(function) => {
+            Ok(()) => {
                 return self.setup_initial_callframe(function);
             }
             Err(msg) => {

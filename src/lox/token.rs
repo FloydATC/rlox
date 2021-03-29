@@ -1,5 +1,6 @@
 
 #[allow(dead_code)]
+#[derive(PartialEq)]
 pub enum TokenKind {
     // Single symbol
     PLUS,
@@ -46,12 +47,19 @@ impl Token {
             at:		None,
         }
     }
+    
+    
     pub fn new_at(kind: TokenKind, lexeme: &str, at: At) -> Token {
         Token {
             kind,
             lexeme:	lexeme.to_string(),
             at:		Some(at),
         }
+    }
+    
+    
+    pub fn matches(&self, kind: TokenKind) -> bool {
+        return self.kind == kind;
     }
 }
 
