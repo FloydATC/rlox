@@ -1,17 +1,13 @@
 
+use crate::lox::function::Function;
 use super::Compiler;
 
 
 #[test]
 fn compiler_new() {
-    let _compiler = Compiler::new(None);
+    let function = Function::new("__test__", 0);
+    let _compiler = Compiler::new(function);
 }
 
-#[test]
-fn compiler_compile_emptystring() {
-    let mut compiler = Compiler::new(None);
-    let result = compiler.compile("");
-    assert!(result.is_ok(), "compiler should return Ok");
-}
 
 
