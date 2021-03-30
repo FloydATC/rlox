@@ -7,12 +7,14 @@ mod test;
 // Returns char at pos+0, pos+1 or pos+2 
 // while tracking current lineno and charno
 
+// Note: Peeking beyond EOF is okay, returns '\0'
 
 // ======== Layout ========
 pub struct Scanner {
     pos:	usize,
     len:	usize,
     chars:	Vec<char>,
+    fileno:	usize,
     lineno:	usize,
     charno:	usize,
 }
@@ -29,6 +31,7 @@ impl Scanner {
             pos:	0,
             len:	vec.len(),
             chars:	vec,
+            fileno:	0,
             lineno:	1,
             charno:	1,
         }
@@ -48,9 +51,9 @@ impl Scanner {
         }
     }
     
-    // Return a tuple with current (lineno, charno)
-    pub fn at(&self) -> (usize, usize) {
-        return (self.lineno, self.charno);
+    // Return a tuple with current (fileno, lineno, charno)
+    pub fn at(&self) -> (usize, usize, usize) {
+        return (self.fileno, self.lineno, self.charno);
     }
     
     // Return char at pos+0 (or zero if eof)    
@@ -79,7 +82,21 @@ impl Scanner {
             return '\0';
         }
     }
+
+    // Return true if current() char matches
+    pub fn matches(&self, c: char) -> bool {
+        return self.current() == c;
+    }
     
+    // Skip char c, panic if current char does not match
+    pub fn skip(&mut self, c: char) {
+        if self.matches(c) {
+            self.advance();
+        } else {
+            panic!("Current char is {} not {}", self.current(), c);
+        }
+    }
+
     // Return true if pos is at eof
     pub fn eof(&self) -> bool {
         return self.pos >= self.len;

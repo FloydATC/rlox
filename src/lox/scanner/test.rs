@@ -7,7 +7,8 @@ use super::Scanner;
 #[test]
 fn scanner_emptystring() {
     let scanner = Scanner::str("");
-    let (lineno, charno) = scanner.at();
+    let (fileno, lineno, charno) = scanner.at();
+    assert_eq!(fileno, 0);
     assert_eq!(lineno, 1);
     assert_eq!(charno, 1);
     assert_eq!(scanner.eof(), true);
@@ -21,7 +22,8 @@ fn scanner_emptystring() {
 fn scanner_no_advance_past_eof() {
     let mut scanner = Scanner::str("");
     scanner.advance();
-    let (lineno, charno) = scanner.at();
+    let (fileno, lineno, charno) = scanner.at();
+    assert_eq!(fileno, 0);
     assert_eq!(lineno, 1);
     assert_eq!(charno, 1);
     assert_eq!(scanner.eof(), true);
@@ -37,7 +39,8 @@ fn scanner_count_lines() {
     scanner.advance();
     scanner.advance();
     scanner.advance();
-    let (lineno, charno) = scanner.at();
+    let (fileno, lineno, charno) = scanner.at();
+    assert_eq!(fileno, 0);
     assert_eq!(lineno, 4);
     assert_eq!(charno, 1);
     assert_eq!(scanner.eof(), true);
@@ -53,7 +56,8 @@ fn scanner_count_chars() {
     scanner.advance();
     scanner.advance();
     scanner.advance();
-    let (lineno, charno) = scanner.at();
+    let (fileno, lineno, charno) = scanner.at();
+    assert_eq!(fileno, 0);
     assert_eq!(lineno, 1);
     assert_eq!(charno, 4);
     assert_eq!(scanner.eof(), true);
@@ -70,7 +74,8 @@ fn scanner_count_lines_and_chars() {
     scanner.advance();
     scanner.advance();
     scanner.advance();
-    let (lineno, charno) = scanner.at();
+    let (fileno, lineno, charno) = scanner.at();
+    assert_eq!(fileno, 0);
     assert_eq!(lineno, 2);
     assert_eq!(charno, 1);
     assert_eq!(scanner.eof(), false);

@@ -3,6 +3,7 @@
 use super::token::{Token, TokenKind};
 #[allow(unused_imports)]
 use super::tokenizer::Tokenizer;
+use super::opcode::OpCode;
 use super::compiler::Compiler;
 
 #[allow(dead_code)]
@@ -57,6 +58,32 @@ impl Parser {
     
     
     pub fn parse(&mut self) -> Result<(), String> {
+        println!("Parser::parse()");
+        
+        loop {
+
+            // Placeholder for actual parser, just to verify tokenizer
+            match self.tokenizer().current().kind() {
+                TokenKind::EOF => {
+                    break;
+                }
+                TokenKind::Return => {
+                    self.compiler().emit(OpCode::Return);
+                }
+                TokenKind::Plus => {
+                    self.compiler().emit(OpCode::Add);
+                }
+                TokenKind::Base10Number => {
+                    self.compiler().emit(OpCode::Push);
+                    let byte: u8 = self.tokenizer().current().lexeme().parse().unwrap();
+                    self.compiler().emit_byte(byte);
+                }
+                _ => {}
+            }
+            self.tokenizer().advance();
+
+        }
+        
         return Ok(());
     }
     
@@ -134,22 +161,22 @@ impl Parser {
 impl Parser {
     fn rule(&self, kind: TokenKind) -> ParserRule {
         match kind {
-            TokenKind::MINUS => return ParserRule {
+            TokenKind::Minus => return ParserRule {
                 prefix: 	Some(Parser::unary), 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Term
             },
-            TokenKind::PLUS => return ParserRule {
+            TokenKind::Plus => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Term
             },
-            TokenKind::SLASH => return ParserRule {
+            TokenKind::Slash => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Factor
             },
-            TokenKind::STAR => return ParserRule {
+            TokenKind::Star => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Factor

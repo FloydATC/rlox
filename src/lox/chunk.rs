@@ -44,16 +44,29 @@ impl Chunk {
         let mut result = String::new();
         result += &format!("0x{:02x} ", self.code[*ip]);
         let instruction = match OpCode::code(self.code[*ip]) {
-            OpCode::RETURN => self.opcode_immediate(ip),
+            OpCode::Return => self.opcode_immediate(ip),
+            OpCode::Add => self.opcode_immediate(ip),
+            OpCode::Push => self.opcode_byte(ip),
             _ => self.opcode_immediate(ip), // "**BAD**"
         };
         result += &instruction;
         return result;
     }
+    
+    // OpCode has no argument
     fn opcode_immediate(&self, ip: &mut usize) -> String {
         let mut result = String::new();
         result.push_str(OpCode::name(self.code[*ip]));
         *ip = *ip + 1;
+        return result;
+    }
+    
+    // OpCode has one byte argument
+    fn opcode_byte(&self, ip: &mut usize) -> String {
+        let mut result = String::new();
+        result.push_str(OpCode::name(self.code[*ip]));
+        result = result + &format!(" 0x{:02x}", self.code[*ip+1]);
+        *ip = *ip + 2;
         return result;
     }
 //    fn opcode_bad(&self, ip: &mut usize) -> String {

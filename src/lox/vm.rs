@@ -46,6 +46,7 @@ impl VM {
         
         compiler = parser.take_compiler();
         function = compiler.take_function();
+        println!("VM.compile() function={:?}", function);
         
         match result {
             Ok(()) => {

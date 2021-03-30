@@ -3,30 +3,46 @@
 #[derive(PartialEq)]
 pub enum TokenKind {
     // Single symbol
-    PLUS,
-    MINUS,
-    STAR,
-    SLASH,
+    Bang,
+    Equal,
+    Minus,
+    Plus,
+    Slash,
+    Star,
 
     // Double symbol
+    BangEqual,
+    EqualEqual,
 
     // Literals
-    BASE10NUMBER,
+    Identifier,
+    Base10Number,
     
     // Keywords
-    RETURN,
+    Return,
     
     // Internal
-    ERROR,
+    Error,
     EOF,
 }
 
 
 #[allow(dead_code)]
 pub struct At {
-    fileno: u32,
-    lineno: u32,
-    charno: u32, 
+    fileno: usize,
+    lineno: usize,
+    charno: usize, 
+}
+
+
+impl At {
+    fn new(at: (usize, usize, usize)) -> At {
+        return At {
+            fileno:	at.0,
+            lineno:	at.1,
+            charno:	at.2,
+        };
+    }
 }
 
 
@@ -49,7 +65,8 @@ impl Token {
     }
     
     
-    pub fn new_at(kind: TokenKind, lexeme: &str, at: At) -> Token {
+    pub fn new_at(kind: TokenKind, lexeme: &str, at: (usize, usize, usize)) -> Token {
+        let at = At::new(at);
         Token {
             kind,
             lexeme:	lexeme.to_string(),
@@ -61,14 +78,46 @@ impl Token {
     pub fn matches(&self, kind: TokenKind) -> bool {
         return self.kind == kind;
     }
+    
+    
+    pub fn kind(&self) -> &TokenKind {
+        return &self.kind;
+    }
+    
+    
+    pub fn lexeme(&self) -> &str {
+        return &self.lexeme;
+    } 
 }
 
 
 impl std::fmt::Debug for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenKind::RETURN => write!(f, "RETURN"),
-            _ => write!(f, "**BAD**"),
+        
+            // Single character symbols
+            TokenKind::Bang 		=> write!(f, "Bang"),
+            TokenKind::Equal 		=> write!(f, "Equal"),
+            TokenKind::Minus 		=> write!(f, "Minus"),
+            TokenKind::Plus 		=> write!(f, "Plus"),
+            TokenKind::Slash 		=> write!(f, "Slash"),
+            TokenKind::Star 		=> write!(f, "Star"),
+            
+            // Double character symbols
+            TokenKind::BangEqual 	=> write!(f, "BangEqual"),
+            TokenKind::EqualEqual 	=> write!(f, "EqualEqual"),
+            
+            // Literals
+            TokenKind::Identifier 	=> write!(f, "Identifier"),
+            TokenKind::Base10Number 	=> write!(f, "Base10Number"),
+            
+            // Keywords
+            TokenKind::Return 		=> write!(f, "Return"),
+            
+            // Internal
+            TokenKind::Error 		=> write!(f, "Error"),
+            TokenKind::EOF 		=> write!(f, "EOF"),
+            
         }
     }
 }
