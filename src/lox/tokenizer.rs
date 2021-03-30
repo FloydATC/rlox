@@ -40,6 +40,11 @@ impl Tokenizer {
         }
     }
     
+
+    pub fn eof(&self) -> bool {
+        return self.matches(TokenKind::EOF);
+    }
+
     
     pub fn advance(&mut self) {
         self.previous = self.current.take();
@@ -49,14 +54,16 @@ impl Tokenizer {
     }
     
     
-    pub fn check(&mut self, kind: TokenKind) -> bool {
+    pub fn matches(&self, kind: TokenKind) -> bool {
         return self.current().matches(kind);
     }
     
     
     pub fn advance_on(&mut self, kind: TokenKind) -> bool {
-        if !self.check(kind) { return false; }
+        if !self.matches(kind) { return false; }
         self.advance();
         return true;
     }
 }
+
+

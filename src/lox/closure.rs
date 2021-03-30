@@ -2,6 +2,7 @@
 use super::function::Function;
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Closure {
     function: Function,
 }

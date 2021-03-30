@@ -6,6 +6,7 @@ use super::closure::Closure;
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum Obj {
     String(String),
     Function(Function),

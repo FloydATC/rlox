@@ -36,7 +36,7 @@ impl VM {
         println!("VM.compile() code={}", code);
         
         
-        let scanner = Scanner::new(code);
+        let scanner = Scanner::str(code);
         let tokenizer = Tokenizer::new(scanner);
         let mut function = Function::new("__main__", 0);    
         let mut compiler = Compiler::new(function);

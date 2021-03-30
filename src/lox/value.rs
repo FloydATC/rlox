@@ -7,6 +7,7 @@ use super::closure::Closure;
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum Value {
     Null,
     Bool(bool),
@@ -39,19 +40,19 @@ impl Value {
     pub fn as_boolean(&self) -> bool {
         match self {
             Value::Bool(b) => return *b,
-            _ => panic!("{} is not a Boolean"),
+            _ => panic!("{:?} is not a Boolean", self),
         }
     }
     pub fn as_number(&self) -> f64 {
         match self {
             Value::Number(n) => return *n,
-            _ => panic!("{} is not a Number"),
+            _ => panic!("{:?} is not a Number", self),
         }
     }
     pub fn as_rc_object(&self) -> Rc<Obj> {
         match self {
             Value::Obj(obj) => return obj.clone(),
-            _ => panic!("{} is not an Object"),
+            _ => panic!("{:?} is not an Object", self),
         }
     }
 }
