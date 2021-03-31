@@ -326,8 +326,9 @@ impl Parser {
     fn dot(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
-    fn grouping(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn grouping(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.expression(input, output);
+        self.consume(TokenKind::RightParen, "Expect ')' after expression", input, output);
     }
     fn literal(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
@@ -372,6 +373,17 @@ impl Parser {
                 precedence: 	ParserPrec::None,
             },
             TokenKind::Equal => return ParserRule::null(),
+            TokenKind::LeftBracket => return ParserRule {
+                prefix:		Some(Parser::array), 
+                infix: 		Some(Parser::subscr), 
+                precedence: 	ParserPrec::Subscript,
+            },
+            TokenKind::LeftCurly => return ParserRule::null(),
+            TokenKind::LeftParen => return ParserRule {
+                prefix: 	Some(Parser::grouping), 
+                infix: 		Some(Parser::call), 
+                precedence: 	ParserPrec::Call,
+            },            
             TokenKind::Minus => return ParserRule {
                 prefix: 	Some(Parser::unary), 
                 infix: 		Some(Parser::binary), 
@@ -387,6 +399,9 @@ impl Parser {
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Term,
             },
+            TokenKind::RightBracket => return ParserRule::null(),
+            TokenKind::RightCurly => return ParserRule::null(),
+            TokenKind::RightParen => return ParserRule::null(),
             TokenKind::Slash => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 

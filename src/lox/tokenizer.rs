@@ -141,6 +141,12 @@ impl Tokenizer {
             '/' => return self.make_token_at("/", TokenKind::Slash, at),
             '%' => return self.make_token_at("%", TokenKind::Percent, at),
             ';' => return self.make_token_at(";", TokenKind::Semicolon, at),
+            '[' => return self.make_token_at("[", TokenKind::LeftBracket, at),
+            '{' => return self.make_token_at("{", TokenKind::LeftCurly, at),
+            '(' => return self.make_token_at("(", TokenKind::LeftParen, at),
+            ']' => return self.make_token_at("]", TokenKind::RightBracket, at),
+            '}' => return self.make_token_at("}", TokenKind::RightCurly, at),
+            ')' => return self.make_token_at(")", TokenKind::RightParen, at),
             '!' => {
                 match self.scanner().peek() {
                     '=' => return self.make_token_at("!=", TokenKind::BangEqual, at),
