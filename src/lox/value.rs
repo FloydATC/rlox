@@ -63,6 +63,9 @@ impl Value {
 impl Value {
     pub fn add(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
+            (Value::Bool(a), Value::Bool(b)) => {
+                return Ok(Value::boolean(*a || *b));
+            }
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a + b));
             }
@@ -99,6 +102,9 @@ impl Value {
 impl Value {
     pub fn multiply(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
+            (Value::Bool(a), Value::Bool(b)) => {
+                return Ok(Value::boolean(*a && *b));
+            }
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a * b));
             }
