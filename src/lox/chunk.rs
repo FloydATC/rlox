@@ -57,6 +57,9 @@ impl Chunk {
             OpCode::Const8 => self.opcode_byte(ip),
             OpCode::Const16 => self.opcode_word(ip),
             OpCode::Const32 => self.opcode_dword(ip),
+            OpCode::False => self.opcode_immediate(ip),
+            OpCode::Null => self.opcode_immediate(ip),
+            OpCode::True => self.opcode_immediate(ip),
 
             OpCode::Add => self.opcode_immediate(ip),
             OpCode::Sub => self.opcode_immediate(ip),

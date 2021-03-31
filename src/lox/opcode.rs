@@ -10,6 +10,9 @@ pub enum OpCode {
     Const8,		// Followed by BYTE indexing table of constants
     Const16,		// Followed by WORD indexing table of constants
     Const32,		// Followed by DWORD indexing table of constants
+    False,
+    Null,
+    True,    
     
     // Pop two values, perform operation, push result
     Add,
@@ -33,6 +36,9 @@ impl OpCode {
         if byte == OpCode::Const8 as u8 { return "CONST"; }
         if byte == OpCode::Const16 as u8 { return "CONST"; }
         if byte == OpCode::Const32 as u8 { return "CONST"; }
+        if byte == OpCode::False as u8 	{ return "FALSE"; }
+        if byte == OpCode::Null as u8 	{ return "NULL"; }
+        if byte == OpCode::True as u8 	{ return "TRUE"; }
         
         if byte == OpCode::Add as u8 	{ return "ADD"; }
         if byte == OpCode::Sub as u8 	{ return "SUB"; }
@@ -51,6 +57,9 @@ impl OpCode {
         if byte == OpCode::Const8 as u8 { return OpCode::Const8; }
         if byte == OpCode::Const16 as u8 { return OpCode::Const16; }
         if byte == OpCode::Const32 as u8 { return OpCode::Const32; }
+        if byte == OpCode::False as u8 { return OpCode::False; }
+        if byte == OpCode::Null as u8 { return OpCode::Null; }
+        if byte == OpCode::True as u8 { return OpCode::True; }
         
         if byte == OpCode::Add as u8 	{ return OpCode::Add; }
         if byte == OpCode::Sub as u8 	{ return OpCode::Sub; }

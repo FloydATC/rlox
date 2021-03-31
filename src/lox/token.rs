@@ -24,11 +24,14 @@ pub enum TokenKind {
     EqualEqual,
 
     // Literals
-    Identifier,
     Base2Number,
     Base8Number,
     Base10Number,
     Base16Number,
+    False,
+    Identifier,
+    Null,
+    True,
     
     // Keywords
     Return,
@@ -130,11 +133,14 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::EqualEqual 	=> write!(f, "EqualEqual"),
             
             // Literals
-            TokenKind::Identifier 	=> write!(f, "Identifier"),
             TokenKind::Base2Number 	=> write!(f, "Base2Number"),
             TokenKind::Base8Number 	=> write!(f, "Base8Number"),
             TokenKind::Base10Number 	=> write!(f, "Base10Number"),
             TokenKind::Base16Number 	=> write!(f, "Base16Number"),
+            TokenKind::False		=> write!(f, "False"),
+            TokenKind::Identifier 	=> write!(f, "Identifier"),
+            TokenKind::Null		=> write!(f, "Null"),
+            TokenKind::True		=> write!(f, "True"),
             
             // Keywords
             TokenKind::Return 		=> write!(f, "Return"),

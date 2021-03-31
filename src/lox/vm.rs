@@ -96,6 +96,9 @@ impl VM {
                         OpCode::Const8 		=> result = self.opcode_const8(),
                         OpCode::Const16 	=> result = self.opcode_const16(),
                         OpCode::Const32 	=> result = self.opcode_const32(),
+                        OpCode::False 		=> result = self.opcode_false(),
+                        OpCode::Null 		=> result = self.opcode_null(),
+                        OpCode::True	 	=> result = self.opcode_true(),
 
                         OpCode::Add 		=> result = self.opcode_add(),
                         OpCode::Sub 		=> result = self.opcode_sub(),
@@ -153,6 +156,21 @@ impl VM {
 
     pub fn opcode_const32(&mut self) -> Result<(), String> {
         Err("OpCode not implemented".to_string())
+    }
+    
+    pub fn opcode_false(&mut self) -> Result<(), String> {
+        self.push(Value::boolean(false));
+        Ok(())
+    }
+    
+    pub fn opcode_null(&mut self) -> Result<(), String> {
+        self.push(Value::null());
+        Ok(())
+    }
+    
+    pub fn opcode_true(&mut self) -> Result<(), String> {
+        self.push(Value::boolean(true));
+        Ok(())
     }
     
     pub fn opcode_add(&mut self) -> Result<(), String> {

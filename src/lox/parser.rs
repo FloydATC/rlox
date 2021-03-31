@@ -330,8 +330,16 @@ impl Parser {
         self.expression(input, output);
         self.consume(TokenKind::RightParen, "Expect ')' after expression", input, output);
     }
-    fn literal(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn literal(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let literal = input.tokenizer.previous().kind();
+        match literal {
+            TokenKind::False	=> output.compiler.emit_op(OpCode::False),
+            TokenKind::Null	=> output.compiler.emit_op(OpCode::Null),
+            TokenKind::True	=> output.compiler.emit_op(OpCode::True),
+            _ => {
+                panic!("Unhandled literal {:?}", literal);
+            }
+        }
     }
     fn or_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
@@ -447,8 +455,23 @@ impl Parser {
                 infix: 		None, 
                 precedence: 	ParserPrec::None,
             },
+            TokenKind::False => return ParserRule {
+                prefix: 	Some(Parser::literal), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
             TokenKind::Identifier => return ParserRule {
                 prefix: 	Some(Parser::variable), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
+            TokenKind::Null => return ParserRule {
+                prefix: 	Some(Parser::literal), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
+            TokenKind::True => return ParserRule {
+                prefix: 	Some(Parser::literal), 
                 infix: 		None, 
                 precedence: 	ParserPrec::None,
             },
