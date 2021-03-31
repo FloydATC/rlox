@@ -23,7 +23,7 @@ pub struct Compiler {
 //#[allow(unused_mut)]
 impl Compiler {
     pub fn new(function: Function) -> Compiler {
-        println!("Compiler::new()");
+        //println!("Compiler::new()");
         Compiler {
             function: 	Some(function),
         }
@@ -75,6 +75,6 @@ impl Compiler {
 
 impl Drop for Compiler {
     fn drop(&mut self) {
-        println!("Compiler.drop()");
+        //println!("Compiler.drop()");
     }
 }

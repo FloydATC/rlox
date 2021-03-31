@@ -42,4 +42,8 @@ impl Constants {
         return None;
     }
 
+    pub fn value_by_index(&self, index: usize) -> Value {
+        return self.values[index].clone();
+    }
+
 }

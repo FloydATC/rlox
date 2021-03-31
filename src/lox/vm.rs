@@ -8,7 +8,7 @@ use super::closure::Closure;
 use super::function::Function;
 use super::scanner::Scanner;
 use super::tokenizer::Tokenizer;
-use super::parser::Parser;
+use super::parser::{Parser, ParserInput, ParserOutput};
 use super::compiler::Compiler;
 use super::opcode::OpCode;
 
@@ -17,7 +17,7 @@ use super::opcode::OpCode;
 pub struct VM {
   callframes: Vec<CallFrame>,
   stack: Stack<Value>,
-  constants: Option<Constants>,
+  constants: Constants,
   //objects: Vec<Obj>,
 }
 
@@ -27,7 +27,7 @@ impl VM {
         VM {
             callframes: 	vec![],
             stack: 		Stack::new(), 
-            constants:		None,
+            constants:		Constants::new(),
             //objects: 		vec![],
         }
     }
@@ -39,28 +39,25 @@ impl VM {
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
         println!("VM.compile() code={}", code);
         
-        // Reuse existing constants or create new if needed
-        let constants;
-        match &self.constants {
-            Some(_) => {
-                constants = self.constants.take().unwrap();
-                },
-            None    => {
-                constants = Constants::new();
-                }
-        }
-        
         let scanner = Scanner::str(code);
-        let tokenizer = Tokenizer::new(scanner);
+        let mut tokenizer = Tokenizer::new(scanner);
         let mut function = Function::new("__main__", 0);    
         let mut compiler = Compiler::new(function);
+
+        let mut parser = Parser::new();        
+        //let mut parser = Parser::new(tokenizer, compiler);
+        //parser.give_constants(constants);
+        let mut input = ParserInput {
+            tokenizer: &mut tokenizer,
+        };
+        let mut output = ParserOutput {
+            compiler: &mut compiler,
+            constants: &mut self.constants,
+        };
+        let result = parser.parse(&mut input, &mut output);
         
-        let mut parser = Parser::new(tokenizer, compiler);
-        parser.give_constants(constants);
-        let result = parser.parse();
-        
-        self.constants = Some(parser.take_constants());
-        compiler = parser.take_compiler();
+        //self.constants = Some(parser.take_constants());
+        //compiler = parser.take_compiler();
         function = compiler.take_function();
         
         println!("VM.compile() function={:?}", function);
@@ -84,38 +81,48 @@ impl VM {
         loop {
             let ip = self.read_callframe().ip();
             let opcode = self.callframe().read_op();
-            let result;
-
             match opcode {
-                OpCode::Return 		=> result = self.opcode_return(),
-
-                OpCode::Const8 		=> result = self.opcode_const8(),
-                OpCode::Const16 	=> result = self.opcode_const16(),
-                OpCode::Const32 	=> result = self.opcode_const32(),
-
-                OpCode::Add 		=> result = self.opcode_add(),
-                OpCode::Sub 		=> result = self.opcode_sub(),
-                OpCode::Mul 		=> result = self.opcode_mul(),
-                OpCode::Div 		=> result = self.opcode_div(),
-                OpCode::Mod 		=> result = self.opcode_mod(),
-
-                OpCode::Pop 		=> result = self.opcode_pop(),
-                OpCode::PopN 		=> result = self.opcode_popn(),
-
-                OpCode::BAD 		=> result = self.opcode_bad(),
-            }
-            
-            match result {
-                Ok(()) => {
-                }
-                Err(message) => {
-                    eprintln!(
-                        "{} at ip={}\n{:?}", 
-                        message,
-                        ip, 
-                        self.read_callframe().read_function()
-                    );
+                None => {
+                    println!("VM.execute() completed successfully");
                     return;
+                }
+                Some(opcode) => {
+            
+                    let result;
+
+                    match opcode {
+                        OpCode::Return 		=> result = self.opcode_return(),
+
+                        OpCode::Const8 		=> result = self.opcode_const8(),
+                        OpCode::Const16 	=> result = self.opcode_const16(),
+                        OpCode::Const32 	=> result = self.opcode_const32(),
+
+                        OpCode::Add 		=> result = self.opcode_add(),
+                        OpCode::Sub 		=> result = self.opcode_sub(),
+                        OpCode::Mul 		=> result = self.opcode_mul(),
+                        OpCode::Div 		=> result = self.opcode_div(),
+                        OpCode::Mod 		=> result = self.opcode_mod(),
+
+                        OpCode::Pop 		=> result = self.opcode_pop(),
+                        OpCode::PopN 		=> result = self.opcode_popn(),
+
+                        OpCode::BAD 		=> result = self.opcode_bad(),
+                    }
+                    
+                    // On error, dump message and return
+                    match result {
+                        Ok(()) => {
+                        }
+                        Err(message) => {
+                            eprintln!(
+                                "{} at ip={}\n{:?}", 
+                                message,
+                                ip, 
+                                self.read_callframe().read_function()
+                            );
+                            return;
+                        }
+                    }
                 }
             }
         }
@@ -134,7 +141,10 @@ impl VM {
     }
 
     pub fn opcode_const8(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let constant = self.callframe().read_byte() as usize;
+        let value = self.constants.value_by_index(constant);
+        self.push(value);
+        Ok(())
     }
     
     pub fn opcode_const16(&mut self) -> Result<(), String> {
@@ -146,7 +156,16 @@ impl VM {
     }
     
     pub fn opcode_add(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let b = self.pop();
+        let a = self.pop();
+        let res = a.add(&b);
+        match res {
+            Ok(value) => {
+                self.push(value);
+                return Ok(());
+            }
+            Err(msg) => Err(msg),
+        }
     }
     
     pub fn opcode_sub(&mut self) -> Result<(), String> {
@@ -166,7 +185,9 @@ impl VM {
     }
     
     pub fn opcode_pop(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let value = self.pop();
+        println!("POP = {:?}", value);
+        Ok(())
     }
     
     pub fn opcode_popn(&mut self) -> Result<(), String> {
@@ -185,7 +206,8 @@ impl VM {
         self.stack.push(value);
     }
     fn pop(&mut self) -> Value {
-        return self.stack.pop();
+        let value = self.stack.pop();
+        return value;
     }
     fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
         let closure = Closure::new(function);

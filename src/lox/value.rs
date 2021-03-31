@@ -60,6 +60,41 @@ impl Value {
 }
 
 
+impl Value {
+    pub fn add(self: &Value, other: &Value) -> Result<Value, String> {
+        match (&self, &other) {
+            (Value::Number(a), Value::Number(b)) => {
+                return Ok(Value::number(a + b));
+            }
+            (Value::Obj(ra), Value::Obj(rb)) => {
+                // Value::Obj is Rc<Obj>, dereference and compare
+                match (&*ra.borrow(), &*rb.borrow()) {
+                    (Obj::String(a), Obj::String(b)) 	 => {
+                        let string = format!("{}{}", a, b);
+                        return Ok(Value::string(&string));
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+        return Err(format!("Can not add operands {:?} and {:?}.", &self, &other));
+    }
+}
+
+
+impl Clone for Value {
+    fn clone(&self) -> Value {
+        match self {
+            Value::Null => return Value::null(),
+            Value::Bool(b) => return Value::boolean(*b),
+            Value::Number(n) => return Value::number(*n),
+            Value::Obj(o) => return Value::Obj(o.clone()),
+        }
+    }
+}
+
+
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool { 
         match (self, other) {

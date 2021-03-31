@@ -10,6 +10,15 @@ use super::tokenizer::Tokenizer;
 use super::opcode::OpCode;
 use super::compiler::Compiler;
 
+pub struct ParserInput<'a> {
+    pub tokenizer: &'a mut Tokenizer,
+}
+
+pub struct ParserOutput<'a> {
+    pub compiler: &'a mut Compiler,
+    pub constants: &'a mut Constants,
+}
+
 #[allow(dead_code)]
 #[repr(u8)]
 #[derive(PartialOrd,PartialEq)]
@@ -58,7 +67,7 @@ impl ParserPrec {
     }
 }
 
-type ParserFn = fn(&mut Parser, bool);
+type ParserFn = fn(&mut Parser, bool, &mut ParserInput, &mut ParserOutput);
 
 
 #[allow(dead_code)]
@@ -82,153 +91,90 @@ impl ParserRule {
 
 #[allow(dead_code)]
 pub struct Parser {
-    tokenizer: 	Option<Tokenizer>,
-    compiler: 	Option<Compiler>,
-    constants: 	Option<Constants>,
 }
 
 
 #[allow(dead_code)]
 impl Parser {
-    pub fn new(tokenizer: Tokenizer, compiler: Compiler) -> Parser {
-        println!("Parser::new()");
+    pub fn new() -> Parser {
+        //println!("Parser::new()");
         Parser {
-            tokenizer: Some(tokenizer),
-            compiler: Some(compiler),
-            constants: None,
         }
     }
     
-    
-    pub fn parse(&mut self) -> Result<(), String> {
+    pub fn parse(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<(), String> {
         
         loop {
             //println!("Parser::parse() loop begins");
-            if self.tokenizer().eof() { break; }
-            self.declaration();
+            if input.tokenizer.eof() { break; }
+            self.declaration(input, output);
         }
         
         return Ok(());
     }
-    
-    
-    pub fn give_constants(&mut self, constants: Constants) {
-        self.constants = Some(constants);
-    }
-
-
-    pub fn take_constants(&mut self) -> Constants {
-        return self.constants.take().unwrap();
-    }
-
-
-    pub fn take_tokenizer(&mut self) -> Tokenizer {
-        return self.tokenizer.take().unwrap();
-    }
-
-
-    pub fn take_compiler(&mut self) -> Compiler {
-        return self.compiler.take().unwrap();
-    }
 }
 
 
 #[allow(dead_code)]
 impl Parser {
-    fn mut_tokenizer(&mut self) -> &mut Tokenizer {
-        match &self.tokenizer {
-            Some(_) => self.tokenizer.as_mut().unwrap(),
-            None => panic!("Internal Error; No Tokenizer"),
-        }
-    }
-
-    fn tokenizer(&self) -> &Tokenizer {
-        match &self.tokenizer {
-            Some(_) => self.tokenizer.as_ref().unwrap(),
-            None => panic!("Internal Error; No Tokenizer"),
-        }
-    }
 
     // Shorthand
-    fn consume(&mut self, kind: TokenKind, errmsg: &str) {
-        if !self.mut_tokenizer().advance_on(kind) {
+    fn consume(&self, kind: TokenKind, errmsg: &str, input: &mut ParserInput, _output: &mut ParserOutput) {
+        if !input.tokenizer.advance_on(kind) {
             // TODO: Proper error handling
-            panic!("{}, got\n{:#?}", errmsg, self.tokenizer().current());
+            panic!("{}, got\n{:#?}", errmsg, input.tokenizer.current());
         }
     }
 
-
-    fn compiler(&mut self) -> &mut Compiler {
-        match &self.compiler {
-            Some(_) => self.compiler.as_mut().unwrap(),
-            None => panic!("Internal Error; No Compiler"),
-        }
+    // Shorthand
+    fn emit_op(&self, opcode: OpCode, output: &mut ParserOutput) {
+        output.compiler.emit_op(opcode);
     }
     
     // Shorthand
-    fn tokenkind(&mut self) -> TokenKind {
-        return self.tokenizer().current().kind();
+    fn emit_byte(&self, byte: u8, output: &mut ParserOutput) {
+        output.compiler.emit_byte(byte);
     }
     
     // Shorthand
-    fn emit_op(&mut self, opcode: OpCode) {
-        self.compiler().emit_op(opcode);
+    fn emit_word(&self, word: u16, output: &mut ParserOutput) {
+        output.compiler.emit_word(word);
     }
     
     // Shorthand
-    fn emit_byte(&mut self, byte: u8) {
-        self.compiler().emit_byte(byte);
+    fn emit_dword(&self, dword: u32, output: &mut ParserOutput) {
+        output.compiler.emit_dword(dword);
     }
     
-    // Shorthand
-    fn emit_word(&mut self, word: u16) {
-        self.compiler().emit_word(word);
-    }
-    
-    // Shorthand
-    fn emit_dword(&mut self, dword: u32) {
-        self.compiler().emit_dword(dword);
-    }
-    
-    fn make_constant(&mut self, value: Value) -> usize {
-        match &mut self.constants {
-            Some(constants) => {
-                return constants.make(value);
-            }
-            None => {
-                panic!("Internal Error; No Constants");
-            }
-        }
-    }
-    
-    fn emit_constant(&mut self, value: Value) {
-        let constant = self.make_constant(value) as u64;
+    fn emit_constant(&self, value: Value, output: &mut ParserOutput) {
+//        let constant = self.make_constant(value) as u64;
+        let constant = output.constants.make(value) as u64;
         match constant {
             0..=0xff => {
-                self.emit_op(OpCode::Const8);
-                self.emit_byte(constant as u8);
+                output.compiler.emit_op(OpCode::Const8);
+                output.compiler.emit_byte(constant as u8);
             }
             0x100..=0xffff => {
-                self.emit_op(OpCode::Const16);
-                self.emit_word(constant as u16);
+                output.compiler.emit_op(OpCode::Const16);
+                output.compiler.emit_word(constant as u16);
             }
             0x10000..=0xffffffff => {
-                self.emit_op(OpCode::Const32);
-                self.emit_dword(constant as u32);
+                output.compiler.emit_op(OpCode::Const32);
+                output.compiler.emit_dword(constant as u32);
             }
             _ => {
-                panic!("More than 2**32 constants!?!");
+                panic!("4.2 billion constants should be enough for everyone.");
             }
         }
     }
     
-    fn current_token_rule(&self) -> ParserRule {
-        let kind = self.tokenizer().current().kind();
+    fn current_token_rule(&self, input: &mut ParserInput) -> ParserRule {
+        let kind = input.tokenizer.current().kind();
         return self.rule(&kind);
     }
     
-    fn previous_token_rule(&self) -> ParserRule {
-        let kind = self.tokenizer().previous().kind();
+    fn previous_token_rule(&self, input: &mut ParserInput) -> ParserRule {
+        let kind = input.tokenizer.previous().kind();
         return self.rule(&kind);
     }
     
@@ -237,36 +183,36 @@ impl Parser {
     // compiler.c:parsePrecedence() from Robert Nystrom's excellent book
     // http://craftinginterpreters.com
     // Please accept my apologies.
-    fn parse_precedence(&mut self, precedence: ParserPrec) {
+    fn parse_precedence(&mut self, precedence: ParserPrec, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.parse_precedence()");
     
-        self.mut_tokenizer().advance();
-        let rule = self.previous_token_rule();
+        input.tokenizer.advance();
+        let rule = self.previous_token_rule(input);
         
         match rule.prefix {
             Some(method) => {
                 let can_assign = precedence <= ParserPrec::Assignment;
-                method(self, can_assign); // Call the Compiler method pointer
+                method(self, can_assign, input, output); // Call the Compiler method pointer
                 
                 loop {
-                    let rule = self.current_token_rule();
+                    let rule = self.current_token_rule(input);
                     if precedence > rule.precedence { break; }
                     
-                    self.mut_tokenizer().advance();
+                    input.tokenizer.advance();
 
                     match rule.infix {
                         Some(method) => {
-                            method(self, can_assign); // Call the Compiler method pointer
+                            method(self, can_assign, input, output); // Call the Compiler method pointer
                         }
                         None => {
                             // TODO: Proper error handling
-                            // Not sure if this is even reachable
+                            // Not sure if this is even reachable; clox does not test for this
                             panic!("Expect expression.");
                         }
                     }
                 }
                 
-                if can_assign && self.tokenizer().matches(TokenKind::Equal) {
+                if can_assign && input.tokenizer.matches(TokenKind::Equal) {
                     // TODO: Proper error handling
                     panic!("Invalid assignment target.");
                 }
@@ -284,31 +230,31 @@ impl Parser {
 // ======== Statements ========
 #[allow(dead_code)]
 impl Parser {
-    fn statement(&mut self) {
+    fn statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.statement()");
-        match self.tokenkind() {
+        match input.tokenizer.current().kind() {
             //TokenKind::Print	=> self.print_statement(),
-            _			=> self.expression_statement(),
+            _			=> self.expression_statement(input, output),
         }
     }
-    fn expression_statement(&mut self) {
+    fn expression_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.expression_statement()");
-        self.expression();
-        self.consume(TokenKind::Semicolon, "Expect ';' after expression.");
-        self.emit_op(OpCode::Pop); // Discard result
+        self.expression(input, output);
+        self.consume(TokenKind::Semicolon, "Expect ';' after expression.", input, output);
+        output.compiler.emit_op(OpCode::Pop); // Discard result
     }
 }
 
 // ======== Declarations ========
 #[allow(dead_code)]
 impl Parser {
-    fn declaration(&mut self) {
+    fn declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.declaration()");
-        match self.tokenkind() {
+        match input.tokenizer.current().kind() {
             //TokenKind::Class 	=> self.class_declaration(),
             //TokenKind::Fun 	=> self.fun_declaration(),
             //TokenKind::Var	=> self.var_declaration(),
-            _			=> self.statement(),
+            _			=> self.statement(input, output),
         }
     }
     fn class_declaration(&mut self) {
@@ -323,74 +269,88 @@ impl Parser {
 // ======== Expressions ========
 #[allow(dead_code)]
 impl Parser {
-    fn expression(&mut self) {
+    fn expression(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.expression()");
-        self.parse_precedence(ParserPrec::Assignment);    
+        self.parse_precedence(ParserPrec::Assignment, input, output);    
     }
-    fn and_(&mut self, _can_assign: bool) {
+    fn and_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn array(&mut self, _can_assign: bool) {
+    fn array(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn base2number(&mut self, _can_assign: bool) {
-        let lexeme = self.tokenizer().previous().lexeme();
+    fn base2number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let lexeme = input.tokenizer.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0b");
         let float = i64::from_str_radix(without_prefix, 2).unwrap() as f64;
-        self.emit_constant(Value::number(float));
+        self.emit_constant(Value::number(float), output);
     }
-    fn base8number(&mut self, _can_assign: bool) {
-        let lexeme = self.tokenizer().previous().lexeme();
+    fn base8number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let lexeme = input.tokenizer.previous().lexeme();
         let float = i64::from_str_radix(lexeme, 8).unwrap() as f64;
-        self.emit_constant(Value::number(float));
+        self.emit_constant(Value::number(float), output);
     }
-    fn base10number(&mut self, _can_assign: bool) {
-        let lexeme = self.tokenizer().previous().lexeme();
+    fn base10number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let lexeme = input.tokenizer.previous().lexeme();
         let float: f64 = lexeme.parse().unwrap();
-        self.emit_constant(Value::number(float));
+        self.emit_constant(Value::number(float), output);
     }
-    fn base16number(&mut self, _can_assign: bool) {
-        let lexeme = self.tokenizer().previous().lexeme();
+    fn base16number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let lexeme = input.tokenizer.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0x");
         let float = i64::from_str_radix(without_prefix, 16).unwrap() as f64;
-        self.emit_constant(Value::number(float));
+        self.emit_constant(Value::number(float), output);
     }
-    fn binary(&mut self, _can_assign: bool) {
+    fn binary(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.binary()");
 
-        let operator = self.tokenizer().previous().kind();
+        let operator = input.tokenizer.previous().kind();
         let rule = self.rule(&operator);
 
-        self.parse_precedence(rule.precedence.next());
+        self.parse_precedence(rule.precedence.next(), input, output);
         
         match operator {
-            TokenKind::Plus	=> self.emit_op(OpCode::Add),
+            TokenKind::Plus	=> output.compiler.emit_op(OpCode::Add),
             _ => {
                 panic!("Unhandled binary operator {:?}", operator);
             }
         }
     }
-    fn call(&mut self, _can_assign: bool) {
+    fn call(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn dot(&mut self, _can_assign: bool) {
+    fn dot(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn grouping(&mut self, _can_assign: bool) {
+    fn grouping(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn literal(&mut self, _can_assign: bool) {
+    fn literal(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn or_(&mut self, _can_assign: bool) {
+    fn or_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn string(&mut self, _can_assign: bool) {
+    fn string(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn subscr(&mut self, _can_assign: bool) {
+    fn subscr(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn super_(&mut self, _can_assign: bool) {
+    fn super_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn ternary(&mut self, _can_assign: bool) {
+    fn ternary(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn this_(&mut self, _can_assign: bool) {
+    fn this_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn unary(&mut self, _can_assign: bool) {
+    fn unary(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
-    fn variable(&mut self, _can_assign: bool) {
+    fn variable(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        panic!("Not yet implemented.");
     }
 }
 
@@ -482,6 +442,6 @@ impl Parser {
 
 impl Drop for Parser {
     fn drop(&mut self) {
-        println!("Parser.drop()");
+        //println!("Parser.drop()");
     }
 }
