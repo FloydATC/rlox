@@ -27,6 +27,10 @@ impl Chunk {
         self.code.push(((dword >> 8) & 0xff) as u8);
         self.code.push((dword & 0xff) as u8);
     }
+    
+    pub fn read_byte(&self, index: usize) -> u8 {
+        return self.code[index];
+    }
 }
 
 

@@ -38,10 +38,10 @@ impl Obj {
 //            _ => panic!("{} is not a Function Object"),
 //        }
 //    }
-//    pub fn as_closure(&self) -> Rc<Closure> {
-//        match self {
-//            Obj::Closure(c) => return &c,
-//            _ => panic!("{} is not a Closure Object"),
-//        }
-//    }
+    pub fn as_closure(&self) -> &Closure {
+        match self {
+            Obj::Closure(c) => return &c,
+            _ => panic!("{:?} is not a Closure Object", self),
+        }
+    }
 }

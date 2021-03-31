@@ -1,5 +1,7 @@
 
 use std::rc::Rc;
+use std::borrow::Borrow;
+use std::ptr;
 
 use super::obj::Obj;
 use super::function::Function;
@@ -56,4 +58,27 @@ impl Value {
         }
     }
 }
+
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Value) -> bool { 
+        match (self, other) {
+            (Value::Null, Value::Null) 			 => true,
+            (Value::Bool(a), Value::Bool(b)) 		 => a == b,
+            (Value::Number(a), Value::Number(b)) 	 => a == b,
+            (Value::Obj(ra), Value::Obj(rb)) => {
+                // Value::Obj is Rc<Obj>, dereference and compare
+                match (&*ra.borrow(), &*rb.borrow()) {
+                    (Obj::String(a), Obj::String(b)) 	 => a == b,
+                    // Obj types other than Obj::String must be same object
+                    (Obj::Function(a), Obj::Function(b)) => ptr::eq(a, b),
+                    (Obj::Closure(a), Obj::Closure(b)) 	 => ptr::eq(a, b),
+                    _ => false, // Obj types mismatch
+                }
+            }
+            _ => false, // Value types mismatch
+        }    
+    }
+}
+
 

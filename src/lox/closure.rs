@@ -13,7 +13,7 @@ impl Closure {
     pub fn new(function: Function) -> Closure {
         Closure { function }
     }
-    pub fn function(&mut self) -> &Function {
+    pub fn function(&self) -> &Function {
         &self.function
     }
 }

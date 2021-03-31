@@ -21,6 +21,9 @@ impl Function {
     pub fn chunk(&mut self) -> &mut Chunk {
         &mut self.chunk
     }
+    pub fn read_chunk(&self) -> &Chunk {
+        &self.chunk
+    }
 }
 
 

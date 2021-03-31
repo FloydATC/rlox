@@ -7,6 +7,7 @@ mod callframe;
 mod obj;
 mod stack;
 mod value;
+mod constants;
 mod scanner;
 mod tokenizer;
 mod token;

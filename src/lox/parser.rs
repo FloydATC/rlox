@@ -5,6 +5,7 @@
 use super::token::{Token, TokenKind};
 #[allow(unused_imports)]
 use super::value::Value;
+use super::constants::Constants;
 use super::tokenizer::Tokenizer;
 use super::opcode::OpCode;
 use super::compiler::Compiler;
@@ -81,8 +82,9 @@ impl ParserRule {
 
 #[allow(dead_code)]
 pub struct Parser {
-    tokenizer: Option<Tokenizer>,
-    compiler: Option<Compiler>,
+    tokenizer: 	Option<Tokenizer>,
+    compiler: 	Option<Compiler>,
+    constants: 	Option<Constants>,
 }
 
 
@@ -93,6 +95,7 @@ impl Parser {
         Parser {
             tokenizer: Some(tokenizer),
             compiler: Some(compiler),
+            constants: None,
         }
     }
     
@@ -109,15 +112,23 @@ impl Parser {
     }
     
     
+    pub fn give_constants(&mut self, constants: Constants) {
+        self.constants = Some(constants);
+    }
+
+
+    pub fn take_constants(&mut self) -> Constants {
+        return self.constants.take().unwrap();
+    }
+
+
     pub fn take_tokenizer(&mut self) -> Tokenizer {
-        let tokenizer = self.tokenizer.take().unwrap();
-        return tokenizer;
+        return self.tokenizer.take().unwrap();
     }
 
 
     pub fn take_compiler(&mut self) -> Compiler {
-        let compiler = self.compiler.take().unwrap();
-        return compiler;
+        return self.compiler.take().unwrap();
     }
 }
 
@@ -179,24 +190,34 @@ impl Parser {
         self.compiler().emit_dword(dword);
     }
     
-    fn make_constant(&mut self, _value: Value) -> u32 {
-        return 123;
+    fn make_constant(&mut self, value: Value) -> usize {
+        match &mut self.constants {
+            Some(constants) => {
+                return constants.make(value);
+            }
+            None => {
+                panic!("Internal Error; No Constants");
+            }
+        }
     }
     
     fn emit_constant(&mut self, value: Value) {
-        let constant = self.make_constant(value);
+        let constant = self.make_constant(value) as u64;
         match constant {
-            0..=255 => {
+            0..=0xff => {
                 self.emit_op(OpCode::Const8);
                 self.emit_byte(constant as u8);
             }
-            256..=65535 => {
+            0x100..=0xffff => {
                 self.emit_op(OpCode::Const16);
                 self.emit_word(constant as u16);
             }
-            _ => {
+            0x10000..=0xffffffff => {
                 self.emit_op(OpCode::Const32);
-                self.emit_dword(constant);
+                self.emit_dword(constant as u32);
+            }
+            _ => {
+                panic!("More than 2**32 constants!?!");
             }
         }
     }
