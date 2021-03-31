@@ -53,8 +53,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     match config.mode {
         Mode::Repl => {
-            println!("Interactive mode (Enter 'exit' or hit Ctrl+C when done)");
             loop {
+                println!("Interactive mode (Enter 'exit' or hit Ctrl+C when done)");
                 let line = read_stdin();
                 if line == "exit" { break; }
                 vm.compile(&line)?;

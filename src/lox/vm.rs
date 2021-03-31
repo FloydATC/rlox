@@ -169,19 +169,55 @@ impl VM {
     }
     
     pub fn opcode_sub(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let b = self.pop();
+        let a = self.pop();
+        let res = a.subtract(&b);
+        match res {
+            Ok(value) => {
+                self.push(value);
+                return Ok(());
+            }
+            Err(msg) => Err(msg),
+        }
     }
     
     pub fn opcode_mul(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let b = self.pop();
+        let a = self.pop();
+        let res = a.multiply(&b);
+        match res {
+            Ok(value) => {
+                self.push(value);
+                return Ok(());
+            }
+            Err(msg) => Err(msg),
+        }
     }
     
     pub fn opcode_div(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let b = self.pop();
+        let a = self.pop();
+        let res = a.divide(&b);
+        match res {
+            Ok(value) => {
+                self.push(value);
+                return Ok(());
+            }
+            Err(msg) => Err(msg),
+        }
     }
     
     pub fn opcode_mod(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+        let b = self.pop();
+        let a = self.pop();
+        let res = a.modulo(&b);
+        match res {
+            Ok(value) => {
+                self.push(value);
+                return Ok(());
+            }
+            Err(msg) => Err(msg),
+        }
     }
     
     pub fn opcode_pop(&mut self) -> Result<(), String> {

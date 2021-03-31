@@ -311,6 +311,10 @@ impl Parser {
         
         match operator {
             TokenKind::Plus	=> output.compiler.emit_op(OpCode::Add),
+            TokenKind::Minus	=> output.compiler.emit_op(OpCode::Sub),
+            TokenKind::Star	=> output.compiler.emit_op(OpCode::Mul),
+            TokenKind::Slash	=> output.compiler.emit_op(OpCode::Div),
+            TokenKind::Percent	=> output.compiler.emit_op(OpCode::Mod),
             _ => {
                 panic!("Unhandled binary operator {:?}", operator);
             }
@@ -372,6 +376,11 @@ impl Parser {
                 prefix: 	Some(Parser::unary), 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Term,
+            },
+            TokenKind::Percent => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::Factor,
             },
             TokenKind::Plus => return ParserRule {
                 prefix: 	None, 

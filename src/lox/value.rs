@@ -83,6 +83,69 @@ impl Value {
 }
 
 
+impl Value {
+    pub fn subtract(self: &Value, other: &Value) -> Result<Value, String> {
+        match (&self, &other) {
+            (Value::Number(a), Value::Number(b)) => {
+                return Ok(Value::number(a - b));
+            }
+            _ => {}
+        }
+        return Err(format!("Can not subtract operands {:?} and {:?}.", &self, &other));
+    }
+}
+
+
+impl Value {
+    pub fn multiply(self: &Value, other: &Value) -> Result<Value, String> {
+        match (&self, &other) {
+            (Value::Number(a), Value::Number(b)) => {
+                return Ok(Value::number(a * b));
+            }
+            (Value::Obj(ra), Value::Number(b)) => {
+                // Value::Obj is Rc<Obj>, dereference and compare
+                match &*ra.borrow() {
+                    Obj::String(a) => {
+                        let count = *b as usize;
+                        let string = a.repeat(count);
+                        return Ok(Value::string(&string));
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+        return Err(format!("Can not multiply operands {:?} and {:?}.", &self, &other));
+    }
+}
+
+
+impl Value {
+    pub fn divide(self: &Value, other: &Value) -> Result<Value, String> {
+        match (&self, &other) {
+            (Value::Number(a), Value::Number(b)) => {
+                return Ok(Value::number(a / b));
+            }
+            _ => {}
+        }
+        return Err(format!("Can not divide operands {:?} and {:?}.", &self, &other));
+    }
+}
+
+
+impl Value {
+    pub fn modulo(self: &Value, other: &Value) -> Result<Value, String> {
+        match (&self, &other) {
+            (Value::Number(a), Value::Number(b)) => {
+                return Ok(Value::number(a % b));
+            }
+            _ => {}
+        }
+        return Err(format!("Can not divide operands {:?} and {:?}.", &self, &other));
+    }
+}
+
+
 impl Clone for Value {
     fn clone(&self) -> Value {
         match self {

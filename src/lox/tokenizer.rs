@@ -139,6 +139,7 @@ impl Tokenizer {
             '-' => return self.make_token_at("-", TokenKind::Minus, at),
             '*' => return self.make_token_at("*", TokenKind::Star, at),
             '/' => return self.make_token_at("/", TokenKind::Slash, at),
+            '%' => return self.make_token_at("%", TokenKind::Percent, at),
             ';' => return self.make_token_at(";", TokenKind::Semicolon, at),
             '!' => {
                 match self.scanner().peek() {
