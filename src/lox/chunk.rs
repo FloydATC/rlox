@@ -45,8 +45,21 @@ impl Chunk {
         result += &format!("0x{:02x} ", self.code[*ip]);
         let instruction = match OpCode::code(self.code[*ip]) {
             OpCode::Return => self.opcode_immediate(ip),
+
+            OpCode::Const8 => self.opcode_byte(ip),
+            OpCode::Const16 => self.opcode_word(ip),
+            OpCode::Const32 => self.opcode_dword(ip),
+
             OpCode::Add => self.opcode_immediate(ip),
-            OpCode::Push => self.opcode_byte(ip),
+            OpCode::Sub => self.opcode_immediate(ip),
+            OpCode::Mul => self.opcode_immediate(ip),
+            OpCode::Div => self.opcode_immediate(ip),
+            OpCode::Mod => self.opcode_immediate(ip),
+
+            OpCode::Pop => self.opcode_immediate(ip),
+            OpCode::PopN => self.opcode_byte(ip),
+
+            //OpCode::Push => self.opcode_byte(ip),
             _ => self.opcode_immediate(ip), // "**BAD**"
         };
         result += &instruction;
@@ -65,10 +78,36 @@ impl Chunk {
     fn opcode_byte(&self, ip: &mut usize) -> String {
         let mut result = String::new();
         result.push_str(OpCode::name(self.code[*ip]));
-        result = result + &format!(" 0x{:02x}", self.code[*ip+1]);
+        let byte = self.code[*ip+1];
+        result = result + &format!(" 0x{:02x}", byte);
         *ip = *ip + 2;
         return result;
     }
+
+    // OpCode has one word argument
+    fn opcode_word(&self, ip: &mut usize) -> String {
+        let mut result = String::new();
+        result.push_str(OpCode::name(self.code[*ip]));
+        let mut word = self.code[*ip+1] as u16;
+        word = (word << 8) + (self.code[*ip+2] as u16);
+        result = result + &format!(" 0x{:04x}", word);
+        *ip = *ip + 3;
+        return result;
+    }
+
+    // OpCode has one dword argument
+    fn opcode_dword(&self, ip: &mut usize) -> String {
+        let mut result = String::new();
+        result.push_str(OpCode::name(self.code[*ip]));
+        let mut dword = self.code[*ip+1] as u32;
+        dword = (dword << 8) + (self.code[*ip+2] as u32);
+        dword = (dword << 8) + (self.code[*ip+3] as u32);
+        dword = (dword << 8) + (self.code[*ip+4] as u32);
+        result = result + &format!(" 0x{:08x}", dword);
+        *ip = *ip + 5;
+        return result;
+    }
+
 //    fn opcode_bad(&self, ip: &mut usize) -> String {
 //        let mut result = String::new();
 //        result += "**UNKNOWN**";

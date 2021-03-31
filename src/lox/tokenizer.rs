@@ -40,7 +40,7 @@ impl Tokenizer {
     
     // Return a reference to previous token
     pub fn previous(&self) -> &Token {
-        match &self.current {
+        match &self.previous {
             Some(token) => &token,
             None => panic!("No current Token")
         }
@@ -70,6 +70,8 @@ impl Tokenizer {
         }
         
         self.current = Some(token);
+        
+        //println!("Tokenizer.advance() previous={:?}, current={:?}", self.previous, self.current);
     }
 
     // Return true if current tokenkind matches
@@ -137,6 +139,7 @@ impl Tokenizer {
             '-' => return self.make_token_at("-", TokenKind::Minus, at),
             '*' => return self.make_token_at("*", TokenKind::Star, at),
             '/' => return self.make_token_at("/", TokenKind::Slash, at),
+            ';' => return self.make_token_at(";", TokenKind::Semicolon, at),
             '!' => {
                 match self.scanner().peek() {
                     '=' => return self.make_token_at("!=", TokenKind::BangEqual, at),

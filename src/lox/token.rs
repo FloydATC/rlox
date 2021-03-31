@@ -1,12 +1,14 @@
 
 #[allow(dead_code)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
+#[repr(u8)]
 pub enum TokenKind {
     // Single symbol
     Bang,
     Equal,
     Minus,
     Plus,
+    Semicolon,
     Slash,
     Star,
 
@@ -16,7 +18,10 @@ pub enum TokenKind {
 
     // Literals
     Identifier,
+    Base2Number,
+    Base8Number,
     Base10Number,
+    Base16Number,
     
     // Keywords
     Return,
@@ -28,6 +33,7 @@ pub enum TokenKind {
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct At {
     fileno: usize,
     lineno: usize,
@@ -47,6 +53,7 @@ impl At {
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Token {
     kind: TokenKind,
     lexeme: String,
@@ -80,8 +87,8 @@ impl Token {
     }
     
     
-    pub fn kind(&self) -> &TokenKind {
-        return &self.kind;
+    pub fn kind(&self) -> TokenKind {
+        return self.kind;
     }
     
     
@@ -100,6 +107,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::Equal 		=> write!(f, "Equal"),
             TokenKind::Minus 		=> write!(f, "Minus"),
             TokenKind::Plus 		=> write!(f, "Plus"),
+            TokenKind::Semicolon	=> write!(f, "Semicolon"),
             TokenKind::Slash 		=> write!(f, "Slash"),
             TokenKind::Star 		=> write!(f, "Star"),
             
@@ -109,7 +117,10 @@ impl std::fmt::Debug for TokenKind {
             
             // Literals
             TokenKind::Identifier 	=> write!(f, "Identifier"),
+            TokenKind::Base2Number 	=> write!(f, "Base2Number"),
+            TokenKind::Base8Number 	=> write!(f, "Base8Number"),
             TokenKind::Base10Number 	=> write!(f, "Base10Number"),
+            TokenKind::Base16Number 	=> write!(f, "Base16Number"),
             
             // Keywords
             TokenKind::Return 		=> write!(f, "Return"),

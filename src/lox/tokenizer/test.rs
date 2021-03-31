@@ -25,15 +25,19 @@ fn tokenizer_symbols() {
     assert_eq!(tokenizer.current().kind(), &TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
     tokenizer.advance();
+    assert_eq!(tokenizer.previous().kind(), &TokenKind::Plus);
     assert_eq!(tokenizer.current().kind(), &TokenKind::Minus);
     assert_eq!(tokenizer.current().lexeme(), "-");
     tokenizer.advance();
+    assert_eq!(tokenizer.previous().kind(), &TokenKind::Minus);
     assert_eq!(tokenizer.current().kind(), &TokenKind::Star);
     assert_eq!(tokenizer.current().lexeme(), "*");
     tokenizer.advance();
+    assert_eq!(tokenizer.previous().kind(), &TokenKind::Star);
     assert_eq!(tokenizer.current().kind(), &TokenKind::Slash);
     assert_eq!(tokenizer.current().lexeme(), "/");
     tokenizer.advance();
+    assert_eq!(tokenizer.previous().kind(), &TokenKind::Slash);
     assert_eq!(tokenizer.current().kind(), &TokenKind::EOF);
     assert_eq!(tokenizer.current().lexeme(), "\0");
 }
@@ -81,6 +85,23 @@ fn tokenizer_block_comment() {
     tokenizer.advance();
     assert_eq!(tokenizer.current().kind(), &TokenKind::Minus);
     assert_eq!(tokenizer.current().lexeme(), "-");
+    tokenizer.advance();
+    assert_eq!(tokenizer.current().kind(), &TokenKind::EOF);
+    assert_eq!(tokenizer.current().lexeme(), "\0");
+}
+
+#[test]
+fn tokenizer_add() {
+    let scanner = Scanner::str("2+3");
+    let mut tokenizer = Tokenizer::new(scanner);
+    assert_eq!(tokenizer.current().kind(), &TokenKind::Base10Number);
+    assert_eq!(tokenizer.current().lexeme(), "2");
+    tokenizer.advance();
+    assert_eq!(tokenizer.current().kind(), &TokenKind::Plus);
+    assert_eq!(tokenizer.current().lexeme(), "+");
+    tokenizer.advance();
+    assert_eq!(tokenizer.current().kind(), &TokenKind::Base10Number);
+    assert_eq!(tokenizer.current().lexeme(), "3");
     tokenizer.advance();
     assert_eq!(tokenizer.current().kind(), &TokenKind::EOF);
     assert_eq!(tokenizer.current().lexeme(), "\0");

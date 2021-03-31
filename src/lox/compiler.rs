@@ -2,6 +2,7 @@
 //use super::scanner::Scanner;
 //use super::parser::Parser;
 use super::opcode::OpCode;
+//use super::value::Value;
 use super::function::Function;
 
 
@@ -35,7 +36,12 @@ impl Compiler {
     }
 
 
-    pub fn emit(&mut self, opcode: OpCode) {
+//    pub fn make_constant(&mut self, _value: Value) -> u32 {
+//        return 255; // TODO
+//    }
+
+
+    pub fn emit_op(&mut self, opcode: OpCode) {
         self.emit_byte(opcode as u8);
     }
 
@@ -56,6 +62,14 @@ impl Compiler {
             .chunk()
             .append_word(word);
     }
+
+    pub fn emit_dword(&mut self, dword: u32) {
+        self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .chunk()
+            .append_dword(dword);
+    }
 }
 
 
@@ -64,5 +78,3 @@ impl Drop for Compiler {
         println!("Compiler.drop()");
     }
 }
-
-
