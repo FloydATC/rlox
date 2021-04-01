@@ -35,6 +35,7 @@ pub enum TokenKind {
     
     // Keywords
     Return,
+    Var,
     
     // Internal
     Error,
@@ -43,7 +44,7 @@ pub enum TokenKind {
 
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct At {
     fileno: usize,
     lineno: usize,
@@ -63,7 +64,7 @@ impl At {
 
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     kind: TokenKind,
     lexeme: String,
@@ -144,6 +145,7 @@ impl std::fmt::Debug for TokenKind {
             
             // Keywords
             TokenKind::Return 		=> write!(f, "Return"),
+            TokenKind::Var		=> write!(f, "Var"),
             
             // Internal
             TokenKind::Error 		=> write!(f, "Error"),

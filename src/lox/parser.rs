@@ -7,7 +7,7 @@ use super::token::{Token, TokenKind};
 use super::value::Value;
 use super::constants::Constants;
 use super::tokenizer::Tokenizer;
-use super::opcode::OpCode;
+use super::opcode::{OpCode, OpCodeSet};
 use super::compiler::Compiler;
 
 pub struct ParserInput<'a> {
@@ -109,6 +109,7 @@ impl Parser {
             if input.tokenizer.eof() { break; }
             self.declaration(input, output);
         }
+        self.emit_return(output);
         
         return Ok(());
     }
@@ -125,47 +126,21 @@ impl Parser {
             panic!("{}, got\n{:#?}", errmsg, input.tokenizer.current());
         }
     }
+    
+    fn emit_return(&self, output: &mut ParserOutput) {
+        //if compiler.type == TYPE_INITIALIZER {
+        //    output.compiler.emit_op(&OpCode::GetLocal);
+        //    output.compiler.emit_byte(0);
+        //} else {
+        output.compiler.emit_op(&OpCode::Null);
+        //}
+        output.compiler.emit_op(&OpCode::Return);
+    }
 
-    // Shorthand
-    fn emit_op(&self, opcode: OpCode, output: &mut ParserOutput) {
-        output.compiler.emit_op(opcode);
-    }
-    
-    // Shorthand
-    fn emit_byte(&self, byte: u8, output: &mut ParserOutput) {
-        output.compiler.emit_byte(byte);
-    }
-    
-    // Shorthand
-    fn emit_word(&self, word: u16, output: &mut ParserOutput) {
-        output.compiler.emit_word(word);
-    }
-    
-    // Shorthand
-    fn emit_dword(&self, dword: u32, output: &mut ParserOutput) {
-        output.compiler.emit_dword(dword);
-    }
-    
     fn emit_constant(&self, value: Value, output: &mut ParserOutput) {
-//        let constant = self.make_constant(value) as u64;
-        let constant = output.constants.make(value) as u64;
-        match constant {
-            0..=0xff => {
-                output.compiler.emit_op(OpCode::Const8);
-                output.compiler.emit_byte(constant as u8);
-            }
-            0x100..=0xffff => {
-                output.compiler.emit_op(OpCode::Const16);
-                output.compiler.emit_word(constant as u16);
-            }
-            0x10000..=0xffffffff => {
-                output.compiler.emit_op(OpCode::Const32);
-                output.compiler.emit_dword(constant as u32);
-            }
-            _ => {
-                panic!("4.2 billion constants should be enough for everyone.");
-            }
-        }
+        let id = output.constants.make(value);
+        let ops = OpCodeSet::getconst();
+        output.compiler.emit_op_variant(&ops, id as u64);
     }
     
     fn current_token_rule(&self, input: &mut ParserInput) -> ParserRule {
@@ -224,6 +199,124 @@ impl Parser {
             }
         }
     }
+    
+    fn parse_variable(&mut self, errmsg: &str, input: &mut ParserInput, output: &mut ParserOutput) -> usize {
+        //println!("Parser.parse_variable()");
+        
+        self.consume(TokenKind::Identifier, errmsg, input, output);
+        
+        self.declare_variable(input, output);
+        // if scope_depth > 0 { return 0 } // Pseudocode
+        
+        return self.identifier_constant(input.tokenizer.previous(), output); 
+    }
+    
+    // Make a constant containing the variable name as a Value::String
+    fn identifier_constant(&mut self, token: &Token, output: &mut ParserOutput) -> usize {
+        //println!("Parser.identifier_constant()");
+        let name = Value::string(token.lexeme());  
+        return output.constants.make(name);
+    }
+ 
+    fn declare_variable(&mut self, _input: &mut ParserInput, _output: &mut ParserOutput) {
+        //println!("Parser.declare_variable()");
+        
+        //if scope_depth == 0 { // Pseudocode
+        return; 
+        //}
+        
+        //let var_name = input.tokenizer.previous().lexeme();
+        //if locals.has(var_name) {
+        //    panic!("Variable with this name already declared");
+        //} else {
+        //    add_local(var_name)
+        //}
+    }
+    
+    fn define_variable(&mut self, id: usize, output: &mut ParserOutput) {
+        //println!("Parser.define_variable()");
+        
+        //if scope_depth > 0 {
+        //    self.mark_initialized();	// Pseudocode
+        //    return;
+        //}
+        let variable = id as u64;
+        match variable {
+            0..=0xff => {
+                output.compiler.emit_op(&OpCode::DefGlobal8);
+                output.compiler.emit_byte(variable as u8);
+            }
+            0x100..=0xffff => {
+                output.compiler.emit_op(&OpCode::DefGlobal16);
+                output.compiler.emit_word(variable as u16);
+            }
+            0x10000..=0xffffffff => {
+                output.compiler.emit_op(&OpCode::DefGlobal32);
+                output.compiler.emit_dword(variable as u32);
+            }
+            _ => {
+                panic!("4.2 billion globals should be enough for everyone.");
+            }
+        }
+    }
+
+    fn resolve_local(&mut self, _name_token: &Token) -> Option<usize> {
+        eprintln!("WARNING: resolve_local() not yet implemented.");
+        return None;
+    }
+
+    fn resolve_upvalue(&mut self, _name_token: &Token) -> Option<usize> {
+        eprintln!("WARNING: resolve_upvalue() not yet implemented.");
+        return None;
+    }
+    
+    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, usize) {
+        let mut result;
+        
+        result = self.resolve_local(name_token);
+        match result {
+            Some(id) => {
+                return (
+                    OpCodeSet::getlocal(),
+                    OpCodeSet::setlocal(),
+                    id
+                );
+            }
+            None => {}
+        }
+        
+        result = self.resolve_upvalue(name_token);
+        match result {
+            Some(id) => {
+                return (
+                    OpCodeSet::getupvalue(),
+                    OpCodeSet::setupvalue(),
+                    id
+                );
+            }
+            None => {}
+        }
+        
+        let id = self.identifier_constant(name_token, output);
+        return (
+            OpCodeSet::getglobal(),
+            OpCodeSet::setglobal(),
+            id
+        );
+    }
+    
+    fn named_variable(&mut self, name_token: &Token, can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        // Get opcodes for get/set and id of local, upvalue or global
+        let (get_ops, set_ops, id) = self.variable_opcodes(name_token, output);
+
+        // Pick set or get based on context
+        if can_assign && input.tokenizer.advance_on(TokenKind::Equal) {
+            self.expression(input, output);
+            output.compiler.emit_op_variant(&set_ops, id as u64);
+        } else {
+            output.compiler.emit_op_variant(&get_ops, id as u64);
+        }
+    }
 }
 
 
@@ -240,8 +333,8 @@ impl Parser {
     fn expression_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.expression_statement()");
         self.expression(input, output);
-        self.consume(TokenKind::Semicolon, "Expect ';' after expression.", input, output);
-        output.compiler.emit_op(OpCode::Pop); // Discard result
+        self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+        output.compiler.emit_op(&OpCode::Pop); // Discard result
     }
 }
 
@@ -249,19 +342,33 @@ impl Parser {
 #[allow(dead_code)]
 impl Parser {
     fn declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
-        //println!("Parser.declaration()");
+        //println!("Parser.declaration() begin");
         match input.tokenizer.current().kind() {
-            //TokenKind::Class 	=> self.class_declaration(),
-            //TokenKind::Fun 	=> self.fun_declaration(),
-            //TokenKind::Var	=> self.var_declaration(),
+            //TokenKind::Class 	=> self.class_declaration(input, output),
+            //TokenKind::Fun 	=> self.fun_declaration(input, output),
+            TokenKind::Var	=> self.var_declaration(input, output),
             _			=> self.statement(input, output),
         }
+        //println!("Parser.declaration() end");
     }
-    fn class_declaration(&mut self) {
+    fn class_declaration(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
+        input.tokenizer.advance(); // Consume Class token
     }
-    fn fun_declaration(&mut self) {
+    fn fun_declaration(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
+        input.tokenizer.advance(); // Consume Fun token
     }
-    fn var_declaration(&mut self) {
+    fn var_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        input.tokenizer.advance(); // Consume Var token
+        let name_id = self.parse_variable("Expect variable name", input, output);
+        
+        if input.tokenizer.advance_on(TokenKind::Equal) {
+            self.expression(input, output);
+        } else {
+            output.compiler.emit_op(&OpCode::Null);
+        }
+        self.consume(TokenKind::Semicolon, "Expect ';' after variable declaration", input, output);
+        
+        self.define_variable(name_id, output);
     } 
 }
 
@@ -310,11 +417,11 @@ impl Parser {
         self.parse_precedence(rule.precedence.next(), input, output);
         
         match operator {
-            TokenKind::Plus	=> output.compiler.emit_op(OpCode::Add),
-            TokenKind::Minus	=> output.compiler.emit_op(OpCode::Sub),
-            TokenKind::Star	=> output.compiler.emit_op(OpCode::Mul),
-            TokenKind::Slash	=> output.compiler.emit_op(OpCode::Div),
-            TokenKind::Percent	=> output.compiler.emit_op(OpCode::Mod),
+            TokenKind::Plus	=> output.compiler.emit_op(&OpCode::Add),
+            TokenKind::Minus	=> output.compiler.emit_op(&OpCode::Sub),
+            TokenKind::Star	=> output.compiler.emit_op(&OpCode::Mul),
+            TokenKind::Slash	=> output.compiler.emit_op(&OpCode::Div),
+            TokenKind::Percent	=> output.compiler.emit_op(&OpCode::Mod),
             _ => {
                 panic!("Unhandled binary operator {:?}", operator);
             }
@@ -333,9 +440,9 @@ impl Parser {
     fn literal(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let literal = input.tokenizer.previous().kind();
         match literal {
-            TokenKind::False	=> output.compiler.emit_op(OpCode::False),
-            TokenKind::Null	=> output.compiler.emit_op(OpCode::Null),
-            TokenKind::True	=> output.compiler.emit_op(OpCode::True),
+            TokenKind::False	=> output.compiler.emit_op(&OpCode::False),
+            TokenKind::Null	=> output.compiler.emit_op(&OpCode::Null),
+            TokenKind::True	=> output.compiler.emit_op(&OpCode::True),
             _ => {
                 panic!("Unhandled literal {:?}", literal);
             }
@@ -362,8 +469,9 @@ impl Parser {
     fn unary(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
-    fn variable(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn variable(&mut self, can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let token = input.tokenizer.previous().clone();
+        self.named_variable(&token, can_assign, input, output);
     }
 }
 
@@ -478,6 +586,7 @@ impl Parser {
 
             // Keywords
             TokenKind::Return => return ParserRule::null(),
+            TokenKind::Var => return ParserRule::null(),
             
             // Internal
             TokenKind::Error => return ParserRule::null(),

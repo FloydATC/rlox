@@ -83,22 +83,51 @@ impl VM {
             let opcode = self.callframe().read_op();
             match opcode {
                 None => {
-                    println!("VM.execute() completed successfully");
-                    return;
+                    panic!("VM.execute() reached end of function without return");
                 }
                 Some(opcode) => {
             
                     let result;
 
                     match opcode {
-                        OpCode::Return 		=> result = self.opcode_return(),
+                        OpCode::Return 		=> {
+                            let return_value = self.pop();
+                            //self.close_upvalues();
+                            self.callframes.pop();
+                            if self.callframes.len() == 0 { return; }
+                            
+                            self.push(return_value);
+                            result = Ok(());
+                        }
 
-                        OpCode::Const8 		=> result = self.opcode_const8(),
-                        OpCode::Const16 	=> result = self.opcode_const16(),
-                        OpCode::Const32 	=> result = self.opcode_const32(),
+                        OpCode::GetConst8 	=> result = self.opcode_getconst8(),
+                        OpCode::GetConst16 	=> result = self.opcode_getconst16(),
+                        OpCode::GetConst32 	=> result = self.opcode_getconst32(),
                         OpCode::False 		=> result = self.opcode_false(),
                         OpCode::Null 		=> result = self.opcode_null(),
                         OpCode::True	 	=> result = self.opcode_true(),
+                        OpCode::GetLocal8 	=> result = self.opcode_getlocal8(),
+                        OpCode::GetLocal16 	=> result = self.opcode_getlocal16(),
+                        OpCode::GetLocal32 	=> result = self.opcode_getlocal32(),
+                        OpCode::GetUpvalue8 	=> result = self.opcode_getupvalue8(),
+                        OpCode::GetUpvalue16 	=> result = self.opcode_getupvalue16(),
+                        OpCode::GetUpvalue32 	=> result = self.opcode_getupvalue32(),
+                        OpCode::GetGlobal8 	=> result = self.opcode_getglobal8(),
+                        OpCode::GetGlobal16 	=> result = self.opcode_getglobal16(),
+                        OpCode::GetGlobal32 	=> result = self.opcode_getglobal32(),
+
+                        OpCode::DefGlobal8	=> result = self.opcode_defglobal8(),
+                        OpCode::DefGlobal16 	=> result = self.opcode_defglobal16(),
+                        OpCode::DefGlobal32 	=> result = self.opcode_defglobal32(),
+                        OpCode::SetLocal8 	=> result = self.opcode_setlocal8(),
+                        OpCode::SetLocal16 	=> result = self.opcode_setlocal16(),
+                        OpCode::SetLocal32 	=> result = self.opcode_setlocal32(),
+                        OpCode::SetUpvalue8 	=> result = self.opcode_setupvalue8(),
+                        OpCode::SetUpvalue16 	=> result = self.opcode_setupvalue16(),
+                        OpCode::SetUpvalue32 	=> result = self.opcode_setupvalue32(),
+                        OpCode::SetGlobal8 	=> result = self.opcode_setglobal8(),
+                        OpCode::SetGlobal16 	=> result = self.opcode_setglobal16(),
+                        OpCode::SetGlobal32 	=> result = self.opcode_setglobal32(),
 
                         OpCode::Add 		=> result = self.opcode_add(),
                         OpCode::Sub 		=> result = self.opcode_sub(),
@@ -139,41 +168,180 @@ impl VM {
         return self.callframes.last().unwrap();
     }
 
-    pub fn opcode_return(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
-    }
-
-    pub fn opcode_const8(&mut self) -> Result<(), String> {
-        let constant = self.callframe().read_byte() as usize;
-        let value = self.constants.value_by_index(constant);
+    fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {
+        let value = self.constants.value_by_id(id);
         self.push(value);
         Ok(())
     }
     
-    pub fn opcode_const16(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
-    }
-
-    pub fn opcode_const32(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+    fn opcode_getconst8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_getconst(id);
     }
     
-    pub fn opcode_false(&mut self) -> Result<(), String> {
+    fn opcode_getconst16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_getconst(id);
+    }
+    
+    fn opcode_getconst32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_getconst(id);
+    }
+
+    fn opcode_getlocal(&mut self, _id: usize) -> Result<(), String> {
+        Err("OpCode GETLOCAL not implemented".to_string())
+    }
+
+    fn opcode_getlocal8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_getlocal(id);
+    }
+    
+    fn opcode_getlocal16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_getlocal(id);
+    }
+    
+    fn opcode_getlocal32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_getlocal(id);
+    }
+
+    fn opcode_getupvalue(&mut self, _id: usize) -> Result<(), String> {
+        Err("OpCode GETUPVALUE not implemented".to_string())
+    }
+
+    fn opcode_getupvalue8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_getupvalue(id);
+    }
+    
+    fn opcode_getupvalue16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_getupvalue(id);
+    }
+    
+    fn opcode_getupvalue32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_getupvalue(id);
+    }
+
+    fn opcode_getglobal(&mut self, _id: usize) -> Result<(), String> {
+        Err("OpCode GETGLOBAL not implemented".to_string())
+    }
+
+    fn opcode_getglobal8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_getglobal(id);
+    }
+    
+    fn opcode_getglobal16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_getglobal(id);
+    }
+    
+    fn opcode_getglobal32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_getglobal(id);
+    }
+    
+    fn opcode_false(&mut self) -> Result<(), String> {
         self.push(Value::boolean(false));
         Ok(())
     }
     
-    pub fn opcode_null(&mut self) -> Result<(), String> {
+    fn opcode_null(&mut self) -> Result<(), String> {
         self.push(Value::null());
         Ok(())
     }
     
-    pub fn opcode_true(&mut self) -> Result<(), String> {
+    fn opcode_true(&mut self) -> Result<(), String> {
         self.push(Value::boolean(true));
         Ok(())
     }
+
+    fn opcode_defglobal(&mut self, id: usize) -> Result<(), String> {
+        let value = self.pop();
+        let name = self.constants.value_by_id(id);
+        // TODO: Define global variable
+        panic!("Define global '{:?}' = '{:?}' not yet implemented.", name, value);
+        //Ok(())
+    }
     
-    pub fn opcode_add(&mut self) -> Result<(), String> {
+    fn opcode_defglobal8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_defglobal(id);        
+    }
+    
+    fn opcode_defglobal16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_defglobal(id);        
+    }
+    
+    fn opcode_defglobal32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_defglobal(id);        
+    }
+    
+    fn opcode_setlocal(&mut self, _id: usize) -> Result<(), String> {
+        Err("OpCode SETLOCAL not implemented".to_string())
+    }
+
+    fn opcode_setlocal8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_setlocal(id);
+    }
+    
+    fn opcode_setlocal16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_setlocal(id);
+    }
+    
+    fn opcode_setlocal32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_setlocal(id);
+    }
+
+    fn opcode_setupvalue(&mut self, _id: usize) -> Result<(), String> {
+        Err("OpCode SETUPVALUE not implemented".to_string())
+    }
+
+    fn opcode_setupvalue8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_setupvalue(id);
+    }
+    
+    fn opcode_setupvalue16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_setupvalue(id);
+    }
+    
+    fn opcode_setupvalue32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_setupvalue(id);
+    }
+
+    fn opcode_setglobal(&mut self, _id: usize) -> Result<(), String> {
+        Err("OpCode SETGLOBAL not implemented".to_string())
+    }
+
+    fn opcode_setglobal8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_setglobal(id);
+    }
+    
+    fn opcode_setglobal16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_setglobal(id);
+    }
+    
+    fn opcode_setglobal32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_setglobal(id);
+    }
+    
+    fn opcode_add(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
         let res = a.add(&b);
@@ -186,7 +354,7 @@ impl VM {
         }
     }
     
-    pub fn opcode_sub(&mut self) -> Result<(), String> {
+    fn opcode_sub(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
         let res = a.subtract(&b);
@@ -199,7 +367,7 @@ impl VM {
         }
     }
     
-    pub fn opcode_mul(&mut self) -> Result<(), String> {
+    fn opcode_mul(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
         let res = a.multiply(&b);
@@ -212,7 +380,7 @@ impl VM {
         }
     }
     
-    pub fn opcode_div(&mut self) -> Result<(), String> {
+    fn opcode_div(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
         let res = a.divide(&b);
@@ -225,7 +393,7 @@ impl VM {
         }
     }
     
-    pub fn opcode_mod(&mut self) -> Result<(), String> {
+    fn opcode_mod(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
         let res = a.modulo(&b);
@@ -238,17 +406,22 @@ impl VM {
         }
     }
     
-    pub fn opcode_pop(&mut self) -> Result<(), String> {
+    fn opcode_pop(&mut self) -> Result<(), String> {
         let value = self.pop();
-        println!("POP = {:?}", value);
+        println!("POP = {}", value);
         Ok(())
     }
     
-    pub fn opcode_popn(&mut self) -> Result<(), String> {
-        Err("OpCode not implemented".to_string())
+    fn opcode_popn(&mut self) -> Result<(), String> {
+        let count = self.callframe().read_byte();
+        for _ in 0..count {
+            let value = self.pop();
+            println!("POP = {}", value);
+        }
+        Ok(())
     }
     
-    pub fn opcode_bad(&mut self) -> Result<(), String> {
+    fn opcode_bad(&mut self) -> Result<(), String> {
         Err("Bad OpCode".to_string())
     }
 }

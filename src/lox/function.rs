@@ -24,6 +24,10 @@ impl Function {
     pub fn read_chunk(&self) -> &Chunk {
         &self.chunk
     }
+    
+    pub fn name(&self) -> &str {
+        return &self.name;
+    }
 }
 
 
@@ -40,7 +44,7 @@ impl std::fmt::Debug for Function {
 
 impl Drop for Function {
     fn drop(&mut self) {
-        println!("Function.drop()");
+        println!("Function.drop() {}", self.name);
     }
 }
 

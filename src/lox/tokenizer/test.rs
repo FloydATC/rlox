@@ -1,12 +1,7 @@
 
 
-#[cfg(test)]
 use crate::lox::scanner::Scanner;
-
-#[cfg(test)]
 use crate::lox::token::TokenKind;
-
-#[cfg(test)]
 use super::Tokenizer;
 
 

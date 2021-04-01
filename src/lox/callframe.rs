@@ -44,6 +44,18 @@ impl CallFrame {
         return byte;        
     }
 
+    pub fn read_word(&mut self) -> u16 {
+        let word = self.read_function().read_chunk().read_word(self.ip);
+        self.ip = self.ip + 2;
+        return word;        
+    }
+
+    pub fn read_dword(&mut self) -> u32 {
+        let dword = self.read_function().read_chunk().read_dword(self.ip);
+        self.ip = self.ip + 4;
+        return dword;        
+    }
+
     pub fn ip(&self) -> usize {
         return self.ip;
     }

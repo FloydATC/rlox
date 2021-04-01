@@ -1,7 +1,7 @@
 
 //use super::scanner::Scanner;
 //use super::parser::Parser;
-use super::opcode::OpCode;
+use super::opcode::{OpCode, OpCodeSet};
 //use super::value::Value;
 use super::function::Function;
 
@@ -41,8 +41,29 @@ impl Compiler {
 //    }
 
 
-    pub fn emit_op(&mut self, opcode: OpCode) {
-        self.emit_byte(opcode as u8);
+    // Pick OpCode variant based on argument size
+    pub fn emit_op_variant(&mut self, ops: &OpCodeSet, arg: u64) {
+        match arg {
+            0..=0xff => {
+                self.emit_op(&ops.byte);
+                self.emit_byte(arg as u8);
+            }
+            0x100..=0xffff => {
+                self.emit_op(&ops.word);
+                self.emit_word(arg as u16);
+            }
+            0x10000..=0xffffffff => {
+                self.emit_op(&ops.dword);
+                self.emit_dword(arg as u32);
+            }
+            _ => {
+                panic!("Argument greater than 32 bits.");
+            }
+        }
+    }
+
+    pub fn emit_op(&mut self, opcode: &OpCode) {
+        self.emit_byte(*opcode as u8);
     }
 
 

@@ -83,10 +83,7 @@ impl Value {
         }
         return Err(format!("Can not add operands {:?} and {:?}.", &self, &other));
     }
-}
 
-
-impl Value {
     pub fn subtract(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
             (Value::Number(a), Value::Number(b)) => {
@@ -96,10 +93,7 @@ impl Value {
         }
         return Err(format!("Can not subtract operands {:?} and {:?}.", &self, &other));
     }
-}
 
-
-impl Value {
     pub fn multiply(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
             (Value::Bool(a), Value::Bool(b)) => {
@@ -123,10 +117,7 @@ impl Value {
         }
         return Err(format!("Can not multiply operands {:?} and {:?}.", &self, &other));
     }
-}
 
-
-impl Value {
     pub fn divide(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
             (Value::Number(a), Value::Number(b)) => {
@@ -136,10 +127,7 @@ impl Value {
         }
         return Err(format!("Can not divide operands {:?} and {:?}.", &self, &other));
     }
-}
 
-
-impl Value {
     pub fn modulo(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
             (Value::Number(a), Value::Number(b)) => {
@@ -172,7 +160,7 @@ impl PartialEq for Value {
             (Value::Number(a), Value::Number(b)) 	 => a == b,
             (Value::Obj(ra), Value::Obj(rb)) => {
                 // Value::Obj is Rc<Obj>, dereference and compare
-                match (&*ra.borrow(), &*rb.borrow()) {
+                match (ra.borrow(), rb.borrow()) {
                     (Obj::String(a), Obj::String(b)) 	 => a == b,
                     // Obj types other than Obj::String must be same object
                     (Obj::Function(a), Obj::Function(b)) => ptr::eq(a, b),
@@ -186,3 +174,25 @@ impl PartialEq for Value {
 }
 
 
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Value::Null		=> write!(f, "Value::Null"),
+            Value::Bool(b)	=> write!(f, "Value::Bool({})", b),
+            Value::Number(n)	=> write!(f, "Value::Number({})", n),
+            Value::Obj(ra)	=> {
+                match ra.borrow() {
+                    Obj::String(st) => {
+                        write!(f, "Value::String(\"{}\")", st)
+                    }
+                    Obj::Function(fu) => {
+                        write!(f, "Value::Function({})", fu.name())
+                    }
+                    Obj::Closure(cl) => {
+                        write!(f, "Value::Closure({})", cl.function().name())
+                    }
+                }
+            }
+        }
+    }
+}
