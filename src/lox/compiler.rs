@@ -91,6 +91,30 @@ impl Compiler {
             .chunk()
             .append_dword(dword);
     }
+    
+    pub fn emit_jmp(&mut self, opcode: &OpCode) -> u32 {
+        self.emit_op(opcode);
+        let current_ip = self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .chunk()
+            .length();
+        self.emit_dword(0xffffffff);
+        return current_ip;
+    }
+    
+    pub fn patch_jmp(&mut self, ip: u32) {
+        let current_ip = self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .chunk()
+            .length();
+        self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .chunk()
+            .write_dword(current_ip, ip);
+    }
 }
 
 

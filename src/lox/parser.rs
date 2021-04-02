@@ -404,8 +404,11 @@ impl Parser {
         self.parse_precedence(ParserPrec::Assignment, input, output);    
     }
 
-    fn and_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn and(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseQ);
+        output.compiler.emit_op(&OpCode::Pop);
+        self.parse_precedence(ParserPrec::And, input, output);
+        output.compiler.patch_jmp(end_jmp);
     }
     fn array(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
@@ -490,8 +493,13 @@ impl Parser {
         }
     }
 
-    fn or_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn or(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let else_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseQ);
+        let end_jmp = output.compiler.emit_jmp(&OpCode::Jmp);
+        output.compiler.patch_jmp(else_jmp);
+        output.compiler.emit_op(&OpCode::Pop);
+        self.parse_precedence(ParserPrec::Or, input, output);
+        output.compiler.patch_jmp(end_jmp);
     }
 
     fn string(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -538,6 +546,11 @@ impl Parser {
         match kind {
 
             // Single character symbols
+            TokenKind::Amp => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::BinAnd,
+            },
             TokenKind::Bang => return ParserRule {
                 prefix: 	Some(Parser::unary), 
                 infix: 		None, 
@@ -575,6 +588,11 @@ impl Parser {
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Factor,
             },
+            TokenKind::Pipe => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::BinOr,
+            },
             TokenKind::Plus => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
@@ -596,6 +614,11 @@ impl Parser {
             TokenKind::Semicolon => return ParserRule::null(),
             
             // Double character symbols
+            TokenKind::AmpAmp => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::and), 
+                precedence: 	ParserPrec::And,
+            },
             TokenKind::BangEqual => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
@@ -615,6 +638,11 @@ impl Parser {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Comparison,
+            },
+            TokenKind::PipePipe => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::or), 
+                precedence: 	ParserPrec::Or,
             },
 
             // Literals

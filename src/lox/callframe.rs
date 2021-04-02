@@ -10,7 +10,7 @@ use super::function::Function;
 #[allow(dead_code)]
 pub struct CallFrame {
     closure: Rc<Obj>,
-    ip: usize,
+    ip: u32,
 }
 
 
@@ -56,7 +56,11 @@ impl CallFrame {
         return dword;        
     }
 
-    pub fn ip(&self) -> usize {
+    pub fn ip(&self) -> u32 {
         return self.ip;
+    }
+    
+    pub fn jmp(&mut self, ip: u32) {
+        self.ip = ip;
     }
 }

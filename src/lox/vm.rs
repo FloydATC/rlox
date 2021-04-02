@@ -158,6 +158,10 @@ impl VM {
                         OpCode::LessEqual	=> result = self.opcode_lessequal(),
                         OpCode::GreaterEqual	=> result = self.opcode_greaterequal(),
 
+                        OpCode::Jmp 		=> result = self.opcode_jmp(),
+                        OpCode::JmpFalseP	=> result = self.opcode_jmpfalsep(),
+                        OpCode::JmpFalseQ	=> result = self.opcode_jmpfalseq(),
+
                         OpCode::Pop 		=> result = self.opcode_pop(),
                         OpCode::PopN 		=> result = self.opcode_popn(),
 
@@ -486,7 +490,25 @@ impl VM {
         self.push(Value::boolean(a >= b));
         Ok(())
     }
+
+    fn opcode_jmp(&mut self) -> Result<(), String> {
+        let ip = self.callframe().read_dword();
+        self.callframe().jmp(ip);
+        Ok(())
+    }
     
+    fn opcode_jmpfalsep(&mut self) -> Result<(), String> {
+        let ip = self.callframe().read_dword();
+        if !self.pop().truthy() { self.callframe().jmp(ip); }
+        Ok(())
+    }
+
+    fn opcode_jmpfalseq(&mut self) -> Result<(), String> {
+        let ip = self.callframe().read_dword();
+        if !self.peek(0).truthy() { self.callframe().jmp(ip); }
+        Ok(())
+    }
+
     fn opcode_pop(&mut self) -> Result<(), String> {
         let value = self.pop();
         println!("POP = {}", value);
@@ -508,7 +530,7 @@ impl VM {
 }
 
 
-//#[allow(dead_code)]
+#[allow(dead_code)]
 impl VM {
     fn push(&mut self, value: Value) {
         self.stack.push(value);
@@ -516,6 +538,12 @@ impl VM {
     fn pop(&mut self) -> Value {
         let value = self.stack.pop();
         return value;
+    }
+    fn peek(&self, depth: usize) -> &Value {
+        return self.stack.peek(depth);
+    }
+    fn poke(&mut self, value: Value, depth: usize) {
+        self.stack.poke(value, depth);
     }
     fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
         let closure = Closure::new(function);

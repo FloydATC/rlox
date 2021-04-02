@@ -19,9 +19,15 @@ impl<T> Stack<T> {
         self.elements.pop()
             .expect("Stack underflow; tried to pop() from empty stack")
     }
-    pub fn at_depth(&self, depth: usize) -> &T {
+    pub fn peek(&self, depth: usize) -> &T {
         let index = self.elements.len() - 1 - depth;
         &self.elements[index]
+    }
+    pub fn poke(&mut self, element: T, depth: usize) 
+        where T: Clone
+    {
+        let index = self.elements.len() - 1 - depth;
+        self.elements[index] = element.clone();
     }
 }
 

@@ -28,26 +28,33 @@ impl Chunk {
         self.code.push((dword & 0xff) as u8);
     }
 
-    pub fn length(&self) -> usize {
-        return self.code.len();
+    pub fn length(&self) -> u32 {
+        return self.code.len() as u32;
     }
     
-    pub fn read_byte(&self, index: usize) -> u8 {
-        return self.code[index];
+    pub fn read_byte(&self, index: u32) -> u8 {
+        return self.code[index as usize];
     }
     
-    pub fn read_word(&self, index: usize) -> u16 {
-        let mut word = self.code[index+0] as u16;
-        word = (word << 8) + (self.code[index+1] as u16);
+    pub fn read_word(&self, index: u32) -> u16 {
+        let mut word = self.code[(index+0) as usize] as u16;
+        word = (word << 8) + (self.code[(index+1) as usize] as u16);
         return word;
     }
 
-    pub fn read_dword(&self, index: usize) -> u32 {
-        let mut dword = self.code[index+0] as u32;
-        dword = (dword << 8) + (self.code[index+1] as u32);
-        dword = (dword << 8) + (self.code[index+2] as u32);
-        dword = (dword << 8) + (self.code[index+3] as u32);
+    pub fn read_dword(&self, index: u32) -> u32 {
+        let mut dword = self.code[(index+0) as usize] as u32;
+        dword = (dword << 8) + (self.code[(index+1) as usize] as u32);
+        dword = (dword << 8) + (self.code[(index+2) as usize] as u32);
+        dword = (dword << 8) + (self.code[(index+3) as usize] as u32);
         return dword;
+    }
+    
+    pub fn write_dword(&mut self, dword: u32, index: u32) {
+        self.code[(index+0) as usize] = ((dword >> 24) & 0xff) as u8;
+        self.code[(index+1) as usize] = ((dword >> 16) & 0xff) as u8;
+        self.code[(index+2) as usize] = ((dword >>  8) & 0xff) as u8;
+        self.code[(index+3) as usize] = ((dword >>  0) & 0xff) as u8;
     }
 }
 
@@ -55,17 +62,17 @@ impl Chunk {
 impl Chunk {
     fn disassemble(&self) -> String {
         let mut result = String::new();
-        let mut ip: usize = 0;
-        while ip < self.code.len() {
+        let mut ip: u32 = 0;
+        while ip < self.code.len() as u32 {
             result += &format!("  0x{:04x}  ", ip);
             result += &format!("{}\n", self.opcode(&mut ip));
         }
         return result;
     }
-    fn opcode(&self, ip: &mut usize) -> String {
+    fn opcode(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result += &format!("0x{:02x} ", self.code[*ip]);
-        let instruction = match OpCode::code(self.code[*ip]) {
+        result += &format!("0x{:02x} ", self.code[*ip as usize]);
+        let instruction = match OpCode::code(self.code[*ip as usize]) {
             OpCode::Return => self.opcode_immediate(ip),
 
             OpCode::GetConst8 		=> self.opcode_byte(ip),
@@ -112,6 +119,10 @@ impl Chunk {
             OpCode::LessEqual		=> self.opcode_immediate(ip),
             OpCode::GreaterEqual	=> self.opcode_immediate(ip),
 
+            OpCode::Jmp			=> self.opcode_dword(ip),
+            OpCode::JmpFalseP		=> self.opcode_dword(ip),
+            OpCode::JmpFalseQ		=> self.opcode_dword(ip),
+
             OpCode::Pop 		=> self.opcode_immediate(ip),
             OpCode::PopN 		=> self.opcode_byte(ip),
 
@@ -122,17 +133,17 @@ impl Chunk {
     }
     
     // OpCode has no argument
-    fn opcode_immediate(&self, ip: &mut usize) -> String {
+    fn opcode_immediate(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip]));
+        result.push_str(OpCode::name(self.code[*ip as usize]));
         *ip = *ip + 1;
         return result;
     }
     
     // OpCode has one byte argument
-    fn opcode_byte(&self, ip: &mut usize) -> String {
+    fn opcode_byte(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip]));
+        result.push_str(OpCode::name(self.code[*ip as usize]));
         *ip = *ip + 1;
         let byte = self.read_byte(*ip);
         *ip = *ip + 1;
@@ -141,9 +152,9 @@ impl Chunk {
     }
 
     // OpCode has one word argument
-    fn opcode_word(&self, ip: &mut usize) -> String {
+    fn opcode_word(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip]));
+        result.push_str(OpCode::name(self.code[*ip as usize]));
         *ip = *ip + 1;
         let word = self.read_word(*ip);
         *ip = *ip + 2;
@@ -152,9 +163,9 @@ impl Chunk {
     }
 
     // OpCode has one dword argument
-    fn opcode_dword(&self, ip: &mut usize) -> String {
+    fn opcode_dword(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip]));
+        result.push_str(OpCode::name(self.code[*ip as usize]));
         *ip = *ip + 1;
         let dword = self.read_dword(*ip);
         *ip = *ip + 4;

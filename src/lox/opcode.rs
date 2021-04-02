@@ -57,7 +57,12 @@ pub enum OpCode {
     Greater,
     LessEqual,
     GreaterEqual,
-    
+
+    // Change instruction pointer
+    Jmp,
+    JmpFalseP,	// POP, then if false JUMP
+    JmpFalseQ,  // PEEK, then if false JUMP
+        
     // Pop (and discard) one or more values from the stack
     Pop,
     PopN,		// Followed by BYTE indicating number of values
@@ -119,6 +124,10 @@ impl OpCode {
             OpCode::LessEqual 		=> { return "LEQ"; }
             OpCode::GreaterEqual 	=> { return "GEQ"; }
         
+            OpCode::Jmp 		=> { return "JMP"; }
+            OpCode::JmpFalseP 		=> { return "JFP"; }
+            OpCode::JmpFalseQ 		=> { return "JFQ"; }
+
             OpCode::Pop 		=> { return "POP"; }
             OpCode::PopN 		=> { return "POP"; }
             
@@ -174,7 +183,10 @@ impl OpCode {
         if byte == OpCode::LessEqual as u8    { return OpCode::LessEqual; }
         if byte == OpCode::GreaterEqual as u8    { return OpCode::GreaterEqual; }
 
-        //if byte == OpCode::Push as u8 	{ return OpCode::Push; }
+        if byte == OpCode::Jmp as u8 	{ return OpCode::Jmp; }
+        if byte == OpCode::JmpFalseP as u8 	{ return OpCode::JmpFalseP; }
+        if byte == OpCode::JmpFalseQ as u8 	{ return OpCode::JmpFalseQ; }
+
         if byte == OpCode::Pop as u8 	{ return OpCode::Pop; }
         if byte == OpCode::PopN as u8 	{ return OpCode::PopN; }
         return OpCode::BAD;	// Do not use

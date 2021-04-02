@@ -4,6 +4,7 @@
 #[repr(u8)]
 pub enum TokenKind {
     // Single symbol
+    Amp,
     Bang,
     Equal,
     Greater,
@@ -13,6 +14,7 @@ pub enum TokenKind {
     Less,
     Minus,
     Percent,
+    Pipe,
     Plus,
     RightBracket,
     RightCurly,
@@ -22,10 +24,12 @@ pub enum TokenKind {
     Star,
 
     // Double symbol
+    AmpAmp,
     BangEqual,
     EqualEqual,
     GreaterEqual,
     LessEqual,
+    PipePipe,
 
     // Literals
     Base2Number,
@@ -119,6 +123,7 @@ impl std::fmt::Debug for TokenKind {
         match self {
         
             // Single character symbols
+            TokenKind::Amp		=> write!(f, "Amp"),
             TokenKind::Bang 		=> write!(f, "Bang"),
             TokenKind::Equal 		=> write!(f, "Equal"),
             TokenKind::Greater		=> write!(f, "Greater"),
@@ -128,6 +133,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::Less		=> write!(f, "Less"),
             TokenKind::Minus 		=> write!(f, "Minus"),
             TokenKind::Percent          => write!(f, "Percent"),
+            TokenKind::Pipe		=> write!(f, "Pipe"),
             TokenKind::Plus 		=> write!(f, "Plus"),
             TokenKind::RightBracket	=> write!(f, "RightBracket"),
             TokenKind::RightCurly	=> write!(f, "RightCurly"),
@@ -137,10 +143,12 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::Star 		=> write!(f, "Star"),
             
             // Double character symbols
+            TokenKind::AmpAmp		=> write!(f, "AmpAmp"),
             TokenKind::BangEqual 	=> write!(f, "BangEqual"),
             TokenKind::EqualEqual 	=> write!(f, "EqualEqual"),
             TokenKind::GreaterEqual	=> write!(f, "GreaterEqual"),
             TokenKind::LessEqual	=> write!(f, "LessEqual"),
+            TokenKind::PipePipe		=> write!(f, "PipePipe"),
             
             // Literals
             TokenKind::Base2Number 	=> write!(f, "Base2Number"),
