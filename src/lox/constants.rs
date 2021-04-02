@@ -54,3 +54,14 @@ impl Constants {
     }
 
 }
+
+
+impl std::fmt::Debug for Constants {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\n")?;
+        for (id, v) in self.values.iter().enumerate() {
+            write!(f, "  0x{:04x} {}\n", id, v)?;
+        }
+        Ok(())
+    }
+}

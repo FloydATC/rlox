@@ -57,7 +57,7 @@ impl Chunk {
         let mut result = String::new();
         let mut ip: usize = 0;
         while ip < self.code.len() {
-            result += &format!("0x{:08x}  ", ip);
+            result += &format!("  0x{:04x}  ", ip);
             result += &format!("{}\n", self.opcode(&mut ip));
         }
         return result;

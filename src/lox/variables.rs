@@ -84,3 +84,25 @@ impl Variables {
     }
     
 }
+
+
+impl std::fmt::Debug for Variables {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\n")?;
+        for (id, value) in self.values.iter().enumerate() {
+            let name = self.name_by_id(id);
+            match value {
+                Some(value) => {
+                    write!(f, "  0x{:04x} {}={}\n", id, name, &value)?;
+                }
+                None => {
+                    write!(f, "  0x{:04x} {}=undefined\n", id, name)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+
+
