@@ -6,6 +6,7 @@ use super::token::{Token, TokenKind};
 #[allow(unused_imports)]
 use super::value::Value;
 use super::constants::Constants;
+use super::variables::Variables;
 use super::tokenizer::Tokenizer;
 use super::opcode::{OpCode, OpCodeSet};
 use super::compiler::Compiler;
@@ -15,8 +16,9 @@ pub struct ParserInput<'a> {
 }
 
 pub struct ParserOutput<'a> {
-    pub compiler: &'a mut Compiler,
-    pub constants: &'a mut Constants,
+    pub compiler: 	&'a mut Compiler,
+    pub constants: 	&'a mut Constants,
+    pub globals: 	&'a mut Variables,
 }
 
 #[allow(dead_code)]
@@ -205,10 +207,17 @@ impl Parser {
         
         self.consume(TokenKind::Identifier, errmsg, input, output);
         
-        self.declare_variable(input, output);
+
+        //self.declare_variable(name, input, output);
         // if scope_depth > 0 { return 0 } // Pseudocode
         
-        return self.identifier_constant(input.tokenizer.previous(), output); 
+        //return self.identifier_constant(input.tokenizer.previous(), output); 
+        let name = input.tokenizer.previous().lexeme();
+        let res = output.globals.declare(name);
+        match res {
+            Ok(id) => return id,
+            Err(msg) => panic!("{}", msg),
+        }
     }
     
     // Make a constant containing the variable name as a Value::String
@@ -240,6 +249,12 @@ impl Parser {
         //    self.mark_initialized();	// Pseudocode
         //    return;
         //}
+        
+        self.define_global(id, output);
+        
+    }
+    
+    fn define_global(&mut self, id: usize, output: &mut ParserOutput) {
         let variable = id as u64;
         match variable {
             0..=0xff => {
@@ -297,12 +312,21 @@ impl Parser {
             None => {}
         }
         
-        let id = self.identifier_constant(name_token, output);
-        return (
-            OpCodeSet::getglobal(),
-            OpCodeSet::setglobal(),
-            id
-        );
+        //let id = self.identifier_constant(name_token, output);
+        result = output.globals.id_by_name(name_token.lexeme());
+        match result {
+            Some(id) => {
+                return (
+                    OpCodeSet::getglobal(),
+                    OpCodeSet::setglobal(),
+                    id
+                );
+            }
+            None => {
+                // TODO: Proper error handling
+                panic!("Undeclared variable");
+            }
+        }
     }
     
     fn named_variable(&mut self, name_token: &Token, can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {

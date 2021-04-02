@@ -4,6 +4,7 @@ use super::stack::Stack;
 use super::value::Value;
 //use super::obj::Obj;
 use super::constants::Constants;
+use super::variables::Variables;
 use super::closure::Closure;
 use super::function::Function;
 use super::scanner::Scanner;
@@ -18,6 +19,7 @@ pub struct VM {
   callframes: Vec<CallFrame>,
   stack: Stack<Value>,
   constants: Constants,
+  globals: Variables,
   //objects: Vec<Obj>,
 }
 
@@ -28,6 +30,7 @@ impl VM {
             callframes: 	vec![],
             stack: 		Stack::new(), 
             constants:		Constants::new(),
+            globals:		Variables::new(),
             //objects: 		vec![],
         }
     }
@@ -38,6 +41,13 @@ impl VM {
 impl VM {
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
         println!("VM.compile() code={}", code);
+        
+        // -------------------------------------------------------
+        // This is really bad, I know.
+        // Much of the following code may belong within 
+        // the Compiler but I'm keeping things here until I 
+        // figure out exactly how the pieces need to fit together.
+        // -------------------------------------------------------
         
         let scanner = Scanner::str(code);
         let mut tokenizer = Tokenizer::new(scanner);
@@ -51,8 +61,9 @@ impl VM {
             tokenizer: &mut tokenizer,
         };
         let mut output = ParserOutput {
-            compiler: &mut compiler,
-            constants: &mut self.constants,
+            compiler: 	&mut compiler,
+            constants: 	&mut self.constants,
+            globals: 	&mut self.globals,
         };
         let result = parser.parse(&mut input, &mut output);
         
@@ -227,8 +238,11 @@ impl VM {
         return self.opcode_getupvalue(id);
     }
 
-    fn opcode_getglobal(&mut self, _id: usize) -> Result<(), String> {
-        Err("OpCode GETGLOBAL not implemented".to_string())
+    fn opcode_getglobal(&mut self, id: usize) -> Result<(), String> {
+        println!("opcode_getglobal({})", id);
+        let value = self.globals.get_by_id(id).unwrap();
+        self.push(value);
+        Ok(())
     }
 
     fn opcode_getglobal8(&mut self) -> Result<(), String> {
@@ -263,10 +277,8 @@ impl VM {
 
     fn opcode_defglobal(&mut self, id: usize) -> Result<(), String> {
         let value = self.pop();
-        let name = self.constants.value_by_id(id);
-        // TODO: Define global variable
-        panic!("Define global '{:?}' = '{:?}' not yet implemented.", name, value);
-        //Ok(())
+        self.globals.set_by_id(id, value);
+        Ok(())
     }
     
     fn opcode_defglobal8(&mut self) -> Result<(), String> {
