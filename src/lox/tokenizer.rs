@@ -136,6 +136,53 @@ impl Tokenizer {
         }
     }
 
+    fn escape_sequence(&mut self) -> Result<String, String> {
+        let c = self.scanner().current();
+        self.scanner().advance(); // Consume c
+        match c {
+            't'		=> return Ok("\t".to_string()),
+            'n' 	=> return Ok("\n".to_string()),
+            'r' 	=> return Ok("\r".to_string()),
+            '"' 	=> return Ok("\"".to_string()),
+            '\'' 	=> return Ok("'".to_string()),
+            '\\' 	=> return Ok("\\".to_string()),
+            _		=> {
+                return Err(format!("Character sequence not supported: '\\{}'", c));
+            }
+        }
+    }
+
+    // Single or double quoted string
+    fn string_token(&mut self) -> Token {
+        let at = self.scanner().at();
+        let quote = self.scanner().current();
+        let mut string = String::new();
+        self.scanner().advance(); // Consume leading quote
+        while self.scanner().current() != quote {
+            if self.scanner().eof() {
+                return Token::new_at(TokenKind::Error, "Unterminated string", at);
+            }
+            let c = self.scanner().current();
+            if c == '\\' {
+                self.scanner().advance(); // Consume backslash
+                let result = self.escape_sequence();
+                match result {
+                    Ok(unescaped) => {
+                        string = string + unescaped.as_str();
+                    }
+                    Err(msg) => {
+                        return Token::new_at(TokenKind::Error, msg.as_str(), at);
+                    }
+                }
+            } else {
+                string.push(c);
+                self.scanner().advance(); // Consume c
+            }
+        }
+        self.scanner().advance(); // Consume trailing quote
+        return Token::new_at(TokenKind::String, string.as_str(), at);
+    }
+
     // First character is not alphanumerical so it must be a symbol
     fn symbol_token(&mut self) -> Token {
         let at = self.scanner().at();
@@ -164,6 +211,7 @@ impl Tokenizer {
                     _ => return self.make_token_at("=", TokenKind::Equal, at),
                 }
             }
+            '"' | '\'' => return self.string_token(),
             _ => {
                 // Bad/unknown symbol encountered, return an Error token
                 let lexeme = self.scanner().current().to_string();

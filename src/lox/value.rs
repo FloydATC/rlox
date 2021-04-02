@@ -183,7 +183,8 @@ impl std::fmt::Display for Value {
             Value::Obj(ra)	=> {
                 match ra.borrow() {
                     Obj::String(st) => {
-                        write!(f, "Value::String(\"{}\")", st)
+                        // Escape non-ascii and non-printable ascii chars
+                        write!(f, "Value::String({:?})", st)
                     }
                     Obj::Function(fu) => {
                         write!(f, "Value::Function({})", fu.name())

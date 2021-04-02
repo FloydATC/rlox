@@ -475,8 +475,9 @@ impl Parser {
     fn or_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
-    fn string(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn string(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let value = Value::string(input.tokenizer.previous().lexeme());
+        self.emit_constant(value, output);
     }
     fn subscr(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
@@ -599,6 +600,11 @@ impl Parser {
             },
             TokenKind::Null => return ParserRule {
                 prefix: 	Some(Parser::literal), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
+            TokenKind::String => return ParserRule {
+                prefix: 	Some(Parser::string), 
                 infix: 		None, 
                 precedence: 	ParserPrec::None,
             },

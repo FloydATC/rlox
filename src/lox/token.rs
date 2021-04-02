@@ -31,6 +31,7 @@ pub enum TokenKind {
     False,
     Identifier,
     Null,
+    String,
     True,
     
     // Keywords
@@ -141,6 +142,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::False		=> write!(f, "False"),
             TokenKind::Identifier 	=> write!(f, "Identifier"),
             TokenKind::Null		=> write!(f, "Null"),
+            TokenKind::String		=> write!(f, "String"),
             TokenKind::True		=> write!(f, "True"),
             
             // Keywords
