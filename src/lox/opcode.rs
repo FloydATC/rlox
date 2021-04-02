@@ -47,6 +47,8 @@ pub enum OpCode {
     Mul,
     Div,
     Mod,
+    Equal,
+    NotEqual,
     
     // Pop (and discard) one or more values from the stack
     Pop,
@@ -99,6 +101,8 @@ impl OpCode {
             OpCode::Mul => 	{ return "MUL"; }
             OpCode::Div => 	{ return "DIV"; }
             OpCode::Mod => 	{ return "MOD"; }
+            OpCode::Equal => { return "EQUAL"; }
+            OpCode::NotEqual => { return "NOTEQUAL"; }
         
             OpCode::Pop => 	{ return "POP"; }
             OpCode::PopN => 	{ return "POP"; }
@@ -145,6 +149,8 @@ impl OpCode {
         if byte == OpCode::Mul as u8 	{ return OpCode::Mul; }
         if byte == OpCode::Div as u8 	{ return OpCode::Div; }
         if byte == OpCode::Mod as u8 	{ return OpCode::Mod; }
+        if byte == OpCode::Equal as u8		{ return OpCode::Equal; }
+        if byte == OpCode::NotEqual as u8	{ return OpCode::NotEqual; }
 
         //if byte == OpCode::Push as u8 	{ return OpCode::Push; }
         if byte == OpCode::Pop as u8 	{ return OpCode::Pop; }

@@ -148,6 +148,8 @@ impl VM {
                         OpCode::Mul 		=> result = self.opcode_mul(),
                         OpCode::Div 		=> result = self.opcode_div(),
                         OpCode::Mod 		=> result = self.opcode_mod(),
+                        OpCode::Equal		=> result = self.opcode_equal(),
+                        OpCode::NotEqual	=> result = self.opcode_notequal(),
 
                         OpCode::Pop 		=> result = self.opcode_pop(),
                         OpCode::PopN 		=> result = self.opcode_popn(),
@@ -418,6 +420,20 @@ impl VM {
             }
             Err(msg) => Err(msg),
         }
+    }
+    
+    fn opcode_equal(&mut self) -> Result<(), String> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a == b));
+        Ok(())
+    }
+    
+    fn opcode_notequal(&mut self) -> Result<(), String> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a != b));
+        Ok(())
     }
     
     fn opcode_pop(&mut self) -> Result<(), String> {

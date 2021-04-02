@@ -441,11 +441,13 @@ impl Parser {
         self.parse_precedence(rule.precedence.next(), input, output);
         
         match operator {
-            TokenKind::Plus	=> output.compiler.emit_op(&OpCode::Add),
-            TokenKind::Minus	=> output.compiler.emit_op(&OpCode::Sub),
-            TokenKind::Star	=> output.compiler.emit_op(&OpCode::Mul),
-            TokenKind::Slash	=> output.compiler.emit_op(&OpCode::Div),
-            TokenKind::Percent	=> output.compiler.emit_op(&OpCode::Mod),
+            TokenKind::Plus		=> output.compiler.emit_op(&OpCode::Add),
+            TokenKind::Minus		=> output.compiler.emit_op(&OpCode::Sub),
+            TokenKind::Star		=> output.compiler.emit_op(&OpCode::Mul),
+            TokenKind::Slash		=> output.compiler.emit_op(&OpCode::Div),
+            TokenKind::Percent		=> output.compiler.emit_op(&OpCode::Mod),
+            TokenKind::BangEqual	=> output.compiler.emit_op(&OpCode::NotEqual),
+            TokenKind::EqualEqual	=> output.compiler.emit_op(&OpCode::Equal),
             _ => {
                 panic!("Unhandled binary operator {:?}", operator);
             }
