@@ -71,7 +71,10 @@ impl VM {
         //compiler = parser.take_compiler();
         function = compiler.take_function();
         
-        println!("VM.compile() function={:?}", function);
+        println!("VM.compile() complete:");
+        println!(" function={:?}", function);
+        println!(" constants={:?}", self.constants);
+        println!(" globals={:?}", self.globals);
         
         match result {
             Ok(()) => {
@@ -239,9 +242,8 @@ impl VM {
     }
 
     fn opcode_getglobal(&mut self, id: usize) -> Result<(), String> {
-        println!("opcode_getglobal({})", id);
-        let value = self.globals.get_by_id(id).unwrap();
-        self.push(value);
+        // Compiler guarantees the variable is defined
+        self.push(self.globals.get_by_id(id).unwrap());
         Ok(())
     }
 
