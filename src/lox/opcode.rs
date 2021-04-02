@@ -58,49 +58,53 @@ pub enum OpCode {
 
 impl OpCode {
     pub fn name(byte: u8) -> &'static str {
-        if byte == OpCode::Return as u8 { return "RETURN"; }
+        let opcode = OpCode::code(byte);
 
-        if byte == OpCode::GetConst8 as u8 { return "GETCONST"; }
-        if byte == OpCode::GetConst16 as u8 { return "GETCONST"; }
-        if byte == OpCode::GetConst32 as u8 { return "GETCONST"; }
-        if byte == OpCode::False as u8 	{ return "FALSE"; }
-        if byte == OpCode::Null as u8 	{ return "NULL"; }
-        if byte == OpCode::True as u8 	{ return "TRUE"; }
+        match opcode {        
+            OpCode::Return => { return "RETURN"; }
 
-        if byte == OpCode::GetLocal8 as u8  { return "GETLOCAL"; }
-        if byte == OpCode::GetLocal16 as u8  { return "GETLOCAL"; }
-        if byte == OpCode::GetLocal32 as u8  { return "GETLOCAL"; }
-        if byte == OpCode::GetUpvalue8 as u8  { return "GETUPVALUE"; }
-        if byte == OpCode::GetUpvalue16 as u8  { return "GETUPVALUE"; }
-        if byte == OpCode::GetUpvalue32 as u8  { return "GETUPVALUE"; }
-        if byte == OpCode::GetGlobal8 as u8  { return "GETGLOBAL"; }
-        if byte == OpCode::GetGlobal16 as u8  { return "GETGLOBAL"; }
-        if byte == OpCode::GetGlobal32 as u8  { return "GETGLOBAL"; }
+            OpCode::GetConst8 => { return "GETCONST"; }
+            OpCode::GetConst16 => { return "GETCONST"; }
+            OpCode::GetConst32 => { return "GETCONST"; }
+            OpCode::False => 	{ return "FALSE"; }
+            OpCode::Null => 	{ return "NULL"; }
+            OpCode::True => 	{ return "TRUE"; }
+
+            OpCode::GetLocal8 =>  { return "GETLOCAL"; }
+            OpCode::GetLocal16 =>  { return "GETLOCAL"; }
+            OpCode::GetLocal32 =>  { return "GETLOCAL"; }
+            OpCode::GetUpvalue8 =>  { return "GETUPVALUE"; }
+            OpCode::GetUpvalue16 =>  { return "GETUPVALUE"; }
+            OpCode::GetUpvalue32 =>  { return "GETUPVALUE"; }
+            OpCode::GetGlobal8 =>  { return "GETGLOBAL"; }
+            OpCode::GetGlobal16 =>  { return "GETGLOBAL"; }
+            OpCode::GetGlobal32 =>  { return "GETGLOBAL"; }
         
-        if byte == OpCode::DefGlobal8 as u8 { return "DEFGLOBAL"; }
-        if byte == OpCode::DefGlobal16 as u8 { return "DEFGLOBAL"; }
-        if byte == OpCode::DefGlobal32 as u8 { return "DEFGLOBAL"; }
+            OpCode::DefGlobal8 => { return "DEFGLOBAL"; }
+            OpCode::DefGlobal16 => { return "DEFGLOBAL"; }
+            OpCode::DefGlobal32 => { return "DEFGLOBAL"; }
 
-        if byte == OpCode::SetLocal8 as u8  { return "SETLOCAL"; }
-        if byte == OpCode::SetLocal16 as u8  { return "SETLOCAL"; }
-        if byte == OpCode::SetLocal32 as u8  { return "SETLOCAL"; }
-        if byte == OpCode::SetUpvalue8 as u8  { return "SETUPVALUE"; }
-        if byte == OpCode::SetUpvalue16 as u8  { return "SETUPVALUE"; }
-        if byte == OpCode::SetUpvalue32 as u8  { return "SETUPVALUE"; }
-        if byte == OpCode::SetGlobal8 as u8  { return "SETGLOBAL"; }
-        if byte == OpCode::SetGlobal16 as u8  { return "SETGLOBAL"; }
-        if byte == OpCode::SetGlobal32 as u8  { return "SETGLOBAL"; }
+            OpCode::SetLocal8 =>  { return "SETLOCAL"; }
+            OpCode::SetLocal16 =>  { return "SETLOCAL"; }
+            OpCode::SetLocal32 =>  { return "SETLOCAL"; }
+            OpCode::SetUpvalue8 =>  { return "SETUPVALUE"; }
+            OpCode::SetUpvalue16 =>  { return "SETUPVALUE"; }
+            OpCode::SetUpvalue32 =>  { return "SETUPVALUE"; }
+            OpCode::SetGlobal8 =>  { return "SETGLOBAL"; }
+            OpCode::SetGlobal16 =>  { return "SETGLOBAL"; }
+            OpCode::SetGlobal32 =>  { return "SETGLOBAL"; }
 
-        if byte == OpCode::Add as u8 	{ return "ADD"; }
-        if byte == OpCode::Sub as u8 	{ return "SUB"; }
-        if byte == OpCode::Mul as u8 	{ return "MUL"; }
-        if byte == OpCode::Div as u8 	{ return "DIV"; }
-        if byte == OpCode::Mod as u8 	{ return "MOD"; }
+            OpCode::Add => 	{ return "ADD"; }
+            OpCode::Sub => 	{ return "SUB"; }
+            OpCode::Mul => 	{ return "MUL"; }
+            OpCode::Div => 	{ return "DIV"; }
+            OpCode::Mod => 	{ return "MOD"; }
         
-        //if byte == OpCode::Push as u8 	{ return "PUSH"; }
-        if byte == OpCode::Pop as u8 	{ return "POP"; }
-        if byte == OpCode::PopN as u8 	{ return "POP"; }
-        return "**BAD**";
+            OpCode::Pop => 	{ return "POP"; }
+            OpCode::PopN => 	{ return "POP"; }
+            
+            OpCode::BAD => { return "**BAD**"; }
+        }
     }
     pub fn code(byte: u8) -> OpCode {
         if byte == OpCode::Return as u8 { return OpCode::Return; }
