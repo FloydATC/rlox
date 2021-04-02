@@ -441,13 +441,20 @@ impl Parser {
         self.parse_precedence(rule.precedence.next(), input, output);
         
         match operator {
-            TokenKind::Plus		=> output.compiler.emit_op(&OpCode::Add),
+            // Single symbol
+            TokenKind::Greater		=> output.compiler.emit_op(&OpCode::Greater),
+            TokenKind::Less		=> output.compiler.emit_op(&OpCode::Less),
             TokenKind::Minus		=> output.compiler.emit_op(&OpCode::Sub),
+            TokenKind::Percent		=> output.compiler.emit_op(&OpCode::Mod),
+            TokenKind::Plus		=> output.compiler.emit_op(&OpCode::Add),
             TokenKind::Star		=> output.compiler.emit_op(&OpCode::Mul),
             TokenKind::Slash		=> output.compiler.emit_op(&OpCode::Div),
-            TokenKind::Percent		=> output.compiler.emit_op(&OpCode::Mod),
+            
+            // Double symbol
             TokenKind::BangEqual	=> output.compiler.emit_op(&OpCode::NotEqual),
             TokenKind::EqualEqual	=> output.compiler.emit_op(&OpCode::Equal),
+            TokenKind::GreaterEqual	=> output.compiler.emit_op(&OpCode::GreaterEqual),
+            TokenKind::LessEqual	=> output.compiler.emit_op(&OpCode::LessEqual),
             _ => {
                 panic!("Unhandled binary operator {:?}", operator);
             }
@@ -516,6 +523,11 @@ impl Parser {
                 precedence: 	ParserPrec::None,
             },
             TokenKind::Equal => return ParserRule::null(),
+            TokenKind::Greater => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::Comparison,
+            },
             TokenKind::LeftBracket => return ParserRule {
                 prefix:		Some(Parser::array), 
                 infix: 		Some(Parser::subscr), 
@@ -527,6 +539,11 @@ impl Parser {
                 infix: 		Some(Parser::call), 
                 precedence: 	ParserPrec::Call,
             },            
+            TokenKind::Less => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::Comparison,
+            },
             TokenKind::Minus => return ParserRule {
                 prefix: 	Some(Parser::unary), 
                 infix: 		Some(Parser::binary), 
@@ -567,6 +584,16 @@ impl Parser {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Equality,
+            },
+            TokenKind::GreaterEqual => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::Comparison,
+            },
+            TokenKind::LessEqual => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::Comparison,
             },
 
             // Literals

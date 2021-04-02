@@ -150,6 +150,10 @@ impl VM {
                         OpCode::Mod 		=> result = self.opcode_mod(),
                         OpCode::Equal		=> result = self.opcode_equal(),
                         OpCode::NotEqual	=> result = self.opcode_notequal(),
+                        OpCode::Less		=> result = self.opcode_less(),
+                        OpCode::Greater		=> result = self.opcode_greater(),
+                        OpCode::LessEqual	=> result = self.opcode_lessequal(),
+                        OpCode::GreaterEqual	=> result = self.opcode_greaterequal(),
 
                         OpCode::Pop 		=> result = self.opcode_pop(),
                         OpCode::PopN 		=> result = self.opcode_popn(),
@@ -433,6 +437,34 @@ impl VM {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a != b));
+        Ok(())
+    }
+    
+    fn opcode_less(&mut self) -> Result<(), String> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a < b));
+        Ok(())
+    }
+    
+    fn opcode_greater(&mut self) -> Result<(), String> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a > b));
+        Ok(())
+    }
+    
+    fn opcode_lessequal(&mut self) -> Result<(), String> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a <= b));
+        Ok(())
+    }
+    
+    fn opcode_greaterequal(&mut self) -> Result<(), String> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a >= b));
         Ok(())
     }
     

@@ -174,6 +174,23 @@ impl PartialEq for Value {
 }
 
 
+impl std::cmp::PartialOrd for Value {
+    fn partial_cmp(&self, other: &Value) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
+            (Value::Obj(ra), Value::Obj(rb)) => {
+                // Value::Obj is Rc<Obj>, dereference and compare
+                match (ra.borrow(), rb.borrow()) {
+                    (Obj::String(a), Obj::String(b)) => Some(a.cmp(b)),
+                    _ => None, // Obj types mismatch or can't be ordered
+                }
+            }
+            _ => None, // Value types mismatch
+        }
+    }
+}
+
+
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {

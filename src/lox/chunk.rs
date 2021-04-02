@@ -104,6 +104,10 @@ impl Chunk {
             OpCode::Mod 		=> self.opcode_immediate(ip),
             OpCode::Equal		=> self.opcode_immediate(ip),
             OpCode::NotEqual		=> self.opcode_immediate(ip),
+            OpCode::Less		=> self.opcode_immediate(ip),
+            OpCode::Greater		=> self.opcode_immediate(ip),
+            OpCode::LessEqual		=> self.opcode_immediate(ip),
+            OpCode::GreaterEqual	=> self.opcode_immediate(ip),
 
             OpCode::Pop 		=> self.opcode_immediate(ip),
             OpCode::PopN 		=> self.opcode_byte(ip),

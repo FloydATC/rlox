@@ -49,6 +49,10 @@ pub enum OpCode {
     Mod,
     Equal,
     NotEqual,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
     
     // Pop (and discard) one or more values from the stack
     Pop,
@@ -63,51 +67,55 @@ impl OpCode {
         let opcode = OpCode::code(byte);
 
         match opcode {        
-            OpCode::Return => { return "RETURN"; }
+            OpCode::Return 		=> { return "RET"; }
 
-            OpCode::GetConst8 => { return "GETCONST"; }
-            OpCode::GetConst16 => { return "GETCONST"; }
-            OpCode::GetConst32 => { return "GETCONST"; }
-            OpCode::False => 	{ return "FALSE"; }
-            OpCode::Null => 	{ return "NULL"; }
-            OpCode::True => 	{ return "TRUE"; }
+            OpCode::GetConst8 		=> { return "GETC"; }
+            OpCode::GetConst16 		=> { return "GETC"; }
+            OpCode::GetConst32 		=> { return "GETC"; }
+            OpCode::False 		=> { return "FALSE"; }
+            OpCode::Null 		=> { return "NULL"; }
+            OpCode::True 		=> { return "TRUE"; }
 
-            OpCode::GetLocal8 =>  { return "GETLOCAL"; }
-            OpCode::GetLocal16 =>  { return "GETLOCAL"; }
-            OpCode::GetLocal32 =>  { return "GETLOCAL"; }
-            OpCode::GetUpvalue8 =>  { return "GETUPVALUE"; }
-            OpCode::GetUpvalue16 =>  { return "GETUPVALUE"; }
-            OpCode::GetUpvalue32 =>  { return "GETUPVALUE"; }
-            OpCode::GetGlobal8 =>  { return "GETGLOBAL"; }
-            OpCode::GetGlobal16 =>  { return "GETGLOBAL"; }
-            OpCode::GetGlobal32 =>  { return "GETGLOBAL"; }
+            OpCode::GetLocal8 		=> { return "GETL"; }
+            OpCode::GetLocal16 		=> { return "GETL"; }
+            OpCode::GetLocal32 		=> { return "GETL"; }
+            OpCode::GetUpvalue8 	=> { return "GETU"; }
+            OpCode::GetUpvalue16 	=> { return "GETU"; }
+            OpCode::GetUpvalue32 	=> { return "GETU"; }
+            OpCode::GetGlobal8 		=> { return "GETG"; }
+            OpCode::GetGlobal16 	=> { return "GETG"; }
+            OpCode::GetGlobal32 	=> { return "GETG"; }
         
-            OpCode::DefGlobal8 => { return "DEFGLOBAL"; }
-            OpCode::DefGlobal16 => { return "DEFGLOBAL"; }
-            OpCode::DefGlobal32 => { return "DEFGLOBAL"; }
+            OpCode::DefGlobal8 		=> { return "DEFG"; }
+            OpCode::DefGlobal16 	=> { return "DEFG"; }
+            OpCode::DefGlobal32 	=> { return "DEFG"; }
 
-            OpCode::SetLocal8 =>  { return "SETLOCAL"; }
-            OpCode::SetLocal16 =>  { return "SETLOCAL"; }
-            OpCode::SetLocal32 =>  { return "SETLOCAL"; }
-            OpCode::SetUpvalue8 =>  { return "SETUPVALUE"; }
-            OpCode::SetUpvalue16 =>  { return "SETUPVALUE"; }
-            OpCode::SetUpvalue32 =>  { return "SETUPVALUE"; }
-            OpCode::SetGlobal8 =>  { return "SETGLOBAL"; }
-            OpCode::SetGlobal16 =>  { return "SETGLOBAL"; }
-            OpCode::SetGlobal32 =>  { return "SETGLOBAL"; }
+            OpCode::SetLocal8 		=> { return "SETL"; }
+            OpCode::SetLocal16 		=> { return "SETL"; }
+            OpCode::SetLocal32 		=> { return "SETL"; }
+            OpCode::SetUpvalue8 	=> { return "SETU"; }
+            OpCode::SetUpvalue16 	=> { return "SETU"; }
+            OpCode::SetUpvalue32 	=> { return "SETU"; }
+            OpCode::SetGlobal8 		=> { return "SETG"; }
+            OpCode::SetGlobal16 	=> { return "SETG"; }
+            OpCode::SetGlobal32 	=> { return "SETG"; }
 
-            OpCode::Add => 	{ return "ADD"; }
-            OpCode::Sub => 	{ return "SUB"; }
-            OpCode::Mul => 	{ return "MUL"; }
-            OpCode::Div => 	{ return "DIV"; }
-            OpCode::Mod => 	{ return "MOD"; }
-            OpCode::Equal => { return "EQUAL"; }
-            OpCode::NotEqual => { return "NOTEQUAL"; }
+            OpCode::Add 		=> { return "ADD"; }
+            OpCode::Sub 		=> { return "SUB"; }
+            OpCode::Mul 		=> { return "MUL"; }
+            OpCode::Div 		=> { return "DIV"; }
+            OpCode::Mod 		=> { return "MOD"; }
+            OpCode::Equal 		=> { return "EQ"; }
+            OpCode::NotEqual 		=> { return "NEQ"; }
+            OpCode::Less 		=> { return "LT"; }
+            OpCode::Greater 		=> { return "GT"; }
+            OpCode::LessEqual 		=> { return "LEQ"; }
+            OpCode::GreaterEqual 	=> { return "GEQ"; }
         
-            OpCode::Pop => 	{ return "POP"; }
-            OpCode::PopN => 	{ return "POP"; }
+            OpCode::Pop 		=> { return "POP"; }
+            OpCode::PopN 		=> { return "POP"; }
             
-            OpCode::BAD => { return "**BAD**"; }
+            OpCode::BAD 		=> { return "???"; }
         }
     }
     pub fn code(byte: u8) -> OpCode {
@@ -151,6 +159,10 @@ impl OpCode {
         if byte == OpCode::Mod as u8 	{ return OpCode::Mod; }
         if byte == OpCode::Equal as u8		{ return OpCode::Equal; }
         if byte == OpCode::NotEqual as u8	{ return OpCode::NotEqual; }
+        if byte == OpCode::Less as u8    { return OpCode::Less; }
+        if byte == OpCode::Greater as u8    { return OpCode::Greater; }
+        if byte == OpCode::LessEqual as u8    { return OpCode::LessEqual; }
+        if byte == OpCode::GreaterEqual as u8    { return OpCode::GreaterEqual; }
 
         //if byte == OpCode::Push as u8 	{ return OpCode::Push; }
         if byte == OpCode::Pop as u8 	{ return OpCode::Pop; }

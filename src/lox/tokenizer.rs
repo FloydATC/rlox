@@ -199,6 +199,18 @@ impl Tokenizer {
             ']' => return self.make_token_at("]", TokenKind::RightBracket, at),
             '}' => return self.make_token_at("}", TokenKind::RightCurly, at),
             ')' => return self.make_token_at(")", TokenKind::RightParen, at),
+            '>' => {
+                match self.scanner().peek() {
+                    '=' => return self.make_token_at(">=", TokenKind::GreaterEqual, at),
+                    _ => return self.make_token_at(">", TokenKind::Greater, at),
+                }
+            }
+            '<' => {
+                match self.scanner().peek() {
+                    '=' => return self.make_token_at("<=", TokenKind::LessEqual, at),
+                    _ => return self.make_token_at("<", TokenKind::Less, at),
+                }
+            }
             '!' => {
                 match self.scanner().peek() {
                     '=' => return self.make_token_at("!=", TokenKind::BangEqual, at),

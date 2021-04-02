@@ -6,9 +6,11 @@ pub enum TokenKind {
     // Single symbol
     Bang,
     Equal,
+    Greater,
     LeftBracket,
     LeftCurly,
     LeftParen,
+    Less,
     Minus,
     Percent,
     Plus,
@@ -22,6 +24,8 @@ pub enum TokenKind {
     // Double symbol
     BangEqual,
     EqualEqual,
+    GreaterEqual,
+    LessEqual,
 
     // Literals
     Base2Number,
@@ -117,9 +121,11 @@ impl std::fmt::Debug for TokenKind {
             // Single character symbols
             TokenKind::Bang 		=> write!(f, "Bang"),
             TokenKind::Equal 		=> write!(f, "Equal"),
+            TokenKind::Greater		=> write!(f, "Greater"),
             TokenKind::LeftBracket	=> write!(f, "LeftBracket"),
             TokenKind::LeftCurly	=> write!(f, "LeftCurly"),
             TokenKind::LeftParen	=> write!(f, "LeftParen"),
+            TokenKind::Less		=> write!(f, "Less"),
             TokenKind::Minus 		=> write!(f, "Minus"),
             TokenKind::Percent          => write!(f, "Percent"),
             TokenKind::Plus 		=> write!(f, "Plus"),
@@ -133,6 +139,8 @@ impl std::fmt::Debug for TokenKind {
             // Double character symbols
             TokenKind::BangEqual 	=> write!(f, "BangEqual"),
             TokenKind::EqualEqual 	=> write!(f, "EqualEqual"),
+            TokenKind::GreaterEqual	=> write!(f, "GreaterEqual"),
+            TokenKind::LessEqual	=> write!(f, "LessEqual"),
             
             // Literals
             TokenKind::Base2Number 	=> write!(f, "Base2Number"),
