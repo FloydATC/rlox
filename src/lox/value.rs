@@ -57,6 +57,20 @@ impl Value {
             _ => panic!("{:?} is not an Object", self),
         }
     }
+    
+    pub fn truthy(&self) -> bool {
+        match self {
+            Value::Null => false,
+            Value::Bool(b) => *b,
+            Value::Number(n) => *n != 0.0,
+            Value::Obj(ra) => {
+                match &*ra.borrow() {
+                    Obj::String(a) => a.len() > 0,
+                    _ => true,
+                }
+            }
+        }
+    }
 }
 
 

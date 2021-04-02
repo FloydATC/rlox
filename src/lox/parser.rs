@@ -401,37 +401,42 @@ impl Parser {
 #[allow(dead_code)]
 impl Parser {
     fn expression(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
-        //println!("Parser.expression()");
         self.parse_precedence(ParserPrec::Assignment, input, output);    
     }
+
     fn and_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
     fn array(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
+
     fn base2number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let lexeme = input.tokenizer.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0b");
         let float = i64::from_str_radix(without_prefix, 2).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
     }
+
     fn base8number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let lexeme = input.tokenizer.previous().lexeme();
         let float = i64::from_str_radix(lexeme, 8).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
     }
+
     fn base10number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let lexeme = input.tokenizer.previous().lexeme();
         let float: f64 = lexeme.parse().unwrap();
         self.emit_constant(Value::number(float), output);
     }
+
     fn base16number(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let lexeme = input.tokenizer.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0x");
         let float = i64::from_str_radix(without_prefix, 16).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
     }
+
     fn binary(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.binary()");
 
@@ -460,16 +465,19 @@ impl Parser {
             }
         }
     }
+
     fn call(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
     fn dot(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
+
     fn grouping(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         self.expression(input, output);
         self.consume(TokenKind::RightParen, "Expect ')' after expression", input, output);
     }
+
     fn literal(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let literal = input.tokenizer.previous().kind();
         match literal {
@@ -481,13 +489,16 @@ impl Parser {
             }
         }
     }
+
     fn or_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
+
     fn string(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let value = Value::string(input.tokenizer.previous().lexeme());
         self.emit_constant(value, output);
     }
+
     fn subscr(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
@@ -500,9 +511,19 @@ impl Parser {
     fn this_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
-    fn unary(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+
+    fn unary(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let operator = input.tokenizer.previous().kind();
+        self.parse_precedence(ParserPrec::Unary, input, output);
+        match operator {
+            TokenKind::Bang 	=> output.compiler.emit_op(&OpCode::Not),
+            TokenKind::Minus 	=> output.compiler.emit_op(&OpCode::Negate),
+            _ => {
+                panic!("Unhandled unary operator {:?}", operator);
+            }
+        }
     }
+
     fn variable(&mut self, can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
         let token = input.tokenizer.previous().clone();
         self.named_variable(&token, can_assign, input, output);

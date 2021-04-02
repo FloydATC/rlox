@@ -41,6 +41,10 @@ pub enum OpCode {
     SetGlobal16	= 0x47,
     SetGlobal32	= 0x48,        
     
+    // Pop one value, perform operation, push result
+    Not,
+    Negate,
+    
     // Pop two values, perform operation, push result
     Add,
     Sub,
@@ -100,6 +104,9 @@ impl OpCode {
             OpCode::SetGlobal16 	=> { return "SETG"; }
             OpCode::SetGlobal32 	=> { return "SETG"; }
 
+            OpCode::Not			=> { return "NOT"; }
+            OpCode::Negate		=> { return "NEG"; }
+
             OpCode::Add 		=> { return "ADD"; }
             OpCode::Sub 		=> { return "SUB"; }
             OpCode::Mul 		=> { return "MUL"; }
@@ -152,6 +159,9 @@ impl OpCode {
         if byte == OpCode::SetGlobal16 as u8  { return OpCode::SetGlobal16; }
         if byte == OpCode::SetGlobal32 as u8  { return OpCode::SetGlobal32; }
         
+        if byte == OpCode::Not as u8 	{ return OpCode::Not; }
+        if byte == OpCode::Negate as u8 { return OpCode::Negate; }
+
         if byte == OpCode::Add as u8 	{ return OpCode::Add; }
         if byte == OpCode::Sub as u8 	{ return OpCode::Sub; }
         if byte == OpCode::Mul as u8 	{ return OpCode::Mul; }

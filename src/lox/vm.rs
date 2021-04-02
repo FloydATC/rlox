@@ -143,6 +143,9 @@ impl VM {
                         OpCode::SetGlobal16 	=> result = self.opcode_setglobal16(),
                         OpCode::SetGlobal32 	=> result = self.opcode_setglobal32(),
 
+                        OpCode::Not 		=> result = self.opcode_not(),
+                        OpCode::Negate 		=> result = self.opcode_negate(),
+
                         OpCode::Add 		=> result = self.opcode_add(),
                         OpCode::Sub 		=> result = self.opcode_sub(),
                         OpCode::Mul 		=> result = self.opcode_mul(),
@@ -359,6 +362,22 @@ impl VM {
     fn opcode_setglobal32(&mut self) -> Result<(), String> {
         let id = self.callframe().read_dword() as usize;
         return self.opcode_setglobal(id);
+    }
+
+    fn opcode_not(&mut self) -> Result<(), String> {
+        let value = self.pop();
+        self.push(Value::boolean(!value.truthy()));
+        Ok(())
+    }
+    
+    fn opcode_negate(&mut self) -> Result<(), String> {
+        let value = self.pop();
+        match value {
+            Value::Bool(b) => self.push(Value::boolean(!b)),
+            Value::Number(n) => self.push(Value::number(-n)),
+            _ => self.push(Value::Null),
+        }
+        Ok(())
     }
     
     fn opcode_add(&mut self) -> Result<(), String> {

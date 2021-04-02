@@ -97,6 +97,9 @@ impl Chunk {
             OpCode::SetGlobal16 	=> self.opcode_word(ip),
             OpCode::SetGlobal32 	=> self.opcode_dword(ip),
 
+            OpCode::Not 		=> self.opcode_immediate(ip),
+            OpCode::Negate 		=> self.opcode_immediate(ip),
+
             OpCode::Add 		=> self.opcode_immediate(ip),
             OpCode::Sub 		=> self.opcode_immediate(ip),
             OpCode::Mul 		=> self.opcode_immediate(ip),
