@@ -116,6 +116,7 @@ impl Tokenizer {
         match lexeme.as_str() {
             "false" 	=> return Token::new_at(TokenKind::False, &lexeme, at),
             "null" 	=> return Token::new_at(TokenKind::Null, &lexeme, at),
+            "print" 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
             "return" 	=> return Token::new_at(TokenKind::Return, &lexeme, at),
             "true" 	=> return Token::new_at(TokenKind::True, &lexeme, at),
             "var" 	=> return Token::new_at(TokenKind::Var,	&lexeme, at),

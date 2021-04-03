@@ -113,6 +113,7 @@ impl VM {
                             self.push(return_value);
                             result = Ok(());
                         }
+                        OpCode::Print		=> result = self.opcode_print(),
 
                         OpCode::GetConst8 	=> result = self.opcode_getconst8(),
                         OpCode::GetConst16 	=> result = self.opcode_getconst16(),
@@ -193,6 +194,12 @@ impl VM {
 
     pub fn read_callframe(&self) -> &CallFrame {
         return self.callframes.last().unwrap();
+    }
+
+    fn opcode_print(&mut self) -> Result<(), String> {
+        let value = self.pop();
+        println!("PRINT> {}", value);
+        Ok(())
     }
 
     fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {

@@ -43,6 +43,7 @@ pub enum TokenKind {
     True,
     
     // Keywords
+    Print,
     Return,
     Var,
     
@@ -162,6 +163,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::True		=> write!(f, "True"),
             
             // Keywords
+            TokenKind::Print		=> write!(f, "Print"),
             TokenKind::Return 		=> write!(f, "Return"),
             TokenKind::Var		=> write!(f, "Var"),
             

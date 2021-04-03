@@ -4,7 +4,8 @@
 #[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum OpCode {
-    Return 	= 0,
+    Print	= 0x00,
+    Return 	= 0x01,
     
     // Push constant value onto stack
     GetConst8	= 0x10,	// Followed by BYTE indexing table of constants
@@ -76,6 +77,7 @@ impl OpCode {
         let opcode = OpCode::code(byte);
 
         match opcode {        
+            OpCode::Print		=> { return "PRT"; }
             OpCode::Return 		=> { return "RET"; }
 
             OpCode::GetConst8 		=> { return "GETC"; }
@@ -135,6 +137,7 @@ impl OpCode {
         }
     }
     pub fn code(byte: u8) -> OpCode {
+        if byte == OpCode::Print as u8 { return OpCode::Print; }
         if byte == OpCode::Return as u8 { return OpCode::Return; }
 
         if byte == OpCode::GetConst8 as u8 { return OpCode::GetConst8; }

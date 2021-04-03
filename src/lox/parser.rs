@@ -349,16 +349,24 @@ impl Parser {
 impl Parser {
     fn statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.statement()");
-        match input.tokenizer.current().kind() {
-            //TokenKind::Print	=> self.print_statement(),
-            _			=> self.expression_statement(input, output),
+        if input.tokenizer.advance_on(TokenKind::Print) {
+            self.print_statement(input, output);
+        } else {
+            self.expression_statement(input, output);
         }
     }
+
     fn expression_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.expression_statement()");
         self.expression(input, output);
         self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
         output.compiler.emit_op(&OpCode::Pop); // Discard result
+    }
+    
+    fn print_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.expression(input, output);
+        self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+        output.compiler.emit_op(&OpCode::Print); // Print result
     }
 }
 
@@ -693,6 +701,7 @@ impl Parser {
             },
 
             // Keywords
+            TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
             TokenKind::Var => return ParserRule::null(),
             
