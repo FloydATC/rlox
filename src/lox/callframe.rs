@@ -9,17 +9,19 @@ use super::function::Function;
 
 #[allow(dead_code)]
 pub struct CallFrame {
-    closure: Rc<Obj>,
-    ip: u32,
+    closure: 		Rc<Obj>,
+    ip: 		u32,
+    stack_bottom:	u32,
 }
 
 
 #[allow(dead_code)]
 impl CallFrame {
-    pub fn new(closure: Rc<Obj>) -> CallFrame {
+    pub fn new(closure: Rc<Obj>, stack_bottom: u32) -> CallFrame {
         CallFrame { 
             closure,
-            ip: 0, 
+            ip: 	0,
+            stack_bottom,
         }
     }
 
@@ -62,5 +64,9 @@ impl CallFrame {
     
     pub fn jmp(&mut self, ip: u32) {
         self.ip = ip;
+    }
+    
+    pub fn stack_bottom(&self) -> u32 {
+        return self.stack_bottom;
     }
 }

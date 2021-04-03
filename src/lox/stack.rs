@@ -11,23 +11,33 @@ impl<T> Stack<T> {
 }
 
 #[allow(dead_code)]
-impl<T> Stack<T> {
-    pub fn push(&mut self, element: T) {
-        self.elements.push(element);
+impl<T> Stack<T>
+    where T: Clone {
+
+    pub fn push(&mut self, element: &T) {
+        self.elements.push(element.clone());
     }
+
     pub fn pop(&mut self) -> T {
         self.elements.pop()
             .expect("Stack underflow; tried to pop() from empty stack")
     }
+
+    // Index from the TOP of the stack
     pub fn peek(&self, depth: usize) -> &T {
         let index = self.elements.len() - 1 - depth;
         &self.elements[index]
     }
-    pub fn poke(&mut self, element: T, depth: usize) 
-        where T: Clone
+
+    // Index from the TOP of the stack
+    pub fn poke(&mut self, element: &T, depth: usize) 
     {
         let index = self.elements.len() - 1 - depth;
         self.elements[index] = element.clone();
+    }
+    
+    pub fn size(&self) -> usize {
+        return self.elements.len();
     }
 }
 

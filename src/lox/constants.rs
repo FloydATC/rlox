@@ -49,8 +49,8 @@ impl Constants {
     }
 
     // O(1) - used at runtime
-    pub fn value_by_id(&self, id: usize) -> Value {
-        return self.values[id].clone();
+    pub fn value_by_id(&self, id: usize) -> &Value {
+        return &self.values[id];
     }
 
 }

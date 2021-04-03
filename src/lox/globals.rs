@@ -13,16 +13,16 @@ use super::value::Value;
 
 
 #[allow(dead_code)]
-pub struct Variables {
+pub struct Globals {
     index: HashMap<String,usize>,	// Used at script compile time only
     values: Vec<Option<Value>>,	
 }
 
 
 #[allow(dead_code)]
-impl Variables {
-    pub fn new() -> Variables {
-        Variables {
+impl Globals {
+    pub fn new() -> Globals {
+        Globals {
             index:	HashMap::new(),
             values:	Vec::new(),
         }
@@ -41,31 +41,34 @@ impl Variables {
                 return Ok(id);
             }
             Some(_) => {
-                return Err(format!("Variable '{}' already declared", name));
+                return Err(format!("Global '{}' already declared", name));
             }
         }
     }
 
     // Assign value to id
     // Panic if id is invalid
-    pub fn set_by_id(&mut self, id: usize, value: Value) {
-        self.values[id] = Some(value);
+    pub fn define_by_id(&mut self, id: usize, value: &Value) {
+        self.values[id] = Some(value.clone());
     }
     
     // Return value associated with id (if any)
     // Panic if id is invalid
-    pub fn get_by_id(&self, id: usize) -> Option<Value> {
-        return self.values[id].clone();
+    pub fn value_by_id(&self, id: usize) -> Option<&Value> {
+        match &self.values[id] {
+            Some(value) => return Some(&value),
+            None => return None,
+        }
     }
     
     // Return Some(id) if name exists
     // Otherwise, return None
     // Note: Used at script compile time only
-    pub fn id_by_name(&self, name: &str) -> Option<usize> {
+    pub fn id_by_name(&self, name: &str) -> Option<u32> {
         let res = self.index.get(name);
         match res {
             Some(&id) => {
-                return Some(id);
+                return Some(id as u32);
             }
             None => {
                 return None;
@@ -76,21 +79,25 @@ impl Variables {
     // Return the declared name associated with an id
     // Panic if id is invalid
     // Note: Used only to generate error messages =~ O(N)
-    pub fn name_by_id(&self, id: usize) -> String {
+    pub fn name_by_id(&self, id: u32) -> String {
         for (name, &i) in &self.index {
-            if i == id { return name.clone(); }
+            if i == id as usize { return name.clone(); }
         }
         panic!("Id {} not found in index, length of vector is {}.", id, self.values.len());
     }
-    
+
+    // Return the number of variables
+    pub fn count(&self) -> u32 {
+        return self.values.len() as u32;
+    }    
 }
 
 
-impl std::fmt::Debug for Variables {
+impl std::fmt::Debug for Globals {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\n")?;
         for (id, value) in self.values.iter().enumerate() {
-            let name = self.name_by_id(id);
+            let name = self.name_by_id(id as u32);
             match value {
                 Some(value) => {
                     write!(f, "  0x{:04x} {}={}\n", id, name, &value)?;

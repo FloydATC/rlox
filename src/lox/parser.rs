@@ -6,7 +6,8 @@ use super::token::{Token, TokenKind};
 #[allow(unused_imports)]
 use super::value::Value;
 use super::constants::Constants;
-use super::variables::Variables;
+use super::globals::Globals;
+use super::scope::Scope;
 use super::tokenizer::Tokenizer;
 use super::opcode::{OpCode, OpCodeSet};
 use super::compiler::Compiler;
@@ -18,7 +19,7 @@ pub struct ParserInput<'a> {
 pub struct ParserOutput<'a> {
     pub compiler: 	&'a mut Compiler,
     pub constants: 	&'a mut Constants,
-    pub globals: 	&'a mut Variables,
+    pub globals: 	&'a mut Globals,
 }
 
 #[allow(dead_code)]
@@ -93,6 +94,7 @@ impl ParserRule {
 
 #[allow(dead_code)]
 pub struct Parser {
+    scopes: Vec<Scope>,
 }
 
 
@@ -101,6 +103,7 @@ impl Parser {
     pub fn new() -> Parser {
         //println!("Parser::new()");
         Parser {
+            scopes: vec![],
         }
     }
     
@@ -207,9 +210,8 @@ impl Parser {
         
         self.consume(TokenKind::Identifier, errmsg, input, output);
         
-
-        //self.declare_variable(name, input, output);
-        // if scope_depth > 0 { return 0 } // Pseudocode
+        self.declare_variable(input, output);
+        if let Some(_) = self.scope() { return 0; }
         
         //return self.identifier_constant(input.tokenizer.previous(), output); 
         let name = input.tokenizer.previous().lexeme();
@@ -227,28 +229,32 @@ impl Parser {
         return output.constants.make(name);
     }
  
-    fn declare_variable(&mut self, _input: &mut ParserInput, _output: &mut ParserOutput) {
+    fn declare_variable(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
         //println!("Parser.declare_variable()");
         
-        //if scope_depth == 0 { // Pseudocode
-        return; 
-        //}
+        let scope = self.scope();
+        match scope {
+            None => { return; } // Global
+            Some(scope) => {
         
-        //let var_name = input.tokenizer.previous().lexeme();
-        //if locals.has(var_name) {
-        //    panic!("Variable with this name already declared");
-        //} else {
-        //    add_local(var_name)
-        //}
+                let name = input.tokenizer.previous().lexeme();
+                if let Some(_) = scope.resolve(name) {
+                    // TODO: Proper error handling
+                    panic!("Variable with this name already declared");
+                } else {
+                    scope.declare(name); // Add local variable
+                }
+            }
+        }
     }
     
     fn define_variable(&mut self, id: usize, output: &mut ParserOutput) {
         //println!("Parser.define_variable()");
         
-        //if scope_depth > 0 {
+        if let Some(_) = self.scope() {
         //    self.mark_initialized();	// Pseudocode
-        //    return;
-        //}
+            return;
+        }
         
         self.define_global(id, output);
         
@@ -275,20 +281,23 @@ impl Parser {
         }
     }
 
-    fn resolve_local(&mut self, _name_token: &Token) -> Option<usize> {
-        eprintln!("WARNING: resolve_local() not yet implemented.");
-        return None;
+    fn resolve_local(&mut self, name: &str) -> Option<u32> {
+        let scope = self.scope();
+        match scope {
+            Some(scope)	=> return scope.resolve(name),
+            None	=> return None,
+        }
     }
 
-    fn resolve_upvalue(&mut self, _name_token: &Token) -> Option<usize> {
+    fn resolve_upvalue(&mut self, _name: &str) -> Option<u32> {
         eprintln!("WARNING: resolve_upvalue() not yet implemented.");
         return None;
     }
     
-    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, usize) {
+    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, u32) {
         let mut result;
         
-        result = self.resolve_local(name_token);
+        result = self.resolve_local(name_token.lexeme());
         match result {
             Some(id) => {
                 return (
@@ -300,7 +309,7 @@ impl Parser {
             None => {}
         }
         
-        result = self.resolve_upvalue(name_token);
+        result = self.resolve_upvalue(name_token.lexeme());
         match result {
             Some(id) => {
                 return (
@@ -341,6 +350,29 @@ impl Parser {
             output.compiler.emit_op_variant(&get_ops, id as u64);
         }
     }
+    
+    fn begin_scope(&mut self) {
+        let depth = self.scopes.len() as u32;
+        self.scopes.push(Scope::new(depth));
+    }
+
+    fn end_scope(&mut self, output: &mut ParserOutput) {
+        let scope = self.scopes.pop().unwrap(); // end_scope() should never be called in Global scope
+        for _i in 0..scope.local_count() {
+            // Pseudocode for upvalues, TBD
+            //while (locals[local_count - 1].depth > scope_depth) // ???
+            //if is_captured(i) {
+                //emit_op(&OpCode::CloseUpvalue); 
+            //} else {
+            output.compiler.emit_op(&OpCode::Pop);
+            //}
+        }
+    }
+    
+    fn scope(&mut self) -> Option<&mut Scope> {
+        return self.scopes.last_mut(); // None = Global scope
+    }
+    
 }
 
 
@@ -351,9 +383,22 @@ impl Parser {
         //println!("Parser.statement()");
         if input.tokenizer.advance_on(TokenKind::Print) {
             self.print_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::LeftCurly) {
+            self.begin_scope();
+            self.block(input, output);
+            self.end_scope(output);
         } else {
             self.expression_statement(input, output);
         }
+    }
+
+    fn block(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        loop {
+            if input.tokenizer.eof() { break; }
+            if input.tokenizer.matches(TokenKind::RightCurly) { break; }
+            self.declaration(input, output);
+        }
+        self.consume(TokenKind::RightCurly, "Expect '}' after block", input, output);
     }
 
     fn expression_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
