@@ -48,8 +48,8 @@ impl Globals {
 
     // Assign value to id
     // Panic if id is invalid
-    pub fn define_by_id(&mut self, id: usize, value: &Value) {
-        self.values[id] = Some(value.clone());
+    pub fn define_by_id(&mut self, id: usize, value: Value) {
+        self.values[id] = Some(value);
     }
     
     // Return value associated with id (if any)
@@ -79,9 +79,9 @@ impl Globals {
     // Return the declared name associated with an id
     // Panic if id is invalid
     // Note: Used only to generate error messages =~ O(N)
-    pub fn name_by_id(&self, id: u32) -> String {
+    pub fn name_by_id(&self, id: u32) -> &String {
         for (name, &i) in &self.index {
-            if i == id as usize { return name.clone(); }
+            if i == id as usize { return &name; }
         }
         panic!("Id {} not found in index, length of vector is {}.", id, self.values.len());
     }

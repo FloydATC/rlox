@@ -11,11 +11,10 @@ impl<T> Stack<T> {
 }
 
 #[allow(dead_code)]
-impl<T> Stack<T>
-    where T: Clone {
+impl<T> Stack<T> {
 
-    pub fn push(&mut self, element: &T) {
-        self.elements.push(element.clone());
+    pub fn push(&mut self, element: T) {
+        self.elements.push(element);
     }
 
     pub fn pop(&mut self) -> T {
@@ -26,14 +25,16 @@ impl<T> Stack<T>
     // Index from the TOP of the stack
     pub fn peek(&self, depth: usize) -> &T {
         let index = self.elements.len() - 1 - depth;
+        println!("Stack.peek() len{}-1-depth{}=index{}", self.elements.len(), depth, index);
         &self.elements[index]
     }
 
     // Index from the TOP of the stack
-    pub fn poke(&mut self, element: &T, depth: usize) 
+    pub fn poke(&mut self, element: T, depth: usize) 
     {
         let index = self.elements.len() - 1 - depth;
-        self.elements[index] = element.clone();
+        println!("Stack.poke() len{}-1-depth{}=index{}", self.elements.len(), depth, index);
+        self.elements[index] = element;
     }
     
     pub fn size(&self) -> usize {

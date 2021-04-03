@@ -7,6 +7,7 @@ use super::token::{Token, TokenKind};
 use super::value::Value;
 use super::constants::Constants;
 use super::globals::Globals;
+use super::local::Local;
 use super::scope::Scope;
 use super::tokenizer::Tokenizer;
 use super::opcode::{OpCode, OpCodeSet};
@@ -95,6 +96,7 @@ impl ParserRule {
 #[allow(dead_code)]
 pub struct Parser {
     scopes: Vec<Scope>,
+    locals: Vec<Local>,
 }
 
 
@@ -104,6 +106,7 @@ impl Parser {
         //println!("Parser::new()");
         Parser {
             scopes: vec![],
+            locals: vec![],
         }
     }
     
@@ -235,14 +238,14 @@ impl Parser {
         let scope = self.scope();
         match scope {
             None => { return; } // Global
-            Some(scope) => {
+            Some(_) => {
         
                 let name = input.tokenizer.previous().lexeme();
-                if let Some(_) = scope.resolve(name) {
+                if let Some(_) = self.resolve_local(name) {
                     // TODO: Proper error handling
                     panic!("Variable with this name already declared");
                 } else {
-                    scope.declare(name); // Add local variable
+                    self.declare_local(name); // Add local variable
                 }
             }
         }
@@ -281,12 +284,15 @@ impl Parser {
         }
     }
 
-    fn resolve_local(&mut self, name: &str) -> Option<u32> {
-        let scope = self.scope();
-        match scope {
-            Some(scope)	=> return scope.resolve(name),
-            None	=> return None,
+    pub fn resolve_local(&self, name: &str) -> Option<u32> {
+        for (i, local) in self.locals.iter().enumerate() {
+            if local.name() == name { return Some(i as u32); }
         }
+        return None;
+    }
+    
+    pub fn declare_local(&mut self, name: &str) {
+        self.locals.push(Local::new(name, self.scopes.len() as u32));
     }
 
     fn resolve_upvalue(&mut self, _name: &str) -> Option<u32> {
@@ -358,7 +364,9 @@ impl Parser {
 
     fn end_scope(&mut self, output: &mut ParserOutput) {
         let scope = self.scopes.pop().unwrap(); // end_scope() should never be called in Global scope
-        for _i in 0..scope.local_count() {
+        loop {
+            if self.locals.len() == 0 { break; }
+            if self.locals.last().unwrap().depth() < scope.depth() { break; }
             // Pseudocode for upvalues, TBD
             //while (locals[local_count - 1].depth > scope_depth) // ???
             //if is_captured(i) {
@@ -366,6 +374,7 @@ impl Parser {
             //} else {
             output.compiler.emit_op(&OpCode::Pop);
             //}
+            self.locals.pop();
         }
     }
     

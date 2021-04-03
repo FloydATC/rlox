@@ -18,6 +18,7 @@ pub struct CallFrame {
 #[allow(dead_code)]
 impl CallFrame {
     pub fn new(closure: Rc<Obj>, stack_bottom: u32) -> CallFrame {
+        println!("CallFrame.new() stack_bottom={}", stack_bottom);
         CallFrame { 
             closure,
             ip: 	0,

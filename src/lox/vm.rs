@@ -98,6 +98,7 @@ impl VM {
         
         loop {
             let ip = self.read_callframe().ip();
+            println!("IP=0x{:04x} SP=0x{:04x}", ip, self.stack.size());
             let opcode = self.callframe().read_op();
             match opcode {
                 None => {
@@ -114,7 +115,7 @@ impl VM {
                             self.callframes.pop();
                             if self.callframes.len() == 0 { return; }
                             
-                            self.push(&return_value);
+                            self.push(return_value);
                             result = Ok(());
                         }
                         OpCode::Print		=> result = self.opcode_print(),
@@ -208,7 +209,7 @@ impl VM {
 
     fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {
         let value = self.constants.value_by_id(id).clone();
-        self.push(&value);
+        self.push(value);
         Ok(())
     }
     
@@ -228,8 +229,12 @@ impl VM {
     }
 
     fn opcode_getlocal(&mut self, id: usize) -> Result<(), String> {
-        let slot_zero_depth = self.callframe().stack_bottom() as usize - self.stack.size();
-        self.push(&self.peek(slot_zero_depth - id).clone());
+        println!("GETL 0x{:02x}", id);
+        let depth = self.stack.size()
+            - self.callframe().stack_bottom() as usize
+            - 1
+            - id;
+        self.push(self.peek(depth).clone());
         Ok(())
     }
 
@@ -269,7 +274,7 @@ impl VM {
 
     fn opcode_getglobal(&mut self, id: usize) -> Result<(), String> {
         // Compiler guarantees the variable is defined
-        self.push(&self.globals.value_by_id(id).unwrap().clone());
+        self.push(self.globals.value_by_id(id).unwrap().clone());
         Ok(())
     }
 
@@ -289,23 +294,23 @@ impl VM {
     }
     
     fn opcode_false(&mut self) -> Result<(), String> {
-        self.push(&Value::boolean(false));
+        self.push(Value::boolean(false));
         Ok(())
     }
     
     fn opcode_null(&mut self) -> Result<(), String> {
-        self.push(&Value::null());
+        self.push(Value::null());
         Ok(())
     }
     
     fn opcode_true(&mut self) -> Result<(), String> {
-        self.push(&Value::boolean(true));
+        self.push(Value::boolean(true));
         Ok(())
     }
 
     fn opcode_defglobal(&mut self, id: usize) -> Result<(), String> {
         let value = self.pop();
-        self.globals.define_by_id(id, &value);
+        self.globals.define_by_id(id, value);
         Ok(())
     }
     
@@ -325,11 +330,13 @@ impl VM {
     }
     
     fn opcode_setlocal(&mut self, id: usize) -> Result<(), String> {
-        let slot_zero_depth = self.callframe().stack_bottom() as usize - self.stack.size();
-        self.poke(&self.peek(0).clone(), slot_zero_depth - id);
+        let depth = self.stack.size() - 1
+            - self.callframe().stack_bottom() as usize
+            - id;
+        self.poke(self.peek(0).clone(), depth);
         Ok(())
     }
-
+    
     fn opcode_setlocal8(&mut self) -> Result<(), String> {
         let id = self.callframe().read_byte() as usize;
         return self.opcode_setlocal(id);
@@ -366,7 +373,7 @@ impl VM {
 
     fn opcode_setglobal(&mut self, id: usize) -> Result<(), String> {
         let value = self.peek(0).clone();
-        self.globals.define_by_id(id, &value);
+        self.globals.define_by_id(id, value);
         Ok(())
     }
 
@@ -387,16 +394,16 @@ impl VM {
 
     fn opcode_not(&mut self) -> Result<(), String> {
         let value = self.pop();
-        self.push(&Value::boolean(!value.truthy()));
+        self.push(Value::boolean(!value.truthy()));
         Ok(())
     }
     
     fn opcode_negate(&mut self) -> Result<(), String> {
         let value = self.pop();
         match value {
-            Value::Bool(b) => self.push(&Value::boolean(!b)),
-            Value::Number(n) => self.push(&Value::number(-n)),
-            _ => self.push(&Value::Null),
+            Value::Bool(b) => self.push(Value::boolean(!b)),
+            Value::Number(n) => self.push(Value::number(-n)),
+            _ => self.push(Value::Null),
         }
         Ok(())
     }
@@ -406,8 +413,8 @@ impl VM {
         let a = self.pop();
         let res = a.add(&b);
         match res {
-            Ok(value) => { self.push(&value); }
-            Err(_) => { self.push(&Value::number(f64::NAN)); }
+            Ok(value) => { self.push(value); }
+            Err(_) => { self.push(Value::number(f64::NAN)); }
         }
         Ok(())
     }
@@ -417,8 +424,8 @@ impl VM {
         let a = self.pop();
         let res = a.subtract(&b);
         match res {
-            Ok(value) => { self.push(&value); }
-            Err(_) => { self.push(&Value::number(f64::NAN)); }
+            Ok(value) => { self.push(value); }
+            Err(_) => { self.push(Value::number(f64::NAN)); }
         }
         Ok(())
     }
@@ -428,8 +435,8 @@ impl VM {
         let a = self.pop();
         let res = a.multiply(&b);
         match res {
-            Ok(value) => { self.push(&value); }
-            Err(_) => { self.push(&Value::number(f64::NAN)); }
+            Ok(value) => { self.push(value); }
+            Err(_) => { self.push(Value::number(f64::NAN)); }
         }
         Ok(())
     }
@@ -439,8 +446,8 @@ impl VM {
         let a = self.pop();
         let res = a.divide(&b);
         match res {
-            Ok(value) => { self.push(&value); }
-            Err(_) => { self.push(&Value::number(f64::NAN)); }
+            Ok(value) => { self.push(value); }
+            Err(_) => { self.push(Value::number(f64::NAN)); }
         }
         Ok(())
     }
@@ -450,8 +457,8 @@ impl VM {
         let a = self.pop();
         let res = a.modulo(&b);
         match res {
-            Ok(value) => { self.push(&value); }
-            Err(_) => { self.push(&Value::number(f64::NAN)); }
+            Ok(value) => { self.push(value); }
+            Err(_) => { self.push(Value::number(f64::NAN)); }
         }
         Ok(())
     }
@@ -459,42 +466,42 @@ impl VM {
     fn opcode_equal(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
-        self.push(&Value::boolean(a == b));
+        self.push(Value::boolean(a == b));
         Ok(())
     }
     
     fn opcode_notequal(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
-        self.push(&Value::boolean(a != b));
+        self.push(Value::boolean(a != b));
         Ok(())
     }
     
     fn opcode_less(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
-        self.push(&Value::boolean(a < b));
+        self.push(Value::boolean(a < b));
         Ok(())
     }
     
     fn opcode_greater(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
-        self.push(&Value::boolean(a > b));
+        self.push(Value::boolean(a > b));
         Ok(())
     }
     
     fn opcode_lessequal(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
-        self.push(&Value::boolean(a <= b));
+        self.push(Value::boolean(a <= b));
         Ok(())
     }
     
     fn opcode_greaterequal(&mut self) -> Result<(), String> {
         let b = self.pop();
         let a = self.pop();
-        self.push(&Value::boolean(a >= b));
+        self.push(Value::boolean(a >= b));
         Ok(())
     }
 
@@ -539,7 +546,7 @@ impl VM {
 
 #[allow(dead_code)]
 impl VM {
-    fn push(&mut self, value: &Value) {
+    fn push(&mut self, value: Value) {
         self.stack.push(value);
     }
     fn pop(&mut self) -> Value {
@@ -549,7 +556,7 @@ impl VM {
     fn peek(&self, depth: usize) -> &Value {
         return self.stack.peek(depth);
     }
-    fn poke(&mut self, value: &Value, depth: usize) {
+    fn poke(&mut self, value: Value, depth: usize) {
         self.stack.poke(value, depth);
     }
     fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
