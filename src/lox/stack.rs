@@ -46,3 +46,15 @@ impl<T> Stack<T> {
     }
 }
 
+
+impl<T> std::fmt::Debug for Stack<T>
+    where T: std::fmt::Display {
+    
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\n")?;
+        for (id, v) in self.elements.iter().enumerate() {
+            write!(f, "  0x{:04x} {}\n", id, v)?;
+        }
+        Ok(())
+    }
+}
