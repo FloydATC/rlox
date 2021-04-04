@@ -35,6 +35,13 @@ impl Compiler {
         return function;
     }
 
+    pub fn current_ip(&self) -> u32 {
+        return self.function
+            .as_ref()
+            .expect("Internal error: self.function is None")
+            .read_chunk()
+            .length();
+    }
 
 //    pub fn make_constant(&mut self, _value: Value) -> u32 {
 //        return 255; // TODO
@@ -94,27 +101,20 @@ impl Compiler {
     
     pub fn emit_jmp(&mut self, opcode: &OpCode) -> u32 {
         self.emit_op(opcode);
-        let current_ip = self.function
-            .as_mut()
-            .expect("Internal error: self.function is None")
-            .chunk()
-            .length();
+        let current_ip = self.current_ip();
         self.emit_dword(0xffffffff);
         return current_ip;
     }
     
     pub fn patch_jmp(&mut self, ip: u32) {
-        let current_ip = self.function
-            .as_mut()
-            .expect("Internal error: self.function is None")
-            .chunk()
-            .length();
+        let current_ip = self.current_ip();
         self.function
             .as_mut()
             .expect("Internal error: self.function is None")
             .chunk()
             .write_dword(current_ip, ip);
     }
+    
 }
 
 

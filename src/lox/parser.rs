@@ -9,6 +9,7 @@ use super::constants::Constants;
 use super::globals::Globals;
 use super::local::Local;
 use super::scope::Scope;
+use super::codeloop::CodeLoop;
 use super::tokenizer::Tokenizer;
 use super::opcode::{OpCode, OpCodeSet};
 use super::compiler::Compiler;
@@ -95,8 +96,9 @@ impl ParserRule {
 
 #[allow(dead_code)]
 pub struct Parser {
-    scopes: Vec<Scope>,
-    locals: Vec<Local>,
+    scopes: 	Vec<Scope>,
+    locals: 	Vec<Local>,
+    codeloops:	Vec<CodeLoop>,
 }
 
 
@@ -105,8 +107,9 @@ impl Parser {
     pub fn new() -> Parser {
         //println!("Parser::new()");
         Parser {
-            scopes: vec![],
-            locals: vec![],
+            scopes: 	vec![],
+            locals: 	vec![],
+            codeloops:	vec![],
         }
     }
     
@@ -406,7 +409,11 @@ impl Parser {
 impl Parser {
     fn statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.statement()");
-        if input.tokenizer.advance_on(TokenKind::Exit) {
+        if input.tokenizer.advance_on(TokenKind::Break) {
+            self.break_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::Continue) {
+            self.continue_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::Exit) {
             self.exit_statement(input, output);
         } else if input.tokenizer.advance_on(TokenKind::If) {
             self.if_statement(input, output);
@@ -416,6 +423,8 @@ impl Parser {
             self.end_scope(output);
         } else if input.tokenizer.advance_on(TokenKind::Print) {
             self.print_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::While) {
+            self.while_statement(input, output);
         } else {
             self.expression_statement(input, output);
         }
@@ -428,6 +437,16 @@ impl Parser {
             self.declaration(input, output);
         }
         self.consume(TokenKind::RightCurly, "Expect '}' after block", input, output);
+    }
+    
+    fn break_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.break_loop(output);
+        self.consume(TokenKind::Semicolon, "Expect ';' after 'break'", input, output);
+    }
+
+    fn continue_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.continue_loop(output);
+        self.consume(TokenKind::Semicolon, "Expect ';' after 'continue'", input, output);
     }
 
     fn expression_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -471,6 +490,93 @@ impl Parser {
         self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
         output.compiler.emit_op(&OpCode::Print); // Print result
     }
+    
+    fn while_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.begin_loop(output);
+        
+        // while..
+        self.consume(TokenKind::LeftParen, "Expect '(' after 'if'", input, output);
+        self.expression(input, output);
+        self.consume(TokenKind::RightParen, "Expect ')' after condition", input, output);
+        
+        let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
+        // ..do
+        self.statement(input, output);
+
+        self.end_loop(output);
+        output.compiler.patch_jmp(end_jmp);
+    }
+}
+
+
+// ======== Loop break/continue handling ========
+#[allow(dead_code)]
+impl Parser {
+    
+    fn begin_loop(&mut self, output: &mut ParserOutput) -> u32 {
+        let continue_addr = output.compiler.current_ip();
+        let scope_depth = self.scopes.len();
+        self.codeloops.push(CodeLoop::new(continue_addr, scope_depth));
+        return 0;
+    }
+    
+    fn inner_loop(&mut self) -> Option<&mut CodeLoop> {
+        return self.codeloops.last_mut();
+    }
+    
+    fn continue_loop(&mut self, output: &mut ParserOutput) {
+        let scope_depth = self.scopes.len();
+        match self.inner_loop() {
+            Some(codeloop) => {
+
+                // TODO: This problem needs to be solved
+                if codeloop.scope_depth() != scope_depth {
+                    panic!("Can not yet handle 'continue' from inner scopes.");
+                }
+                
+                output.compiler.emit_op(&OpCode::Jmp);
+                output.compiler.emit_dword(codeloop.continue_addr());
+            }
+            None => {
+                // TODO: Proper error handling
+                panic!("'continue' not allowed here");
+            }
+        }
+    }
+    
+    fn break_loop(&mut self, output: &mut ParserOutput) {
+        let scope_depth = self.scopes.len();
+        match self.inner_loop() {
+            Some(codeloop) => {
+                
+                // TODO: This problem needs to be solved
+                if codeloop.scope_depth() != scope_depth {
+                    panic!("Can not yet handle 'break' from inner scopes.");
+                }
+                
+                codeloop.add_break(output.compiler.emit_jmp(&OpCode::Jmp));
+            }
+            None => {
+                // TODO: Proper error handling
+                panic!("'break' not allowed here");
+            }
+        }
+    }
+    
+    fn end_loop(&mut self, output: &mut ParserOutput) -> u32 {
+        match self.codeloops.pop() {
+            Some(codeloop) => {
+                for address in codeloop.breaks() {
+                    output.compiler.patch_jmp(*address);
+                }
+            }
+            None => {
+                panic!("Internal Error; end_loop() without a corresponding begin_loop()");
+            }
+        }
+        return output.compiler.current_ip();
+    }
+    
 }
 
 // ======== Declarations ========
@@ -804,12 +910,15 @@ impl Parser {
             },
 
             // Keywords
+            TokenKind::Break => return ParserRule::null(),
+            TokenKind::Continue => return ParserRule::null(),
             TokenKind::Else => return ParserRule::null(),
             TokenKind::Exit => return ParserRule::null(),
             TokenKind::If => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
             TokenKind::Var => return ParserRule::null(),
+            TokenKind::While => return ParserRule::null(),
             
             // Internal
             TokenKind::Error => return ParserRule::null(),

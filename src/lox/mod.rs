@@ -14,6 +14,7 @@ mod tokenizer;
 mod token;
 mod local;
 mod scope;
+mod codeloop;
 mod parser;
 mod compiler;
 mod vm;
