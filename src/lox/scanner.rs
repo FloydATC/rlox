@@ -1,4 +1,5 @@
 
+#[cfg(test)]
 mod test;
 
 // Scanner object takes input &str, 

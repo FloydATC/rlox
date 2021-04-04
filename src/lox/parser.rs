@@ -303,6 +303,14 @@ impl Parser {
         return None;
     }
     
+    fn resolve_global(&mut self, name: &str, output: &mut ParserOutput) -> Option<u32> {
+        let result = output.globals.id_by_name(name);
+        match result {
+            Some(id)	=> Some(id as u32),
+            None	=> None,
+        }
+    }
+    
     fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, u32) {
         let mut result;
         
@@ -331,7 +339,7 @@ impl Parser {
         }
         
         //let id = self.identifier_constant(name_token, output);
-        result = output.globals.id_by_name(name_token.lexeme());
+        result = self.resolve_global(name_token.lexeme(), output);
         match result {
             Some(id) => {
                 return (

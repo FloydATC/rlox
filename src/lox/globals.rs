@@ -64,11 +64,11 @@ impl Globals {
     // Return Some(id) if name exists
     // Otherwise, return None
     // Note: Used at script compile time only
-    pub fn id_by_name(&self, name: &str) -> Option<u32> {
+    pub fn id_by_name(&self, name: &str) -> Option<usize> {
         let res = self.index.get(name);
         match res {
             Some(&id) => {
-                return Some(id as u32);
+                return Some(id as usize);
             }
             None => {
                 return None;
@@ -79,7 +79,7 @@ impl Globals {
     // Return the declared name associated with an id
     // Panic if id is invalid
     // Note: Used only to generate error messages =~ O(N)
-    pub fn name_by_id(&self, id: u32) -> &String {
+    pub fn name_by_id(&self, id: usize) -> &String {
         for (name, &i) in &self.index {
             if i == id as usize { return &name; }
         }
@@ -87,8 +87,8 @@ impl Globals {
     }
 
     // Return the number of variables
-    pub fn count(&self) -> u32 {
-        return self.values.len() as u32;
+    pub fn count(&self) -> usize {
+        return self.values.len();
     }    
 }
 
@@ -97,7 +97,7 @@ impl std::fmt::Debug for Globals {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\n")?;
         for (id, value) in self.values.iter().enumerate() {
-            let name = self.name_by_id(id as u32);
+            let name = self.name_by_id(id);
             match value {
                 Some(value) => {
                     write!(f, "  0x{:04x} {}={}\n", id, name, &value)?;

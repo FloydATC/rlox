@@ -1,4 +1,8 @@
 
+
+
+
+
 #[allow(dead_code)]
 pub struct Stack<T> {
     elements: Vec<T>
@@ -25,7 +29,7 @@ impl<T> Stack<T> {
     // Index from the TOP of the stack
     pub fn peek(&self, depth: usize) -> &T {
         let index = self.elements.len() - 1 - depth;
-        println!("Stack.peek() len{}-1-depth{}=index{}", self.elements.len(), depth, index);
+        //println!("Stack.peek() len{}-1-depth{}=index{}", self.elements.len(), depth, index);
         &self.elements[index]
     }
 
@@ -33,7 +37,7 @@ impl<T> Stack<T> {
     pub fn poke(&mut self, element: T, depth: usize) 
     {
         let index = self.elements.len() - 1 - depth;
-        println!("Stack.poke() len{}-1-depth{}=index{}", self.elements.len(), depth, index);
+        //println!("Stack.poke() len{}-1-depth{}=index{}", self.elements.len(), depth, index);
         self.elements[index] = element;
     }
     
