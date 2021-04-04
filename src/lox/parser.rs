@@ -241,12 +241,14 @@ impl Parser {
             Some(_) => {
         
                 let name = input.tokenizer.previous().lexeme();
-                if let Some(_) = self.resolve_local(name) {
-                    // TODO: Proper error handling
-                    panic!("Variable with this name already declared");
-                } else {
-                    self.declare_local(name); // Add local variable
+                // Verify variable is not already declared in this scope
+                if let Some(id) = self.resolve_local(name) {
+                    if self.locals[id as usize].depth() as usize == self.scopes.len() {
+                        // TODO: Proper error handling
+                        panic!("Variable with this name already declared");
+                    }
                 }
+                self.declare_local(name); // Add local variable
             }
         }
     }
@@ -286,8 +288,8 @@ impl Parser {
     }
 
     pub fn resolve_local(&self, name: &str) -> Option<u32> {
-        for (i, local) in self.locals.iter().enumerate() {
-            if local.name() == name { return Some(i as u32); }
+        for i in (0..self.locals.len()).rev() {
+            if self.locals[i].name() == name { return Some(i as u32); }
         }
         return None;
     }

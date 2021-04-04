@@ -306,39 +306,37 @@ fn vm_no_local_in_other_local_1() {
 
 
 // Local vars shadowing local ones
-// Note: These will not work until we have implemented upvalues 
-// so they are commented out for now
-//#[test]
-//fn vm_local_shadow_local_1() {
-//    let mut vm = VM::new();
-//    let _res = vm.compile("{ var a=1; var b=2; { var a=3; exit a; } }");
-//    let rc = vm.execute();
-//    assert_eq!(rc, 3);
-//}
-//
-//#[test]
-//fn vm_local_shadow_local_2() {
-//    let mut vm = VM::new();
-//    let _res = vm.compile("{ var a=1; var b=2; { var b=4; exit b; } }");
-//    let rc = vm.execute();
-//    assert_eq!(rc, 4);
-//}
-//
-//#[test]
-//fn vm_local_shadow_local_3() {
-//    let mut vm = VM::new();
-//    let _res = vm.compile("{ var a=1; var b=2; { var a=3; var b=4; exit a; } }");
-//    let rc = vm.execute();
-//    assert_eq!(rc, 3);
-//}
-//
-//#[test]
-//fn vm_local_shadow_local_4() {
-//    let mut vm = VM::new();
-//    let _res = vm.compile("{ var a=1; var b=2; { var a=3; var b=4; exit b; } }");
-//    let rc = vm.execute();
-//    assert_eq!(rc, 4);
-//}
+#[test]
+fn vm_local_shadow_local_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("{ var a=1; var b=2; { var a=3; exit a; } }");
+    let rc = vm.execute();
+    assert_eq!(rc, 3);
+}
+
+#[test]
+fn vm_local_shadow_local_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("{ var a=1; var b=2; { var b=4; exit b; } }");
+    let rc = vm.execute();
+    assert_eq!(rc, 4);
+}
+
+#[test]
+fn vm_local_shadow_local_3() {
+    let mut vm = VM::new();
+    let _res = vm.compile("{ var a=1; var b=2; { var a=3; var b=4; exit a; } }");
+    let rc = vm.execute();
+    assert_eq!(rc, 3);
+}
+
+#[test]
+fn vm_local_shadow_local_4() {
+    let mut vm = VM::new();
+    let _res = vm.compile("{ var a=1; var b=2; { var a=3; var b=4; exit b; } }");
+    let rc = vm.execute();
+    assert_eq!(rc, 4);
+}
 
 // 'if' statement
 #[test]
