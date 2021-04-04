@@ -294,7 +294,7 @@ impl Parser {
     
     pub fn declare_local(&mut self, name: &str) {
         let depth = self.scopes.len() as u32;
-        println!("Parser.declare_local() name={} depth={}", name, depth);
+        //println!("Parser.declare_local() name={} depth={}", name, depth);
         self.locals.push(Local::new(name, depth));
     }
 
@@ -376,13 +376,13 @@ impl Parser {
     fn end_scope(&mut self, output: &mut ParserOutput) {
         self.scopes.pop();
         let depth = self.scopes.len() as u32;
-        println!("Parser.end_scope() depth={}", depth);
+        //println!("Parser.end_scope() depth={}", depth);
         loop {
             if self.locals.len() == 0 { break; }
             if self.locals.last().unwrap().depth() <= depth { break; }
-            println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
+            //println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
+
             // Pseudocode for upvalues, TBD
-            //while (locals[local_count - 1].depth > scope_depth) // ???
             //if is_captured(i) {
                 //emit_op(&OpCode::CloseUpvalue); 
             //} else {

@@ -98,7 +98,11 @@ impl VM {
         
         loop {
             let ip = self.read_callframe().ip();
-            println!("IP=0x{:04x} SP=0x{:04x}", ip, self.stack.size());
+
+            // Trace VM state
+            //println!("IP=0x{:04x} SP=0x{:04x}", ip, self.stack.size());
+            //println!(" stack={:?}", self.stack);
+
             let opcode = self.callframe().read_op();
             match opcode {
                 None => {
@@ -229,7 +233,7 @@ impl VM {
     }
 
     fn opcode_getlocal(&mut self, id: usize) -> Result<(), String> {
-        println!("GETL 0x{:02x}", id);
+        //println!("GETL 0x{:02x}", id);
         let depth = self.stack.size()
             - self.callframe().stack_bottom() as usize
             - 1
