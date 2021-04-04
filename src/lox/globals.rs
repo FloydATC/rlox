@@ -5,7 +5,7 @@ mod test;
 use std::collections::HashMap;
 
 
-use super::value::Value;
+//use super::value::Value;
 
 
 // The rlox compiler accesses variables by name =~ O(logN)
@@ -13,16 +13,16 @@ use super::value::Value;
 
 
 #[allow(dead_code)]
-pub struct Globals {
+pub struct Globals<T> {
     index: HashMap<String,usize>,	// Used at script compile time only
-    values: Vec<Option<Value>>,	
+    values: Vec<Option<T>>,	
 }
 
 
 #[allow(dead_code)]
-impl Globals {
-    pub fn new() -> Globals {
-        Globals {
+impl<T> Globals<T> {
+    pub fn new() -> Self {
+        Self {
             index:	HashMap::new(),
             values:	Vec::new(),
         }
@@ -48,13 +48,13 @@ impl Globals {
 
     // Assign value to id
     // Panic if id is invalid
-    pub fn define_by_id(&mut self, id: usize, value: Value) {
+    pub fn define_by_id(&mut self, id: usize, value: T) {
         self.values[id] = Some(value);
     }
     
     // Return value associated with id (if any)
     // Panic if id is invalid
-    pub fn value_by_id(&self, id: usize) -> Option<&Value> {
+    pub fn value_by_id(&self, id: usize) -> Option<&T> {
         match &self.values[id] {
             Some(value) => return Some(&value),
             None => return None,
@@ -93,7 +93,8 @@ impl Globals {
 }
 
 
-impl std::fmt::Debug for Globals {
+impl<T> std::fmt::Debug for Globals<T> 
+    where T: std::fmt::Display {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\n")?;
         for (id, value) in self.values.iter().enumerate() {

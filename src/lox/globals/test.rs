@@ -6,14 +6,14 @@ use crate::lox::value::Value;
 
 #[test]
 fn globals_new() {
-    let _var = Globals::new();
+    let _var = Globals::<Value>::new();
 }
 
 #[test]
 fn globals_declare() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
 }
@@ -22,7 +22,7 @@ fn globals_declare() {
 fn globals_id_by_name() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id1 = var.declare(&name).unwrap();
     let id2 = var.id_by_name(&name).unwrap();
     assert_eq!(id1, id2);
@@ -33,7 +33,7 @@ fn globals_id_by_name() {
 fn globals_id_by_name_none() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id1 = var.declare(&name).unwrap();
     let id2 = var.id_by_name("unknown").unwrap();
     assert_ne!(id1, id2);
@@ -44,7 +44,7 @@ fn globals_id_by_name_none() {
 fn globals_double_declare_none() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
     
@@ -57,7 +57,7 @@ fn globals_set_by_id() {
     let name = "test".to_string();
     let value = Value::number(123.0);
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
     
@@ -69,7 +69,7 @@ fn globals_value_by_id() {
     let name = "test".to_string();
     let value1 = Value::number(123.0);
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
     
@@ -83,7 +83,7 @@ fn globals_value_by_id() {
 fn globals_value_by_id_none() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
     
@@ -94,7 +94,7 @@ fn globals_value_by_id_none() {
 fn globals_name_by_id() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
     
@@ -107,7 +107,7 @@ fn globals_name_by_id() {
 fn globals_name_by_id_panic() {
     let name = "test".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id = var.declare(&name).unwrap();
     assert_eq!(id, 0);
     
@@ -119,7 +119,7 @@ fn globals_strings() {
     let name1 = "foo".to_string();
     let name2 = "bar".to_string();
     
-    let mut var = Globals::new();
+    let mut var = Globals::<Value>::new();
     let id1 = var.declare(&name1).unwrap();
     var.define_by_id(id1, Value::string("upper"));
     let id2 = var.declare(&name2).unwrap();
@@ -131,5 +131,22 @@ fn globals_strings() {
     assert_eq!(&Value::string("lower"), value4);
 }
 
+#[test]
+fn globals_debug() {
+    let name1 = "foo".to_string();
+    let name2 = "bar".to_string();
+    let value1 = Value::string("upper");
+    let value2 = Value::string("lower");
+    let expect = format!("\n  0x0000 {}={}\n  0x0001 {}={}\n", name1, value1, name2, value2);
+    
+    let mut var = Globals::<Value>::new();
+    let id1 = var.declare(&name1).unwrap();
+    var.define_by_id(id1, value1);
+    let id2 = var.declare(&name2).unwrap();
+    var.define_by_id(id2, value2);
+    
+    let result = format!("{:?}", var);
+    assert_eq!(result, expect);
+}
 
 

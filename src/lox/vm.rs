@@ -23,7 +23,7 @@ pub struct VM {
   callframes: Vec<CallFrame>,
   stack: Stack<Value>,
   constants: Constants<Value>,
-  globals: Globals,
+  globals: Globals<Value>,
   //objects: Vec<Obj>,
 }
 
