@@ -1,4 +1,7 @@
 
+#[cfg(test)]
+mod test;
+
 use std::rc::Rc;
 use std::borrow::Borrow;
 
@@ -93,7 +96,7 @@ impl VM {
 
 
 impl VM {
-    pub fn execute(&mut self) {
+    pub fn execute(&mut self) -> i32 {
         println!("VM.execute()");
         
         loop {
@@ -113,11 +116,18 @@ impl VM {
                     let result;
 
                     match opcode {
+                        OpCode::Exit		=> {
+                            let return_value = self.pop();
+                            match return_value {
+                                Value::Number(n) => return n as i32,
+                                _ => return 0,
+                            }
+                        }
                         OpCode::Return 		=> {
                             let return_value = self.pop();
                             //self.close_upvalues();
                             self.callframes.pop();
-                            if self.callframes.len() == 0 { return; }
+                            if self.callframes.len() == 0 { return 0; }
                             
                             self.push(return_value);
                             result = Ok(());
@@ -189,7 +199,7 @@ impl VM {
                                 ip, 
                                 self.read_callframe().read_function()
                             );
-                            return;
+                            return -1;
                         }
                     }
                 }

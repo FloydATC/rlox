@@ -114,7 +114,10 @@ impl Tokenizer {
             self.scanner().advance();    
         }
         match lexeme.as_str() {
+            "else" 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
+            "exit" 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
             "false" 	=> return Token::new_at(TokenKind::False, &lexeme, at),
+            "if" 	=> return Token::new_at(TokenKind::If, &lexeme, at),
             "null" 	=> return Token::new_at(TokenKind::Null, &lexeme, at),
             "print" 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
             "return" 	=> return Token::new_at(TokenKind::Return, &lexeme, at),

@@ -58,7 +58,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 let line = read_stdin();
                 if line == "exit" { break; }
                 vm.compile(&line)?;
-                vm.execute();
+                let rc = vm.execute();
+                println!("rc={}", rc);
             }
         }
         Mode::Line => {

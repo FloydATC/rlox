@@ -43,6 +43,9 @@ pub enum TokenKind {
     True,
     
     // Keywords
+    Else,
+    Exit,
+    If,
     Print,
     Return,
     Var,
@@ -163,6 +166,9 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::True		=> write!(f, "True"),
             
             // Keywords
+            TokenKind::Else		=> write!(f, "Else"),
+            TokenKind::Exit		=> write!(f, "Exit"),
+            TokenKind::If		=> write!(f, "If"),
             TokenKind::Print		=> write!(f, "Print"),
             TokenKind::Return 		=> write!(f, "Return"),
             TokenKind::Var		=> write!(f, "Var"),

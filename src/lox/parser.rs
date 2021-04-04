@@ -404,12 +404,16 @@ impl Parser {
 impl Parser {
     fn statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.statement()");
-        if input.tokenizer.advance_on(TokenKind::Print) {
-            self.print_statement(input, output);
+        if input.tokenizer.advance_on(TokenKind::Exit) {
+            self.exit_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::If) {
+            self.if_statement(input, output);
         } else if input.tokenizer.advance_on(TokenKind::LeftCurly) {
             self.begin_scope();
             self.block(input, output);
             self.end_scope(output);
+        } else if input.tokenizer.advance_on(TokenKind::Print) {
+            self.print_statement(input, output);
         } else {
             self.expression_statement(input, output);
         }
@@ -429,6 +433,35 @@ impl Parser {
         self.expression(input, output);
         self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
         output.compiler.emit_op(&OpCode::Pop); // Discard result
+    }
+
+    fn exit_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        if input.tokenizer.advance_on(TokenKind::Semicolon) {
+            // No expression after 'exit'
+            output.compiler.emit_op(&OpCode::Null);
+        } else {
+            self.expression(input, output);
+            self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+        }
+        output.compiler.emit_op(&OpCode::Exit);
+    }
+
+    fn if_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        // if..
+        self.consume(TokenKind::LeftParen, "Expect '(' after 'if'", input, output);
+        self.expression(input, output);
+        self.consume(TokenKind::RightParen, "Expect ')' after condition", input, output);
+        
+        let else_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
+        // ..then
+        self.statement(input, output);
+        let end_jmp = output.compiler.emit_jmp(&OpCode::Jmp);
+        output.compiler.patch_jmp(else_jmp);
+        if input.tokenizer.advance_on(TokenKind::Else) {
+            // ..else
+            self.statement(input, output);
+        }
+        output.compiler.patch_jmp(end_jmp);
     }
     
     fn print_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -769,6 +802,9 @@ impl Parser {
             },
 
             // Keywords
+            TokenKind::Else => return ParserRule::null(),
+            TokenKind::Exit => return ParserRule::null(),
+            TokenKind::If => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
             TokenKind::Var => return ParserRule::null(),
