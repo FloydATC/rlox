@@ -103,8 +103,8 @@ impl VM {
             let ip = self.read_callframe().ip();
 
             // Trace VM state
-            //println!("IP=0x{:04x} SP=0x{:04x}", ip, self.stack.size());
-            //println!(" stack={:?}", self.stack);
+            println!("IP=0x{:04x} SP=0x{:04x}", ip, self.stack.size());
+            println!(" stack={:?}", self.stack);
 
             let opcode = self.callframe().read_op();
             match opcode {

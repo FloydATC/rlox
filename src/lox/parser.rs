@@ -526,46 +526,55 @@ impl Parser {
     
     fn continue_loop(&mut self, output: &mut ParserOutput) {
         let scope_depth = self.scopes.len();
-        match self.inner_loop() {
+        let inner_loop = self.inner_loop();
+        match inner_loop {
             Some(codeloop) => {
-
-                // TODO: This problem needs to be solved
-                if codeloop.scope_depth() != scope_depth {
-                    panic!("Can not yet handle 'continue' from inner scopes.");
+                // Reset to loop's scope
+                let end_scopes = scope_depth - codeloop.scope_depth();
+                for _i in 0..end_scopes {
+                    self.end_scope(output);
                 }
-                
-                output.compiler.emit_op(&OpCode::Jmp);
-                output.compiler.emit_dword(codeloop.continue_addr());
             }
             None => {
                 // TODO: Proper error handling
                 panic!("'continue' not allowed here");
             }
         }
+        // At this point we know the inner_loop exists
+        let codeloop = self.inner_loop().unwrap();
+        output.compiler.emit_op(&OpCode::Jmp);
+        output.compiler.emit_dword(codeloop.continue_addr());
     }
     
     fn break_loop(&mut self, output: &mut ParserOutput) {
         let scope_depth = self.scopes.len();
-        match self.inner_loop() {
+        let inner_loop = self.inner_loop();
+        match inner_loop {
             Some(codeloop) => {
-                
-                // TODO: This problem needs to be solved
-                if codeloop.scope_depth() != scope_depth {
-                    panic!("Can not yet handle 'break' from inner scopes.");
+                // Reset to loop's scope
+                let end_scopes = scope_depth - codeloop.scope_depth();
+                for _i in 0..end_scopes {
+                    self.end_scope(output);
                 }
-                
-                codeloop.add_break(output.compiler.emit_jmp(&OpCode::Jmp));
             }
             None => {
                 // TODO: Proper error handling
                 panic!("'break' not allowed here");
             }
         }
+        // At this point we know the inner_loop exists
+        let codeloop = self.inner_loop().unwrap();
+        codeloop.add_break(output.compiler.emit_jmp(&OpCode::Jmp));
     }
     
     fn end_loop(&mut self, output: &mut ParserOutput) -> u32 {
         match self.codeloops.pop() {
             Some(codeloop) => {
+                // Jump back to the beginning of the loop
+                output.compiler.emit_op(&OpCode::Jmp);
+                output.compiler.emit_dword(codeloop.continue_addr());
+                
+                // Then patch any 'break' statements to jump here
                 for address in codeloop.breaks() {
                     output.compiler.patch_jmp(*address);
                 }

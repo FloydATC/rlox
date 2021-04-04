@@ -741,3 +741,105 @@ fn vm_greater_or_equal_4() {
     assert_eq!(rc, 1);
 }
 
+// 'while' loops with 'break'/'continue'
+#[test]
+fn vm_while_naked() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) i=i+1; exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 5);
+}
+
+#[test]
+fn vm_while_scoped() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 5);
+}
+
+#[test]
+fn vm_while_scoped_var_before() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { var j=10; i=i+1; } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 5);
+}
+
+#[test]
+fn vm_while_scoped_var_after() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; var j=10; } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 5);
+}
+
+#[test]
+fn vm_while_immediate_break() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; break; } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_while_nested_break() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; { break; } } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_while_if_break() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; if (i==3) break; } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 3);
+}
+
+#[test]
+fn vm_while_if_nested_break() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; if (i==3) { break; } } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 3);
+}
+
+#[test]
+fn vm_while_nested_if_nested_break() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var i=0; while (i<5) { i=i+1; { if (i==3) { break; } } } exit i;");
+    let rc = vm.execute();
+    assert_eq!(rc, 3);
+}
+
+#[test]
+fn vm_while_if_continue() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a=0; var i=0; while (i<10) { i=i+1; if (i>4) continue; a=a+2; } exit a;");
+    let rc = vm.execute();
+    assert_eq!(rc, 8);
+}
+
+#[test]
+fn vm_while_if_nested_continue() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a=0; var i=0; while (i<10) { i=i+1; if (i>4) { continue; } a=a+2; } exit a;");
+    let rc = vm.execute();
+    assert_eq!(rc, 8);
+}
+
+#[test]
+fn vm_while_nested_if_nested_continue() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a=0; var i=0; while (i<10) { i=i+1; { if (i>4) { continue; } } a=a+2; } exit a;");
+    let rc = vm.execute();
+    assert_eq!(rc, 8);
+}
+
+
+
+
+
+
