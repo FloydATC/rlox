@@ -373,6 +373,72 @@ fn vm_if_false_else() {
     assert_eq!(rc, 2);
 }
 
+// 'then' and 'else' blocks are different scopes if braced
+#[test]
+fn vm_if_scopes_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("if (true) { var a=1; exit a; } else { var a=2; exit a; }");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+#[should_panic]
+fn vm_if_scopes_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("if (true) { var a=1; exit a; } else { exit a; }");
+    let _rc = vm.execute();
+}
+
+#[test]
+fn vm_if_scopes_3() {
+    let mut vm = VM::new();
+    let _res = vm.compile("if (false) { var a=1; exit a; } else { var a=2; exit a; }");
+    let rc = vm.execute();
+    assert_eq!(rc, 2);
+}
+
+#[test]
+#[should_panic]
+fn vm_if_scopes_4() {
+    let mut vm = VM::new();
+    let _res = vm.compile("if (false) { var a=1; exit a; } else { exit a; }");
+    let _rc = vm.execute();
+}
+
+// 'then' and 'else' blocks are same scope if not braced
+#[test]
+fn vm_if_noscopes_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a; if (true) a=1; else a=2; exit a;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_if_noscopes_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a; if (false) a=1; else a=2; exit a;");
+    let rc = vm.execute();
+    assert_eq!(rc, 2);
+}
+
+#[test]
+#[should_panic]
+fn vm_if_noscopes_3() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a; if (true) var a=1; else a=2; exit a;");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_if_noscopes_4() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a; if (true) a=1; else var a=2; exit a;");
+    let _rc = vm.execute();
+}
+
 // boolean &&
 #[test]
 fn vm_boolean_false_and_false() {
