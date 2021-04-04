@@ -1,26 +1,23 @@
 
 
-//use std::collections::HashMap;
+#[cfg(test)]
+mod test;
 
-use super::value::Value;
 
-
-pub struct Constants {
-    //index: HashMap<Value,usize>, // Value::Number (f64) doesn't implement Eq
-    values: Vec<Value>,
+pub struct Constants<T> {
+    values: Vec<T>,
 }
 
 
-impl Constants {
+impl<T: std::cmp::PartialEq> Constants<T> {
 
-    pub fn new() -> Constants {
-        Constants {
-            //index:	HashMap::new(),
+    pub fn new() -> Self {
+        Self {
             values:	vec![],
         }
     }
 
-    pub fn make(&mut self, value: Value) -> usize {
+    pub fn make(&mut self, value: T) -> usize {
         let id = self.id_by_value(&value);
         match id {
             Some(id) => {
@@ -29,34 +26,30 @@ impl Constants {
             None => {
                 let id = self.values.len();
                 self.values.push(value);
-                //self.index.insert(value, index);
                 return id; 
             }
         }
     }
-}
-
-
-impl Constants {
 
     // O(n) - used at compile time
-    pub fn id_by_value(&self, value: &Value) -> Option<usize> {
+    pub fn id_by_value(&self, value: &T) -> Option<usize> {
         for (id, v) in self.values.iter().enumerate() {
             if v == value { return Some(id); }
         }
         return None;
-        //return self.index.get(value);
     }
 
     // O(1) - used at runtime
-    pub fn value_by_id(&self, id: usize) -> &Value {
+    pub fn value_by_id(&self, id: usize) -> &T {
         return &self.values[id];
     }
 
 }
 
 
-impl std::fmt::Debug for Constants {
+impl<T> std::fmt::Debug for Constants<T>
+    where T: std::fmt::Display {
+    
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\n")?;
         for (id, v) in self.values.iter().enumerate() {

@@ -19,7 +19,7 @@ pub struct ParserInput<'a> {
 
 pub struct ParserOutput<'a> {
     pub compiler: 	&'a mut Compiler,
-    pub constants: 	&'a mut Constants,
+    pub constants: 	&'a mut Constants<Value>,
     pub globals: 	&'a mut Globals,
 }
 

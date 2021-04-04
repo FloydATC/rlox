@@ -22,7 +22,7 @@ use super::opcode::OpCode;
 pub struct VM {
   callframes: Vec<CallFrame>,
   stack: Stack<Value>,
-  constants: Constants,
+  constants: Constants<Value>,
   globals: Globals,
   //objects: Vec<Obj>,
 }
