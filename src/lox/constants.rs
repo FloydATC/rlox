@@ -17,6 +17,7 @@ impl<T: std::cmp::PartialEq> Constants<T> {
         }
     }
 
+    // O(n) - used at compile time
     pub fn make(&mut self, value: T) -> usize {
         let id = self.id_by_value(&value);
         match id {
