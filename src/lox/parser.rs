@@ -277,6 +277,7 @@ impl Parser {
             0x10000..=0xffffffff => {
                 output.compiler.emit_op(&OpCode::DefGlobal32);
                 output.compiler.emit_dword(variable as u32);
+
             }
             _ => {
                 panic!("4.2 billion globals should be enough for everyone.");
@@ -292,7 +293,9 @@ impl Parser {
     }
     
     pub fn declare_local(&mut self, name: &str) {
-        self.locals.push(Local::new(name, self.scopes.len() as u32));
+        let depth = self.scopes.len() as u32;
+        println!("Parser.declare_local() name={} depth={}", name, depth);
+        self.locals.push(Local::new(name, depth));
     }
 
     fn resolve_upvalue(&mut self, _name: &str) -> Option<u32> {
@@ -363,10 +366,13 @@ impl Parser {
     }
 
     fn end_scope(&mut self, output: &mut ParserOutput) {
-        let scope = self.scopes.pop().unwrap(); // end_scope() should never be called in Global scope
+        self.scopes.pop();
+        let depth = self.scopes.len() as u32;
+        println!("Parser.end_scope() depth={}", depth);
         loop {
             if self.locals.len() == 0 { break; }
-            if self.locals.last().unwrap().depth() < scope.depth() { break; }
+            if self.locals.last().unwrap().depth() <= depth { break; }
+            println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
             // Pseudocode for upvalues, TBD
             //while (locals[local_count - 1].depth > scope_depth) // ???
             //if is_captured(i) {
