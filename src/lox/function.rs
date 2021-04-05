@@ -1,19 +1,29 @@
 
 use super::chunk::Chunk;
 
+
 #[allow(dead_code)]
+pub enum FunctionKind {
+    Function,
+    Script,
+}
+
+
+//#[allow(dead_code)]
 pub struct Function {
-    name:  String,
-    arity: u8,
-    chunk: Chunk,
+    name:  	String,
+    kind:	FunctionKind,
+    arity: 	u8,
+    chunk: 	Chunk,
 }
 
 
 #[allow(dead_code)]
 impl Function {
-    pub fn new(name: &str, arity: u8) -> Function {
+    pub fn new(name: &str, kind: FunctionKind, arity: u8) -> Function {
         Function {
             name:	name.to_string(),
+            kind,
             arity,
             chunk: 	Chunk::new()
         }
@@ -27,6 +37,10 @@ impl Function {
     
     pub fn name(&self) -> &str {
         return &self.name;
+    }
+    
+    pub fn kind(&self) -> &FunctionKind {
+        return &self.kind;
     }
 }
 

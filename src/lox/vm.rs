@@ -13,7 +13,7 @@ use super::obj::Obj;
 use super::constants::Constants;
 use super::globals::Globals;
 use super::closure::Closure;
-use super::function::Function;
+use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
 use super::tokenizer::Tokenizer;
 use super::parser::{Parser, ParserInput, ParserOutput};
@@ -58,7 +58,7 @@ impl VM {
         
         let scanner = Scanner::str(code);
         let mut tokenizer = Tokenizer::new(scanner);
-        let mut function = Function::new("__main__", 0);    
+        let mut function = Function::new("__main__", FunctionKind::Script, 0);    
         let mut compiler = Compiler::new(function);
 
         let mut parser = Parser::new();        
