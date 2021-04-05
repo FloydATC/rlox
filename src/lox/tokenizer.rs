@@ -118,6 +118,7 @@ impl Tokenizer {
             "continue" 	=> return Token::new_at(TokenKind::Continue, &lexeme, at),
             "else" 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
             "exit" 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
+            "fun" 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),
             "false" 	=> return Token::new_at(TokenKind::False, &lexeme, at),
             "if" 	=> return Token::new_at(TokenKind::If, &lexeme, at),
             "null" 	=> return Token::new_at(TokenKind::Null, &lexeme, at),

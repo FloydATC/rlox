@@ -58,7 +58,7 @@ impl VM {
         
         let scanner = Scanner::str(code);
         let mut tokenizer = Tokenizer::new(scanner);
-        let mut function = Function::new("__main__", FunctionKind::Script, 0);    
+        let mut function = Function::new("__main__", FunctionKind::Script);    
         let mut compiler = Compiler::new(function);
 
         let mut parser = Parser::new();        

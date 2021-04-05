@@ -20,11 +20,11 @@ pub struct Function {
 
 #[allow(dead_code)]
 impl Function {
-    pub fn new(name: &str, kind: FunctionKind, arity: u8) -> Function {
+    pub fn new(name: &str, kind: FunctionKind) -> Function {
         Function {
             name:	name.to_string(),
             kind,
-            arity,
+            arity:	0,
             chunk: 	Chunk::new()
         }
     }
@@ -41,6 +41,10 @@ impl Function {
     
     pub fn kind(&self) -> &FunctionKind {
         return &self.kind;
+    }
+    
+    pub fn set_arity(&mut self, arity: u8) {
+        self.arity = arity;
     }
 }
 

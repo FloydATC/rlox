@@ -4,6 +4,8 @@
 #[allow(unused_imports)]
 use super::token::{Token, TokenKind};
 #[allow(unused_imports)]
+use super::closure::Closure;
+use super::function::{Function, FunctionKind};
 use super::value::Value;
 use super::constants::Constants;
 use super::globals::Globals;
@@ -210,6 +212,22 @@ impl Parser {
             }
         }
     }
+
+    // Note: called instead of parse() to handle functions/methods
+    fn parse_function(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<(), String> {
+        self.begin_scope();
+
+        // Parameter list        
+        self.consume(TokenKind::LeftParen, "Expect '(' after function name.", input, output);
+        self.consume(TokenKind::RightParen, "Expect ')' after parameters.", input, output);
+        
+        // Body
+        self.consume(TokenKind::LeftCurly, "Expect '{' before function body.", input, output);
+        self.block(input, output); // Handles the closing curly
+        
+        self.end_scope(output); // Technically not needed since parser exits here
+        Ok(())
+    }
     
     fn parse_variable(&mut self, errmsg: &str, input: &mut ParserInput, output: &mut ParserOutput) -> usize {
         //println!("Parser.parse_variable()");
@@ -401,6 +419,27 @@ impl Parser {
         return self.scopes.last_mut(); // None = Global scope
     }
     
+    fn function(&mut self, name: &str, kind: FunctionKind, input: &mut ParserInput, output: &mut ParserOutput) {
+        let mut function = Function::new(name, kind);    
+        let mut compiler = Compiler::new(function);        
+        
+        let mut inner_output = ParserOutput {
+            compiler:   &mut compiler,
+            constants:  output.constants,
+            globals:    output.globals,
+        };
+        let mut parser = Parser::new();
+        let result = parser.parse_function(input, &mut inner_output);
+        if let Err(msg) = result {
+            panic!("{}", msg);
+        }
+        
+        function = inner_output.compiler.take_function();
+        let closure = Closure::new(function);
+        let value = Value::closure(closure);
+        println!("{:?}", value);
+        self.emit_constant(value, output);
+    }
 }
 
 
@@ -595,7 +634,7 @@ impl Parser {
         //println!("Parser.declaration() begin");
         match input.tokenizer.current().kind() {
             //TokenKind::Class 	=> self.class_declaration(input, output),
-            //TokenKind::Fun 	=> self.fun_declaration(input, output),
+            TokenKind::Fun 	=> self.fun_declaration(input, output),
             TokenKind::Var	=> self.var_declaration(input, output),
             _			=> self.statement(input, output),
         }
@@ -604,8 +643,13 @@ impl Parser {
     fn class_declaration(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Class token
     }
-    fn fun_declaration(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
+    fn fun_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Fun token
+        let name_id = self.parse_variable("Expect function name", input, output);
+        let name = input.tokenizer.previous().lexeme().to_string();
+        //mark_initialized();
+        self.function(&name, FunctionKind::Function, input, output);
+        self.define_variable(name_id, output);
     }
     fn var_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Var token
@@ -927,6 +971,7 @@ impl Parser {
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
             TokenKind::Var => return ParserRule::null(),
+            TokenKind::Fun => return ParserRule::null(),
             TokenKind::While => return ParserRule::null(),
             
             // Internal
