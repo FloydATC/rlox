@@ -108,7 +108,7 @@ impl Parser {
         //println!("Parser::new()");
         Parser {
             scopes: 	vec![],
-            locals: 	vec![],
+            locals: 	vec![Local::new("",0)], // Reserve stack slot zero
             codeloops:	vec![],
         }
     }

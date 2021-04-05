@@ -23,11 +23,11 @@ use super::opcode::OpCode;
 
 //#[allow(dead_code)]
 pub struct VM {
-  callframes: Vec<CallFrame>,
-  stack: Stack<Value>,
-  constants: Constants<Value>,
-  globals: Globals<Value>,
-  //objects: Vec<Obj>,
+    callframes: Vec<CallFrame>,
+    stack: Stack<Value>,
+    constants: Constants<Value>,
+    globals: Globals<Value>,
+    //objects: Vec<Obj>,
 }
 
 
@@ -576,14 +576,14 @@ impl VM {
     fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
         let closure = Closure::new(function);
         let value = Value::closure(closure);
-        //self.push(value);
+        self.push(value.clone());
         self.call_value(value, 0); // Main function takes zero arguments
         return Ok(());
     }
 
     fn call(&mut self, rc_closure: Rc<Obj>, argc: u8) {
-        //let slots: u32 = (self.stack.size() as u32) - (argc as u32) - 1;
-        let stack_bottom = (self.stack.size() as u32) - (argc as u32);
+//        let stack_bottom = (self.stack.size() as u32) - (argc as u32);
+        let stack_bottom = (self.stack.size() as u32) - (argc as u32) - 1;
         let callframe = CallFrame::new(rc_closure, stack_bottom);
         self.callframes.push(callframe);
     }
