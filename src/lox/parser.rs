@@ -114,7 +114,8 @@ impl Parser {
             codeloops:	vec![],
         }
     }
-    
+
+    // Parse __main__ function only (See: parse_function())    
     pub fn parse(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<(), String> {
         
         loop {
@@ -418,8 +419,13 @@ impl Parser {
     fn scope(&mut self) -> Option<&mut Scope> {
         return self.scopes.last_mut(); // None = Global scope
     }
-    
+
+    // Compiling a function means spinning up another Parser, 
+    // handing it a new compilation unit (Compiler with a Function object)
+    // and letting it borrow our other inputs and outputs.
     fn function(&mut self, name: &str, kind: FunctionKind, input: &mut ParserInput, output: &mut ParserOutput) {
+    
+        // Create a new compilation unit
         let mut function = Function::new(name, kind);    
         let mut compiler = Compiler::new(function);        
         
@@ -428,12 +434,16 @@ impl Parser {
             constants:  output.constants,
             globals:    output.globals,
         };
+        
+        // Create a new Parser and call parse_function()
         let mut parser = Parser::new();
         let result = parser.parse_function(input, &mut inner_output);
         if let Err(msg) = result {
+            // TODO: Proper error handling
             panic!("{}", msg);
         }
         
+        // Wrap the compiled Function in a Closure and store as a constant
         function = inner_output.compiler.take_function();
         let closure = Closure::new(function);
         let value = Value::closure(closure);
@@ -640,9 +650,11 @@ impl Parser {
         }
         //println!("Parser.declaration() end");
     }
+
     fn class_declaration(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Class token
     }
+
     fn fun_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Fun token
         let name_id = self.parse_variable("Expect function name", input, output);
@@ -651,6 +663,7 @@ impl Parser {
         self.function(&name, FunctionKind::Function, input, output);
         self.define_variable(name_id, output);
     }
+
     fn var_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Var token
         let name_id = self.parse_variable("Expect variable name", input, output);
