@@ -919,3 +919,29 @@ fn vm_fun_args_6() {
     assert_eq!(rc, 7);
 }
 
+// Return values
+#[test]
+fn vm_fun_return_implicit() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b,c) { var t=a+b+c; } exit f(1,2,4);");
+    let rc = vm.execute();
+    assert_eq!(rc, 0);
+}
+
+#[test]
+fn vm_fun_return_null() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b,c) { var t=a+b+c; return; } exit f(1,2,4);");
+    let rc = vm.execute();
+    assert_eq!(rc, 0);
+}
+
+#[test]
+fn vm_fun_return_value() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b,c) { var t=a+b+c; return t; } exit f(1,2,4);");
+    let rc = vm.execute();
+    assert_eq!(rc, 7);
+}
+
+

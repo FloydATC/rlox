@@ -3,6 +3,7 @@ use super::chunk::Chunk;
 
 
 #[allow(dead_code)]
+#[derive(PartialEq)]
 pub enum FunctionKind {
     Function,
     Script,

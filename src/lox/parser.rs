@@ -235,8 +235,9 @@ impl Parser {
         // Body
         self.consume(TokenKind::LeftCurly, "Expect '{' before function body.", input, output);
         self.block(input, output); // Handles the closing curly
+        self.emit_return(output);
         
-        self.end_scope(output); // Technically not needed since parser exits here
+        //self.end_scope(output); // Not needed since parser exits here
         Ok(())
     }
     
@@ -517,6 +518,8 @@ impl Parser {
             self.end_scope(output);
         } else if input.tokenizer.advance_on(TokenKind::Print) {
             self.print_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::Return) {
+            self.return_statement(input, output);
         } else if input.tokenizer.advance_on(TokenKind::While) {
             self.while_statement(input, output);
         } else {
@@ -585,6 +588,21 @@ impl Parser {
         output.compiler.emit_op(&OpCode::Print); // Print result
     }
     
+    fn return_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        if output.compiler.function().kind() == &FunctionKind::Script {
+            // TODO: Proper error handling
+            panic!("Can't return from top level code.");
+        }
+        if input.tokenizer.advance_on(TokenKind::Semicolon) {
+            // No expression after 'return'
+            output.compiler.emit_op(&OpCode::Null);
+        } else {
+            self.expression(input, output);
+            self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+        }
+        output.compiler.emit_op(&OpCode::Return);
+    }
+
     fn while_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         self.begin_loop(output);
         
