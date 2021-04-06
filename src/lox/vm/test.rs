@@ -838,8 +838,36 @@ fn vm_while_nested_if_nested_continue() {
     assert_eq!(rc, 8);
 }
 
+// Functions
+#[test]
+fn vm_fun_empty() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f() {} exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
 
+#[test]
+fn vm_fun_empty_with_var() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f() { var a; } exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
 
+#[test]
+fn vm_fun_empty_with_var_defined_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f() { var a=123; } exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
 
-
+#[test]
+fn vm_fun_empty_with_var_defined_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a=1; fun f() { var a=123; } exit a;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
 
