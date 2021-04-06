@@ -181,6 +181,7 @@ impl VM {
                         OpCode::Jmp 		=> result = self.opcode_jmp(),
                         OpCode::JmpFalseP	=> result = self.opcode_jmpfalsep(),
                         OpCode::JmpFalseQ	=> result = self.opcode_jmpfalseq(),
+                        OpCode::Call 		=> result = self.opcode_call(),
 
                         OpCode::Pop 		=> result = self.opcode_pop(),
                         OpCode::PopN 		=> result = self.opcode_popn(),
@@ -213,6 +214,10 @@ impl VM {
 
     pub fn read_callframe(&self) -> &CallFrame {
         return self.callframes.last().unwrap();
+    }
+
+    fn opcode_call(&mut self) -> Result<(), String> {
+        Err("OpCode::Call not implemented yet.".to_string())
     }
 
     fn opcode_print(&mut self) -> Result<(), String> {

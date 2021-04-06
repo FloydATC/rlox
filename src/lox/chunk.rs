@@ -124,6 +124,7 @@ impl Chunk {
             OpCode::Jmp			=> self.opcode_dword(ip),
             OpCode::JmpFalseP		=> self.opcode_dword(ip),
             OpCode::JmpFalseQ		=> self.opcode_dword(ip),
+            OpCode::Call		=> self.opcode_byte(ip),
 
             OpCode::Pop 		=> self.opcode_immediate(ip),
             OpCode::PopN 		=> self.opcode_byte(ip),

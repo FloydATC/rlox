@@ -473,6 +473,22 @@ impl Parser {
         println!("{:?}", value);
         self.emit_constant(value, output);
     }
+
+    fn argument_list(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<u8, String> {
+        let mut arg_count = 0;
+        if !input.tokenizer.matches(TokenKind::RightParen) {
+            loop {
+                self.expression(input, output);
+                arg_count = arg_count + 1;
+                // Keep going?
+                if !input.tokenizer.advance_on(TokenKind::Comma) { break; }
+            }
+        }
+        
+        self.consume(TokenKind::RightParen, "Expect ')' after arguments", input, output);
+        return Ok(arg_count);
+    }
+
 }
 
 
@@ -716,6 +732,7 @@ impl Parser {
         self.parse_precedence(ParserPrec::And, input, output);
         output.compiler.patch_jmp(end_jmp);
     }
+
     fn array(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
@@ -775,9 +792,20 @@ impl Parser {
         }
     }
 
-    fn call(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn call(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        let result = self.argument_list(input, output);
+        match result {
+            Ok(arg_count) => {
+                output.compiler.emit_op(&OpCode::Call);
+                output.compiler.emit_byte(arg_count);
+            }
+            Err(msg) => {
+                // TODO: Proper error handling
+                panic!("{}", msg);
+            }        
+        }
     }
+
     fn dot(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }

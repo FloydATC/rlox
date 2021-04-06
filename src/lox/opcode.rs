@@ -64,6 +64,7 @@ pub enum OpCode {
     Jmp,
     JmpFalseP,	// POP, then if false JUMP
     JmpFalseQ,  // PEEK, then if false JUMP
+    Call,
         
     // Pop (and discard) one or more values from the stack
     Pop,
@@ -131,6 +132,7 @@ impl OpCode {
             OpCode::Jmp 		=> { return "JMP"; }
             OpCode::JmpFalseP 		=> { return "JFP"; }
             OpCode::JmpFalseQ 		=> { return "JFQ"; }
+            OpCode::Call 		=> { return "CALL"; }
 
             OpCode::Pop 		=> { return "POP"; }
             OpCode::PopN 		=> { return "POP"; }
@@ -192,6 +194,7 @@ impl OpCode {
         if byte == OpCode::Jmp as u8 	{ return OpCode::Jmp; }
         if byte == OpCode::JmpFalseP as u8 	{ return OpCode::JmpFalseP; }
         if byte == OpCode::JmpFalseQ as u8 	{ return OpCode::JmpFalseQ; }
+        if byte == OpCode::Call as u8 	{ return OpCode::Call; }
 
         if byte == OpCode::Pop as u8 	{ return OpCode::Pop; }
         if byte == OpCode::PopN as u8 	{ return OpCode::PopN; }
