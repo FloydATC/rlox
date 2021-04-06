@@ -195,6 +195,8 @@ impl Tokenizer {
     fn symbol_token(&mut self) -> Token {
         let at = self.scanner().at();
         match self.scanner().current() {
+            ',' => return self.make_token_at(",", TokenKind::Comma, at),
+            '.' => return self.make_token_at(".", TokenKind::Dot, at),
             '+' => return self.make_token_at("+", TokenKind::Plus, at),
             '-' => return self.make_token_at("-", TokenKind::Minus, at),
             '*' => return self.make_token_at("*", TokenKind::Star, at),

@@ -6,6 +6,8 @@ pub enum TokenKind {
     // Single symbol
     Amp,
     Bang,
+    Comma,
+    Dot,
     Equal,
     Greater,
     LeftBracket,
@@ -133,6 +135,8 @@ impl std::fmt::Debug for TokenKind {
             // Single character symbols
             TokenKind::Amp		=> write!(f, "Amp"),
             TokenKind::Bang 		=> write!(f, "Bang"),
+            TokenKind::Comma 		=> write!(f, "Comma"),
+            TokenKind::Dot 		=> write!(f, "Dot"),
             TokenKind::Equal 		=> write!(f, "Equal"),
             TokenKind::Greater		=> write!(f, "Greater"),
             TokenKind::LeftBracket	=> write!(f, "LeftBracket"),

@@ -871,3 +871,27 @@ fn vm_fun_empty_with_var_defined_2() {
     assert_eq!(rc, 1);
 }
 
+#[test]
+fn vm_fun_args_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a) { } exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_fun_args_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b) { } exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_fun_args_3() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b,c) { } exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+

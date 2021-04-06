@@ -220,6 +220,11 @@ impl Parser {
 
         // Parameter list        
         self.consume(TokenKind::LeftParen, "Expect '(' after function name.", input, output);
+        let result = self.parse_function_params(input, output);
+        if let Err(msg) = result {
+            // TODO: Proper error handling
+            panic!("{}", msg);
+        }
         self.consume(TokenKind::RightParen, "Expect ')' after parameters.", input, output);
         
         // Body
@@ -230,6 +235,24 @@ impl Parser {
         Ok(())
     }
     
+    fn parse_function_params(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<u8, String> {
+        let mut arity = 0;
+        if !input.tokenizer.matches(TokenKind::RightParen) {
+            loop {
+                if arity == 255 { 
+                    // TODO: Proper error handling
+                    panic!("Can't have more than 255 parameters.");
+                }
+                arity = arity + 1;
+                let name_id = self.parse_variable("Expect parameter name", input, output);
+                self.define_variable(name_id, output);
+                // Keep going?
+                if !input.tokenizer.advance_on(TokenKind::Comma) { break; }
+            }
+        }
+        return Ok(arity);
+    }
+
     fn parse_variable(&mut self, errmsg: &str, input: &mut ParserInput, output: &mut ParserOutput) -> usize {
         //println!("Parser.parse_variable()");
         
@@ -838,6 +861,12 @@ impl Parser {
                 prefix: 	Some(Parser::unary), 
                 infix: 		None, 
                 precedence: 	ParserPrec::None,
+            },
+            TokenKind::Comma => return ParserRule::null(),
+            TokenKind::Dot => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::dot), 
+                precedence: 	ParserPrec::Call,
             },
             TokenKind::Equal => return ParserRule::null(),
             TokenKind::Greater => return ParserRule {
