@@ -115,6 +115,12 @@ impl Compiler {
             .write_dword(current_ip, ip);
     }
     
+    pub fn function(&mut self) -> &mut Function {
+        return self.function
+            .as_mut()
+            .expect("Internal error: self.function is None");
+    }
+    
 }
 
 

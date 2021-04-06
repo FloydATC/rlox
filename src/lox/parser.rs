@@ -221,9 +221,14 @@ impl Parser {
         // Parameter list        
         self.consume(TokenKind::LeftParen, "Expect '(' after function name.", input, output);
         let result = self.parse_function_params(input, output);
-        if let Err(msg) = result {
-            // TODO: Proper error handling
-            panic!("{}", msg);
+        match result {
+            Ok(arity) => {
+                output.compiler.function().set_arity(arity);
+            }
+            Err(msg) => {        
+                // TODO: Proper error handling
+                panic!("{}", msg);
+            }
         }
         self.consume(TokenKind::RightParen, "Expect ')' after parameters.", input, output);
         
@@ -474,6 +479,7 @@ impl Parser {
         self.emit_constant(value, output);
     }
 
+    // Parse arguments passed when calling a callee
     fn argument_list(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<u8, String> {
         let mut arg_count = 0;
         if !input.tokenizer.matches(TokenKind::RightParen) {

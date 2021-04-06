@@ -895,3 +895,27 @@ fn vm_fun_args_3() {
     assert_eq!(rc, 1);
 }
 
+#[test]
+fn vm_fun_args_4() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b,c) { exit a+b+c; } f(1,2,4);");
+    let rc = vm.execute();
+    assert_eq!(rc, 7);
+}
+
+#[test]
+fn vm_fun_args_5() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a=10; fun f(a,b,c) { exit a+b+c; } f(1,2,4);");
+    let rc = vm.execute();
+    assert_eq!(rc, 7);
+}
+
+#[test]
+fn vm_fun_args_6() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f(a,b,c) { exit a+b+c; } var a=10; f(1,2,4);");
+    let rc = vm.execute();
+    assert_eq!(rc, 7);
+}
+

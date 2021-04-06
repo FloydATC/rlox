@@ -217,7 +217,11 @@ impl VM {
     }
 
     fn opcode_call(&mut self) -> Result<(), String> {
-        Err("OpCode::Call not implemented yet.".to_string())
+        let arg_count = self.callframe().read_byte();
+        // TODO: Needs a return value
+        let callee = self.peek(arg_count as usize).clone();
+        self.call_value(callee, arg_count);        
+        Ok(())
     }
 
     fn opcode_print(&mut self) -> Result<(), String> {
@@ -587,6 +591,14 @@ impl VM {
     }
 
     fn call(&mut self, rc_closure: Rc<Obj>, argc: u8) {
+        if let Obj::Closure(closure) = rc_closure.borrow() {
+            let want_argc = closure.function().arity();
+            if argc != want_argc {
+                // TODO: Proper error handling
+                panic!("Expected {} arguments but got {}", want_argc, argc);
+            }
+        }
+
 //        let stack_bottom = (self.stack.size() as u32) - (argc as u32);
         let stack_bottom = (self.stack.size() as u32) - (argc as u32) - 1;
         let callframe = CallFrame::new(rc_closure, stack_bottom);

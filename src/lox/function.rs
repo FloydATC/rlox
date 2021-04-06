@@ -46,6 +46,10 @@ impl Function {
     pub fn set_arity(&mut self, arity: u8) {
         self.arity = arity;
     }
+    
+    pub fn arity(&self) -> u8 {
+        return self.arity;
+    }
 }
 
 
