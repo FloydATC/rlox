@@ -224,6 +224,13 @@ pub struct OpCodeSet {
 
 
 impl OpCodeSet {
+    pub fn defglobal() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::DefGlobal8,
+            word:	OpCode::DefGlobal16,
+            dword:	OpCode::DefGlobal32,
+        }
+    }
     pub fn capture() -> OpCodeSet {
         OpCodeSet {
             byte: 	OpCode::Capture8,

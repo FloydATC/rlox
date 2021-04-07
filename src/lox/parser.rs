@@ -1,13 +1,7 @@
 
-//use core::cmp::Ordering;
-
-#[allow(unused_imports)]
 use super::token::{Token, TokenKind};
-#[allow(unused_imports)]
-use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::value::Value;
-//use super::constants::Constants;
 use super::globals::Globals;
 use super::local::Local;
 use super::scope::Scope;
@@ -22,7 +16,6 @@ pub struct ParserInput<'a> {
 
 pub struct ParserOutput<'a> {
     pub compiler: 	&'a mut Compiler,
-//    pub constants: 	&'a mut Constants<Value>,
     pub globals: 	&'a mut Globals<Value>,
 }
 
@@ -123,7 +116,6 @@ impl Parser {
             if input.tokenizer.eof() { break; }
             self.declaration(input, output);
         }
-//        self.emit_return(output);
         self.emit_exit(output);
         
         return Ok(());
@@ -158,7 +150,6 @@ impl Parser {
     }
 
     fn emit_constant(&self, value: Value, output: &mut ParserOutput) {
-        //let id = output.constants.make(value);
         let id = output.compiler.make_constant(value);
         let ops = OpCodeSet::getconst();
         output.compiler.emit_op_variant(&ops, id as u64);
@@ -274,7 +265,6 @@ impl Parser {
         self.declare_variable(input, output);
         if let Some(_) = self.scope() { return 0; }
         
-        //return self.identifier_constant(input.tokenizer.previous(), output); 
         let name = input.tokenizer.previous().lexeme();
         let res = output.globals.declare(name);
         match res {
@@ -287,7 +277,6 @@ impl Parser {
     fn identifier_constant(&mut self, token: &Token, output: &mut ParserOutput) -> usize {
         //println!("Parser.identifier_constant()");
         let name = Value::string(token.lexeme());  
-        //return output.constants.make(name);
         return output.compiler.make_constant(name);
     }
  
@@ -316,7 +305,7 @@ impl Parser {
         //println!("Parser.define_variable()");
         
         if let Some(_) = self.scope() {
-        //    self.mark_initialized();	// Pseudocode
+            // self.mark_initialized();	// TODO: This needs solving.
             return;
         }
         
@@ -325,25 +314,7 @@ impl Parser {
     }
     
     fn define_global(&mut self, id: usize, output: &mut ParserOutput) {
-        let variable = id as u64;
-        match variable {
-            0..=0xff => {
-                output.compiler.emit_op(&OpCode::DefGlobal8);
-                output.compiler.emit_byte(variable as u8);
-            }
-            0x100..=0xffff => {
-                output.compiler.emit_op(&OpCode::DefGlobal16);
-                output.compiler.emit_word(variable as u16);
-            }
-            0x10000..=0xffffffff => {
-                output.compiler.emit_op(&OpCode::DefGlobal32);
-                output.compiler.emit_dword(variable as u32);
-
-            }
-            _ => {
-                panic!("4.2 billion globals should be enough for everyone.");
-            }
-        }
+        output.compiler.emit_op_variant(&OpCodeSet::defglobal(), id as u64);
     }
 
     pub fn resolve_local(&self, name: &str) -> Option<u32> {
@@ -486,8 +457,6 @@ impl Parser {
         println!("{:?}", value);
         let constant_id = output.compiler.make_constant(value);
         output.compiler.emit_op_variant(&OpCodeSet::capture(), constant_id as u64);
-//        let closure = Closure::new(function);
-//        let value = Value::closure(closure);
     }
 
     // Parse arguments passed when calling a callee
