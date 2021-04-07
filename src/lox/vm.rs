@@ -118,7 +118,11 @@ impl VM {
                     match opcode {
                         OpCode::Exit		=> {
                             let return_value = self.pop();
+                            // Rather than wasting time unwinding the stacks,
+                            // simply discard them because the script is terminating.
+                            // If execute gets called again, we need a clean slate.
                             self.stack = Stack::new();
+                            self.callframes = vec![];
                             match return_value {
                                 Value::Number(n) => return n as i32,
                                 _ => return 0,
