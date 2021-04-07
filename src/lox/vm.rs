@@ -118,6 +118,7 @@ impl VM {
                     match opcode {
                         OpCode::Exit		=> {
                             let return_value = self.pop();
+                            self.stack = Stack::new();
                             match return_value {
                                 Value::Number(n) => return n as i32,
                                 _ => return 0,

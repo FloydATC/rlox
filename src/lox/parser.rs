@@ -123,7 +123,8 @@ impl Parser {
             if input.tokenizer.eof() { break; }
             self.declaration(input, output);
         }
-        self.emit_return(output);
+//        self.emit_return(output);
+        self.emit_exit(output);
         
         return Ok(());
     }
@@ -149,6 +150,11 @@ impl Parser {
         output.compiler.emit_op(&OpCode::Null);
         //}
         output.compiler.emit_op(&OpCode::Return);
+    }
+
+    fn emit_exit(&self, output: &mut ParserOutput) {
+        output.compiler.emit_op(&OpCode::Null);
+        output.compiler.emit_op(&OpCode::Exit);
     }
 
     fn emit_constant(&self, value: Value, output: &mut ParserOutput) {
