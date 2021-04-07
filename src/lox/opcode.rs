@@ -43,6 +43,11 @@ pub enum OpCode {
     SetGlobal16	= 0x47,
     SetGlobal32	= 0x48,        
     
+    // Get constant value (should be function) and push a closure
+    Capture8,
+    Capture16,
+    Capture32,
+    
     // Pop one value, perform operation, push result
     Not,
     Negate,
@@ -114,6 +119,10 @@ impl OpCode {
             OpCode::SetGlobal16 	=> { return "SETG"; }
             OpCode::SetGlobal32 	=> { return "SETG"; }
 
+            OpCode::Capture8	 	=> { return "CAP"; }
+            OpCode::Capture16		=> { return "CAP"; }
+            OpCode::Capture32		=> { return "CAP"; }
+
             OpCode::Not			=> { return "NOT"; }
             OpCode::Negate		=> { return "NEG"; }
 
@@ -175,6 +184,10 @@ impl OpCode {
         if byte == OpCode::SetGlobal8 as u8  { return OpCode::SetGlobal8; }
         if byte == OpCode::SetGlobal16 as u8  { return OpCode::SetGlobal16; }
         if byte == OpCode::SetGlobal32 as u8  { return OpCode::SetGlobal32; }
+
+        if byte == OpCode::Capture8 as u8  { return OpCode::Capture8; }
+        if byte == OpCode::Capture16 as u8  { return OpCode::Capture16; }
+        if byte == OpCode::Capture32 as u8  { return OpCode::Capture32; }
         
         if byte == OpCode::Not as u8 	{ return OpCode::Not; }
         if byte == OpCode::Negate as u8 { return OpCode::Negate; }
@@ -211,6 +224,13 @@ pub struct OpCodeSet {
 
 
 impl OpCodeSet {
+    pub fn capture() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::Capture8,
+            word:	OpCode::Capture16,
+            dword:	OpCode::Capture32,
+        }
+    }
     pub fn getconst() -> OpCodeSet {
         OpCodeSet {
             byte: 	OpCode::GetConst8,

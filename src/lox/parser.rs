@@ -482,10 +482,12 @@ impl Parser {
         
         // Wrap the compiled Function in a Closure and store as a constant
         function = inner_output.compiler.take_function();
-        let closure = Closure::new(function);
-        let value = Value::closure(closure);
+        let value = Value::function(function);
         println!("{:?}", value);
-        self.emit_constant(value, output);
+        let constant_id = output.compiler.make_constant(value);
+        output.compiler.emit_op_variant(&OpCodeSet::capture(), constant_id as u64);
+//        let closure = Closure::new(function);
+//        let value = Value::closure(closure);
     }
 
     // Parse arguments passed when calling a callee

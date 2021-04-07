@@ -164,6 +164,10 @@ impl VM {
                         OpCode::SetGlobal16 	=> result = self.opcode_setglobal16(),
                         OpCode::SetGlobal32 	=> result = self.opcode_setglobal32(),
 
+                        OpCode::Capture8 	=> result = self.opcode_capture8(),
+                        OpCode::Capture16 	=> result = self.opcode_capture16(),
+                        OpCode::Capture32 	=> result = self.opcode_capture32(),
+
                         OpCode::Not 		=> result = self.opcode_not(),
                         OpCode::Negate 		=> result = self.opcode_negate(),
 
@@ -417,6 +421,31 @@ impl VM {
         return self.opcode_setglobal(id);
     }
 
+    fn opcode_capture(&mut self, id: usize) -> Result<(), String> {
+        // Get the function from constants table
+        let value = self.read_callframe().read_function().read_constants().value_by_id(id).clone();
+        // Wrap it in a closure
+        let closure = Closure::new(value);
+        // Push the closure onto the stack
+        self.push(Value::closure(closure));
+        Ok(())
+    }
+
+    fn opcode_capture8(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_byte() as usize;
+        return self.opcode_capture(id);
+    }
+    
+    fn opcode_capture16(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_word() as usize;
+        return self.opcode_capture(id);
+    }
+    
+    fn opcode_capture32(&mut self) -> Result<(), String> {
+        let id = self.callframe().read_dword() as usize;
+        return self.opcode_capture(id);
+    }
+
     fn opcode_not(&mut self) -> Result<(), String> {
         let value = self.pop();
         self.push(Value::boolean(!value.truthy()));
@@ -585,7 +614,7 @@ impl VM {
         self.stack.poke(value, depth);
     }
     fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
-        let closure = Closure::new(function);
+        let closure = Closure::new(Value::function(function));
         let value = Value::closure(closure);
         self.push(value.clone());
         self.call_value(value, 0); // Main function takes zero arguments
