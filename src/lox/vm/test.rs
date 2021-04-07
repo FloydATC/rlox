@@ -944,4 +944,27 @@ fn vm_fun_return_value() {
     assert_eq!(rc, 7);
 }
 
+// Closures
+//#[test]
+//fn vm_closure_1() {
+//    let mut vm = VM::new();
+//    let _res = vm.compile("fun mk() { var a = 123; fun c() { return a; } return c; } var c=mk(); exit c();");
+//    let rc = vm.execute();
+//    assert_eq!(rc, 123);
+//}
 
+//#[test]
+//fn vm_closure_2() {
+//    let mut vm = VM::new();
+//    let _res = vm.compile("fun mk(v) { fun c() { return v; } return c; } var a = mk(1); var b = mk(2); exit a();");
+//    let rc = vm.execute();
+//    assert_eq!(rc, 1);
+//}
+
+//#[test]
+//fn vm_closure_3() {
+//    let mut vm = VM::new();
+//    let _res = vm.compile("fun mk(v) { fun c() { return v; } return c; } var a = mk(1); var b = mk(2); exit b();");
+//    let rc = vm.execute();
+//    assert_eq!(rc, 2);
+//}
