@@ -7,7 +7,7 @@ use super::token::{Token, TokenKind};
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::value::Value;
-use super::constants::Constants;
+//use super::constants::Constants;
 use super::globals::Globals;
 use super::local::Local;
 use super::scope::Scope;
@@ -22,7 +22,7 @@ pub struct ParserInput<'a> {
 
 pub struct ParserOutput<'a> {
     pub compiler: 	&'a mut Compiler,
-    pub constants: 	&'a mut Constants<Value>,
+//    pub constants: 	&'a mut Constants<Value>,
     pub globals: 	&'a mut Globals<Value>,
 }
 
@@ -158,7 +158,8 @@ impl Parser {
     }
 
     fn emit_constant(&self, value: Value, output: &mut ParserOutput) {
-        let id = output.constants.make(value);
+        //let id = output.constants.make(value);
+        let id = output.compiler.make_constant(value);
         let ops = OpCodeSet::getconst();
         output.compiler.emit_op_variant(&ops, id as u64);
     }
@@ -286,7 +287,8 @@ impl Parser {
     fn identifier_constant(&mut self, token: &Token, output: &mut ParserOutput) -> usize {
         //println!("Parser.identifier_constant()");
         let name = Value::string(token.lexeme());  
-        return output.constants.make(name);
+        //return output.constants.make(name);
+        return output.compiler.make_constant(name);
     }
  
     fn declare_variable(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
@@ -466,7 +468,7 @@ impl Parser {
         
         let mut inner_output = ParserOutput {
             compiler:   &mut compiler,
-            constants:  output.constants,
+            //constants:  output.constants,
             globals:    output.globals,
         };
         

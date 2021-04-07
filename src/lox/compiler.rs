@@ -2,7 +2,7 @@
 //use super::scanner::Scanner;
 //use super::parser::Parser;
 use super::opcode::{OpCode, OpCodeSet};
-//use super::value::Value;
+use super::value::Value;
 use super::function::Function;
 
 
@@ -121,6 +121,13 @@ impl Compiler {
             .expect("Internal error: self.function is None");
     }
     
+    pub fn make_constant(&mut self, value: Value) -> usize {
+        return self.function
+            .as_mut()
+            .expect("Internal error: self.function is None")
+            .constants()
+            .make(value);
+    }
 }
 
 

@@ -10,7 +10,7 @@ use super::stack::Stack;
 use super::value::Value;
 use super::obj::Obj;
 //use super::obj::Obj;
-use super::constants::Constants;
+//use super::constants::Constants;
 use super::globals::Globals;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
@@ -25,7 +25,7 @@ use super::opcode::OpCode;
 pub struct VM {
     callframes: Vec<CallFrame>,
     stack: Stack<Value>,
-    constants: Constants<Value>,
+    //constants: Constants<Value>,
     globals: Globals<Value>,
     //objects: Vec<Obj>,
 }
@@ -36,7 +36,7 @@ impl VM {
         VM {
             callframes: 	vec![],
             stack: 		Stack::new(), 
-            constants:		Constants::new(),
+            //constants:		Constants::new(),
             globals:		Globals::new(),
             //objects: 		vec![],
         }
@@ -69,7 +69,7 @@ impl VM {
         };
         let mut output = ParserOutput {
             compiler: 	&mut compiler,
-            constants: 	&mut self.constants,
+            //constants: 	&mut self.constants,
             globals: 	&mut self.globals,
         };
         let result = parser.parse(&mut input, &mut output);
@@ -80,7 +80,7 @@ impl VM {
         
         println!("VM.compile() complete:");
         println!(" function={:?}", function);
-        println!(" constants={:?}", self.constants);
+        //println!(" constants={:?}", self.constants);
         println!(" globals={:?}", self.globals);
         
         match result {
@@ -232,7 +232,8 @@ impl VM {
     }
 
     fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {
-        let value = self.constants.value_by_id(id).clone();
+        //let value = self.constants.value_by_id(id).clone();
+        let value = self.read_callframe().read_function().read_constants().value_by_id(id).clone();
         self.push(value);
         Ok(())
     }
