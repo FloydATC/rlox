@@ -291,20 +291,15 @@ impl Parser {
             Some(_) => {
                 let scope_depth = self.scopes.len();
                 let name = input.tokenizer.previous().lexeme();
+
                 // Verify variable is not already declared in this scope
-//                if let Some(id) = self.resolve_local(name) {
-//                    if self.locals[id as usize].depth() as usize == self.scopes.len() {
-//                        // TODO: Proper error handling
-//                        panic!("Variable with this name already declared");
-//                    }
-//                }
                 if let Some(id) = output.locals.resolve_local(name) {
                     if output.locals.local_ref_by_id(id).depth() == scope_depth {
                         // TODO: Proper error handling
                         panic!("Variable with this name already declared");
                     }
                 }
-//                self.declare_local(name); // Add local variable
+
                 output.locals.declare_local(name, scope_depth); // Add local variable
             }
         }
@@ -315,6 +310,7 @@ impl Parser {
         
         if let Some(_) = self.scope() {
             // self.mark_initialized();	// TODO: This needs solving.
+            output.locals.last_local().unwrap().define();
             return;
         }
         
@@ -326,53 +322,6 @@ impl Parser {
         output.compiler.emit_op_variant(&OpCodeSet::defglobal(), id as u64);
     }
 
-//    pub fn resolve_local(&self, name: &str) -> Option<u32> {
-//        for i in (0..self.locals.len()).rev() {
-//            if self.locals[i].name() == name { return Some(i as u32); }
-//        }
-//        return None;
-//    }
-    
-//    pub fn declare_local(&mut self, name: &str) {
-//        let depth = self.scopes.len() as u32;
-//        //println!("Parser.declare_local() name={} depth={}", name, depth);
-//        self.locals.push(Local::new(name, depth));
-//    }
-
-//    fn resolve_upvalue(&mut self, _name: &str) -> Option<usize> {
-//        return None;
-
-        // Ideally, this would go something like...
-    
-        //match self.enclosing {
-        //    Some(parser) => {
-        //        let result = parser.resolve_local(name);
-        //        match result {
-        //            Some(local_id) => {
-        //                return self.add_upvalue(local_id, true);
-        //            }                
-        //            None => {
-        //                return None;
-        //            }
-        //        }
-        //    }
-        //    None => {
-        //        return None;
-        //    }
-        //}
-        
-        // However, nesting a Parser within a Parser in such a way
-        // that the nested instance can see its parent or call
-        // methods on it seems near impossible in Rust, 
-        // unless you scatter lifetime tags literally everywhere.
-        
-        // Besides, we're missing some crucial arguments to 
-        // self.add_upvalue; in order to produce any code it needs 
-        // both the current locals and the current compiler object.
-        
-        // I don't know how to solve this.
-//    }
-    
     fn resolve_global(&mut self, name: &str, output: &mut ParserOutput) -> Option<usize> {
         let result = output.globals.id_by_name(name);
         match result {
@@ -387,6 +336,10 @@ impl Parser {
         result = output.locals.resolve_local(name_token.lexeme());
         match result {
             Some(id) => {
+                if !output.locals.local_ref_by_id(id).is_defined() {
+                    // TODO: Proper error handling
+                    panic!("Can't readl local variable in its own initializer.");
+                }
                 return (
                     OpCodeSet::getlocal(),
                     OpCodeSet::setlocal(),
@@ -452,17 +405,11 @@ impl Parser {
             if output.locals.last_local().unwrap().depth() <= scope_depth { break; }
             //println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
 
-            // Pseudocode for upvalues, TBD
-            //if is_captured(i) {
-                //emit_op(&OpCode::CloseUpvalue); 
-            //} else {
             if output.locals.last_local().unwrap().is_captured() {
                 output.compiler.emit_op(&OpCode::CloseUpvalue);
             } else {
                 output.compiler.emit_op(&OpCode::Pop);
             }
-            //}
-            //self.locals.pop();
             output.locals.pop_local();
         }
     }
@@ -483,7 +430,6 @@ impl Parser {
         
         let mut inner_output = ParserOutput {
             compiler:   &mut compiler,
-            //constants:  output.constants,
             globals:    output.globals,
             locals:	output.locals,
         };

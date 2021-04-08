@@ -63,8 +63,8 @@ impl LocalSet {
     
     // Return immutable reference to last local in this LocalSet
     // Note: None if there are no locals
-    fn last_local(&self) -> Option<&Local> {
-        return self.locals.last();
+    fn last_local(&mut self) -> Option<&mut Local> {
+        return self.locals.last_mut();
     }
     
     // Discard last local in this LocalSet
@@ -199,9 +199,9 @@ impl Locals {
 
     // Return a mutable reference to local in current LocalSet, by id
     // Note: Panic on invalid id
-    pub fn local_mut_by_id(&mut self, id: usize) -> &mut Local {
-        return self.current.as_mut().unwrap().local_mut_by_id(id);
-    }
+//    pub fn local_mut_by_id(&mut self, id: usize) -> &mut Local {
+//        return self.current.as_mut().unwrap().local_mut_by_id(id);
+//    }
     
     // Return the number of locals in current LocalSet
     pub fn local_count(&self) -> usize {
@@ -210,7 +210,7 @@ impl Locals {
     
     // Return a reference to the last local in the current LocalSet
     // Return None if none exist
-    pub fn last_local(&mut self) -> Option<&Local> {
+    pub fn last_local(&mut self) -> Option<&mut Local> {
         return self.current.as_mut().unwrap().last_local();
     }
     
@@ -221,6 +221,7 @@ impl Locals {
 }
 
 // ======== Upvalues ========
+#[allow(dead_code)]
 impl Locals {
 
     pub fn resolve_upvalue(&mut self, name: &str) -> Option<usize> {

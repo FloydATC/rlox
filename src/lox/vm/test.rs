@@ -220,6 +220,13 @@ fn vm_global_5() {
     assert_eq!(rc, 8);
 }
 
+#[test]
+#[should_panic]
+fn vm_global_redefine() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var a=1; var a=2;");
+}
+
 // Local vars shadowing global ones
 #[test]
 fn vm_local_shadow_global_1() {
@@ -285,6 +292,23 @@ fn vm_reuse_local_4() {
     let rc = vm.execute();
     assert_eq!(rc, 4);
 }
+
+// Disallow redefine in same scope
+#[test]
+#[should_panic]
+fn vm_redefine_local() {
+    let mut vm = VM::new();
+    let _res = vm.compile("{ var a=1; var a=2; }");
+}
+
+// Disallow self definition
+#[test]
+#[should_panic]
+fn vm_local_self_define() {
+    let mut vm = VM::new();
+    let _res = vm.compile("{ var a=a; }");
+}
+
 
 // Local var inaccessible in global scope
 #[test]

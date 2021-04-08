@@ -1,11 +1,13 @@
 
 
+#[allow(dead_code)]
 pub struct Upvalue {
     id:		usize,
     is_local:	bool,
 }
 
 
+#[allow(dead_code)]
 impl Upvalue {
     pub fn new(id: usize, is_local: bool) -> Self {
         Self {
