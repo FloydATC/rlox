@@ -11,12 +11,12 @@ use super::upvalue::Upvalue;
 struct LocalSet {
     locals:	Vec<Local>,
     upvalues:	Vec<Upvalue>,
-    parent:	Option<&mut LocalSet>,
+    parent:	Option<Box<LocalSet>>,
 }
 
 
 impl LocalSet {
-    fn new(parent: Option<&mut LocalSet>) -> Self {
+    fn new(parent: Option<Box<LocalSet>>) -> Self {
         Self {
             locals:	vec![Local::new("",0)], // Reserve stack slot zero
             upvalues:	vec![],
@@ -24,10 +24,6 @@ impl LocalSet {
         }
     }
 
-    // Return a reference to parent LocalSet, if any    
-    fn parent(&mut self) -> Option<&mut Self> {
-        return self.parent;
-    }
 }
 
 // ======== Locals ========
@@ -56,7 +52,7 @@ impl LocalSet {
 
     // Return mutable reference to local by id
     // Note: Panic if id is invalid
-    fn local_mut_by_id(&self, id: usize) -> &mut Local {
+    fn local_mut_by_id(&mut self, id: usize) -> &mut Local {
         return &mut self.locals[id];
     }
     
@@ -124,7 +120,7 @@ impl LocalSet {
     // or create one if name is found to be a local
     // in one of the parents
     fn resolve_upvalue(&mut self, name: &str) -> Option<usize> {
-        match self.parent {
+        match &mut self.parent {
             None => {
                 // If we have no parent, there can be no upvalues
                 return None;
@@ -152,14 +148,14 @@ impl LocalSet {
 
 
 pub struct Locals {
-    localsets: 	Vec<LocalSet>,
+    current: 	Option<Box<LocalSet>>,
 }
 
 
 impl Locals {
     pub fn new() -> Self {
         Self {
-            localsets:	vec![LocalSet::new(None)],
+            current: Some(Box::new(LocalSet::new(None))),
         }
     }
 
@@ -170,13 +166,14 @@ impl Locals {
         // stupid with self.localsets the references would remain valid,
         // but I'm afraid there's no way to make such a promise.
         
-        let parent = self.localsets.last_mut();
-        self.localsets.push(LocalSet::new(parent));
+        let parent = self.current.take();
+        self.current = Some(Box::new(LocalSet::new(parent)));
     }
     
     // End the current LocalSet (=function declaration)
     pub fn end_function(&mut self) {
-        self.localsets.pop();
+        let parent = self.current.as_mut().unwrap().parent.take();
+        self.current = parent;
     }
 }
 
@@ -186,40 +183,40 @@ impl Locals {
 
     // Declare a local variable in the current LocalSet
     pub fn declare_local(&mut self, name: &str, depth: usize) {
-        self.localsets.last_mut().unwrap().declare_local(name, depth);
+        self.current.as_mut().unwrap().declare_local(name, depth);
     } 
 
     // Resolve local variable name in the current LocalSet
     pub fn resolve_local(&self, name: &str) -> Option<usize> {
-        return self.localsets.last().unwrap().resolve_local(name);
+        return self.current.as_ref().unwrap().resolve_local(name);
     }
     
     // Return a reference to local in current LocalSet, by id
     // Note: Panic on invalid id
     pub fn local_ref_by_id(&mut self, id: usize) -> &Local {
-        return self.localsets.last().unwrap().local_ref_by_id(id);
+        return self.current.as_mut().unwrap().local_ref_by_id(id);
     }
 
     // Return a mutable reference to local in current LocalSet, by id
     // Note: Panic on invalid id
     pub fn local_mut_by_id(&mut self, id: usize) -> &mut Local {
-        return self.localsets.last_mut().unwrap().local_mut_by_id(id);
+        return self.current.as_mut().unwrap().local_mut_by_id(id);
     }
     
     // Return the number of locals in current LocalSet
     pub fn local_count(&self) -> usize {
-        return self.localsets.last().unwrap().local_count();
+        return self.current.as_ref().unwrap().local_count();
     }
     
     // Return a reference to the last local in the current LocalSet
     // Return None if none exist
     pub fn last_local(&mut self) -> Option<&Local> {
-        return self.localsets.last_mut().unwrap().last_local();
+        return self.current.as_mut().unwrap().last_local();
     }
     
     // Discard the last local in the current LocalSet, if any
     pub fn pop_local(&mut self) {
-        return self.localsets.last_mut().unwrap().pop_local();
+        return self.current.as_mut().unwrap().pop_local();
     }
 }
 
@@ -227,29 +224,29 @@ impl Locals {
 impl Locals {
 
     pub fn resolve_upvalue(&mut self, name: &str) -> Option<usize> {
-        return self.localsets.last_mut().unwrap().resolve_upvalue(name);    
+        return self.current.as_mut().unwrap().resolve_upvalue(name);    
     }
 
     // Return a reference to upvalue in current LocalSet, by id
     // Note: Panic on invalid id
     pub fn upvalue_ref_by_id(&mut self, id: usize) -> &Upvalue {
-        return self.localsets.last().unwrap().upvalue_ref_by_id(id);
+        return self.current.as_mut().unwrap().upvalue_ref_by_id(id);
     }
 
     // Return the number of upvalues in current LocalSet
     pub fn upvalue_count(&self) -> usize {
-        return self.localsets.last().unwrap().upvalue_count();
+        return self.current.as_ref().unwrap().upvalue_count();
     }
     
     // Return a reference to the last upvalue in the current LocalSet
     // Return None if none exist
     pub fn last_upvalue(&mut self) -> Option<&Upvalue> {
-        return self.localsets.last_mut().unwrap().last_upvalue();
+        return self.current.as_mut().unwrap().last_upvalue();
     }
     
     // Discard the last upvalue in the current LocalSet, if any
     pub fn pop_upvalue(&mut self) {
-        return self.localsets.last_mut().unwrap().pop_upvalue();
+        return self.current.as_mut().unwrap().pop_upvalue();
     }
 }
 
