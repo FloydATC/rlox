@@ -74,6 +74,7 @@ pub enum OpCode {
     // Pop (and discard) one or more values from the stack
     Pop,
     PopN,		// Followed by BYTE indicating number of values
+    CloseUpvalue,
     
     BAD 	= 0xff,	// Unknown/bad opcodes resolve to this
 }
@@ -145,6 +146,7 @@ impl OpCode {
 
             OpCode::Pop 		=> { return "POP"; }
             OpCode::PopN 		=> { return "POP"; }
+            OpCode::CloseUpvalue	=> { return "CLU"; }
             
             OpCode::BAD 		=> { return "???"; }
         }
@@ -211,6 +213,7 @@ impl OpCode {
 
         if byte == OpCode::Pop as u8 	{ return OpCode::Pop; }
         if byte == OpCode::PopN as u8 	{ return OpCode::PopN; }
+        if byte == OpCode::CloseUpvalue as u8 	{ return OpCode::CloseUpvalue; }
         return OpCode::BAD;	// Do not use
     }
 }

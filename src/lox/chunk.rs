@@ -132,6 +132,7 @@ impl Chunk {
 
             OpCode::Pop 		=> self.opcode_immediate(ip),
             OpCode::PopN 		=> self.opcode_byte(ip),
+            OpCode::CloseUpvalue	=> self.opcode_immediate(ip),
 
             OpCode::BAD 		=> self.opcode_immediate(ip),
         };

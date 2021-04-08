@@ -339,8 +339,8 @@ impl Parser {
 //        self.locals.push(Local::new(name, depth));
 //    }
 
-    fn resolve_upvalue(&mut self, _name: &str) -> Option<usize> {
-        return None;
+//    fn resolve_upvalue(&mut self, _name: &str) -> Option<usize> {
+//        return None;
 
         // Ideally, this would go something like...
     
@@ -371,7 +371,7 @@ impl Parser {
         // both the current locals and the current compiler object.
         
         // I don't know how to solve this.
-    }
+//    }
     
     fn resolve_global(&mut self, name: &str, output: &mut ParserOutput) -> Option<usize> {
         let result = output.globals.id_by_name(name);
@@ -384,7 +384,6 @@ impl Parser {
     fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, usize) {
         let mut result;
         
-        //result = self.resolve_local(name_token.lexeme());
         result = output.locals.resolve_local(name_token.lexeme());
         match result {
             Some(id) => {
@@ -397,7 +396,7 @@ impl Parser {
             None => {}
         }
         
-        result = self.resolve_upvalue(name_token.lexeme());
+        result = output.locals.resolve_upvalue(name_token.lexeme());
         match result {
             Some(id) => {
                 return (
@@ -449,9 +448,7 @@ impl Parser {
         let scope_depth = self.scopes.len();
         //println!("Parser.end_scope() depth={}", depth);
         loop {
-            //if self.locals.len() == 0 { break; }
             if output.locals.local_count() == 0 { break; }
-            //if self.locals.last().unwrap().depth() <= depth { break; }
             if output.locals.last_local().unwrap().depth() <= scope_depth { break; }
             //println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
 
@@ -459,7 +456,11 @@ impl Parser {
             //if is_captured(i) {
                 //emit_op(&OpCode::CloseUpvalue); 
             //} else {
-            output.compiler.emit_op(&OpCode::Pop);
+            if output.locals.last_local().unwrap().is_captured() {
+                output.compiler.emit_op(&OpCode::CloseUpvalue);
+            } else {
+                output.compiler.emit_op(&OpCode::Pop);
+            }
             //}
             //self.locals.pop();
             output.locals.pop_local();

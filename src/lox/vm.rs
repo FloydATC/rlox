@@ -196,6 +196,7 @@ impl VM {
 
                         OpCode::Pop 		=> result = self.opcode_pop(),
                         OpCode::PopN 		=> result = self.opcode_popn(),
+                        OpCode::CloseUpvalue	=> result = self.opcode_closeupvalue(),
 
                         OpCode::BAD 		=> result = self.opcode_bad(),
                     }
@@ -596,6 +597,10 @@ impl VM {
             println!("POP = {}", value);
         }
         Ok(())
+    }
+    
+    fn opcode_closeupvalue(&mut self) -> Result<(), String> {
+        Err("OpCode::CloseUpvalue not yet implemented.".to_string())
     }
     
     fn opcode_bad(&mut self) -> Result<(), String> {
