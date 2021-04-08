@@ -3,7 +3,8 @@ use super::token::{Token, TokenKind};
 use super::function::{Function, FunctionKind};
 use super::value::Value;
 use super::globals::Globals;
-use super::local::Local;
+use super::locals::Locals;
+//use super::local::Local;
 use super::scope::Scope;
 use super::codeloop::CodeLoop;
 use super::tokenizer::Tokenizer;
@@ -17,6 +18,7 @@ pub struct ParserInput<'a> {
 pub struct ParserOutput<'a> {
     pub compiler: 	&'a mut Compiler,
     pub globals: 	&'a mut Globals<Value>,
+    pub locals: 	&'a mut Locals,
 }
 
 #[allow(dead_code)]
@@ -92,7 +94,7 @@ impl ParserRule {
 #[allow(dead_code)]
 pub struct Parser {
     scopes: 	Vec<Scope>,
-    locals: 	Vec<Local>,
+//    locals: 	Vec<Local>,
     codeloops:	Vec<CodeLoop>,
 }
 
@@ -103,7 +105,7 @@ impl Parser {
         //println!("Parser::new()");
         Parser {
             scopes: 	vec![],
-            locals: 	vec![Local::new("",0)], // Reserve stack slot zero
+//            locals: 	vec![Local::new("",0)], // Reserve stack slot zero
             codeloops:	vec![],
         }
     }
@@ -280,23 +282,30 @@ impl Parser {
         return output.compiler.make_constant(name);
     }
  
-    fn declare_variable(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
+    fn declare_variable(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.declare_variable()");
         
         let scope = self.scope();
         match scope {
             None => { return; } // Global
             Some(_) => {
-        
+                let scope_depth = self.scopes.len();
                 let name = input.tokenizer.previous().lexeme();
                 // Verify variable is not already declared in this scope
-                if let Some(id) = self.resolve_local(name) {
-                    if self.locals[id as usize].depth() as usize == self.scopes.len() {
+//                if let Some(id) = self.resolve_local(name) {
+//                    if self.locals[id as usize].depth() as usize == self.scopes.len() {
+//                        // TODO: Proper error handling
+//                        panic!("Variable with this name already declared");
+//                    }
+//                }
+                if let Some(id) = output.locals.resolve_local(name) {
+                    if output.locals.local_ref_by_id(id).depth() == scope_depth {
                         // TODO: Proper error handling
                         panic!("Variable with this name already declared");
                     }
                 }
-                self.declare_local(name); // Add local variable
+//                self.declare_local(name); // Add local variable
+                output.locals.declare_local(name, scope_depth); // Add local variable
             }
         }
     }
@@ -317,36 +326,66 @@ impl Parser {
         output.compiler.emit_op_variant(&OpCodeSet::defglobal(), id as u64);
     }
 
-    pub fn resolve_local(&self, name: &str) -> Option<u32> {
-        for i in (0..self.locals.len()).rev() {
-            if self.locals[i].name() == name { return Some(i as u32); }
-        }
-        return None;
-    }
+//    pub fn resolve_local(&self, name: &str) -> Option<u32> {
+//        for i in (0..self.locals.len()).rev() {
+//            if self.locals[i].name() == name { return Some(i as u32); }
+//        }
+//        return None;
+//    }
     
-    pub fn declare_local(&mut self, name: &str) {
-        let depth = self.scopes.len() as u32;
-        //println!("Parser.declare_local() name={} depth={}", name, depth);
-        self.locals.push(Local::new(name, depth));
-    }
+//    pub fn declare_local(&mut self, name: &str) {
+//        let depth = self.scopes.len() as u32;
+//        //println!("Parser.declare_local() name={} depth={}", name, depth);
+//        self.locals.push(Local::new(name, depth));
+//    }
 
-    fn resolve_upvalue(&mut self, _name: &str) -> Option<u32> {
-        eprintln!("WARNING: resolve_upvalue() not yet implemented.");
+    fn resolve_upvalue(&mut self, _name: &str) -> Option<usize> {
         return None;
+
+        // Ideally, this would go something like...
+    
+        //match self.enclosing {
+        //    Some(parser) => {
+        //        let result = parser.resolve_local(name);
+        //        match result {
+        //            Some(local_id) => {
+        //                return self.add_upvalue(local_id, true);
+        //            }                
+        //            None => {
+        //                return None;
+        //            }
+        //        }
+        //    }
+        //    None => {
+        //        return None;
+        //    }
+        //}
+        
+        // However, nesting a Parser within a Parser in such a way
+        // that the nested instance can see its parent or call
+        // methods on it seems near impossible in Rust, 
+        // unless you scatter lifetime tags literally everywhere.
+        
+        // Besides, we're missing some crucial arguments to 
+        // self.add_upvalue; in order to produce any code it needs 
+        // both the current locals and the current compiler object.
+        
+        // I don't know how to solve this.
     }
     
-    fn resolve_global(&mut self, name: &str, output: &mut ParserOutput) -> Option<u32> {
+    fn resolve_global(&mut self, name: &str, output: &mut ParserOutput) -> Option<usize> {
         let result = output.globals.id_by_name(name);
         match result {
-            Some(id)	=> Some(id as u32),
+            Some(id)	=> Some(id),
             None	=> None,
         }
     }
     
-    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, u32) {
+    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, usize) {
         let mut result;
         
-        result = self.resolve_local(name_token.lexeme());
+        //result = self.resolve_local(name_token.lexeme());
+        result = output.locals.resolve_local(name_token.lexeme());
         match result {
             Some(id) => {
                 return (
@@ -407,11 +446,13 @@ impl Parser {
 
     fn end_scope(&mut self, output: &mut ParserOutput) {
         self.scopes.pop();
-        let depth = self.scopes.len() as u32;
+        let scope_depth = self.scopes.len();
         //println!("Parser.end_scope() depth={}", depth);
         loop {
-            if self.locals.len() == 0 { break; }
-            if self.locals.last().unwrap().depth() <= depth { break; }
+            //if self.locals.len() == 0 { break; }
+            if output.locals.local_count() == 0 { break; }
+            //if self.locals.last().unwrap().depth() <= depth { break; }
+            if output.locals.last_local().unwrap().depth() <= scope_depth { break; }
             //println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
 
             // Pseudocode for upvalues, TBD
@@ -420,7 +461,8 @@ impl Parser {
             //} else {
             output.compiler.emit_op(&OpCode::Pop);
             //}
-            self.locals.pop();
+            //self.locals.pop();
+            output.locals.pop_local();
         }
     }
     
@@ -432,6 +474,7 @@ impl Parser {
     // handing it a new compilation unit (Compiler with a Function object)
     // and letting it borrow our other inputs and outputs.
     fn function(&mut self, name: &str, kind: FunctionKind, input: &mut ParserInput, output: &mut ParserOutput) {
+        output.locals.begin_function();
     
         // Create a new compilation unit
         let mut function = Function::new(name, kind);    
@@ -441,6 +484,7 @@ impl Parser {
             compiler:   &mut compiler,
             //constants:  output.constants,
             globals:    output.globals,
+            locals:	output.locals,
         };
         
         // Create a new Parser and call parse_function()
@@ -457,6 +501,7 @@ impl Parser {
         println!("{:?}", value);
         let constant_id = output.compiler.make_constant(value);
         output.compiler.emit_op_variant(&OpCodeSet::capture(), constant_id as u64);
+        output.locals.end_function();
     }
 
     // Parse arguments passed when calling a callee

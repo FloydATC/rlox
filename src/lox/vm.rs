@@ -12,6 +12,7 @@ use super::obj::Obj;
 //use super::obj::Obj;
 //use super::constants::Constants;
 use super::globals::Globals;
+use super::locals::Locals;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
@@ -71,6 +72,7 @@ impl VM {
             compiler: 	&mut compiler,
             //constants: 	&mut self.constants,
             globals: 	&mut self.globals,
+            locals:	&mut Locals::new(), // Discard after compile
         };
         let result = parser.parse(&mut input, &mut output);
         

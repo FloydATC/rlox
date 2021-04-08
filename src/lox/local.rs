@@ -2,18 +2,20 @@
 
 pub struct Local {
     name:	String,
-    depth:	u32,
+    depth:	usize,	// Scope depth within function
     defined: 	bool,
+    captured:	bool,
 }
 
 
 #[allow(dead_code)]
 impl Local {
-    pub fn new(name: &str, depth: u32) -> Local {
+    pub fn new(name: &str, depth: usize) -> Local {
         Local {
             name:	name.to_string(),
             depth,
-            defined: 	false,	
+            defined: 	false,
+            captured:	false,
         }
     }
     
@@ -21,15 +23,23 @@ impl Local {
         self.defined = true;
     }
 
+    pub fn capture(&mut self) {
+        self.captured = true;
+    }
+
     pub fn name(&self) -> &str {
         return self.name.as_str();
     }
     
-    pub fn depth(&self) -> u32 {
+    pub fn depth(&self) -> usize {
         return self.depth;
     }
     
     pub fn is_defined(&self) -> bool {
         return self.defined;
+    }
+
+    pub fn is_captured(&self) -> bool {
+        return self.captured;
     }
 }
