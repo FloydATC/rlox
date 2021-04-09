@@ -1,10 +1,10 @@
 
 
-use std::rc::Rc;
+//use std::rc::Rc;
 
 use super::function::Function;
 use super::value::Value;
-use super::obj::Obj;
+//use super::obj::Obj;
 use super::vm::upvalue::Upvalue; // Runtime representation
 
 #[allow(dead_code)]
@@ -12,33 +12,37 @@ use super::vm::upvalue::Upvalue; // Runtime representation
 pub struct Closure {
     // This is a reference to a function that lives in a Value
     // stored in a constants table somewhere. 
-    rc_function: Rc<Obj>,
+    //rc_function: Rc<Obj>,
+    function: 	Value,
     
     // I *think* this should be a vector of references to values that
     // live in vm.open_upvalues
-    upvalues: Vec<Upvalue<Value>>,
+    upvalues: 	Vec<Upvalue<Value>>,
 }
 
 
 #[allow(dead_code)]
 impl Closure {
     pub fn new(function: Value) -> Self {
-        let rc_object = function.as_rc_object();
-        match function.as_rc_object().as_ref() {
-            Obj::Function(_) => {
-                return Self { 
-                    rc_function: rc_object, 
-                    upvalues: vec![],
-                };
-            }
-            _ => {
-                panic!("{} is not a Function", function);
-            }
+        //let rc_object = function.as_rc_object().clone();
+        //match function.as_rc_object().as_ref() {
+        //    Obj::Function(_) => {
+        if !function.is_function() {
+            panic!("{} is not a Function", function);
         }
+        Self { 
+            function, 
+            upvalues: vec![],
+        }
+        //    }
+        //    _ => {
+        //        panic!("{} is not a Function", function);
+        //    }
+        //}
     }
     
     pub fn function(&self) -> &Function {
-        return self.rc_function.as_function();
+        return self.function.as_function();
     }
 
 // This may only be needed for GC. Not sure.    

@@ -5,7 +5,7 @@ mod test;
 pub mod upvalue;
 use upvalue::Upvalue;
 
-use std::rc::Rc;
+//use std::rc::Rc;
 //use std::cell::RefCell;
 use std::borrow::Borrow;
 
@@ -109,7 +109,7 @@ impl VM {
         
         loop {
             let ip = self.read_callframe().ip();
-            let fn_name = self.read_callframe().read_function().name();
+            let fn_name = self.read_callframe().function_ref().name();
 
             // Trace VM state
             println!("IP={}:0x{:04x} SP=0x{:04x}", fn_name, ip, self.stack.size());
@@ -218,7 +218,7 @@ impl VM {
                                 "{} at ip={}\n{:?}", 
                                 message,
                                 ip, 
-                                self.read_callframe().read_function()
+                                self.read_callframe().function_ref()
                             );
                             return -1;
                         }
@@ -252,7 +252,7 @@ impl VM {
 
     fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {
         //let value = self.constants.value_by_id(id).clone();
-        let value = self.read_callframe().read_function().read_constants().value_by_id(id).clone();
+        let value = self.read_callframe().function_ref().read_constants().value_by_id(id).clone();
         self.push(value);
         Ok(())
     }
@@ -408,9 +408,10 @@ impl VM {
         // How do I assign to this?
         //self.callframe().closure().upvalue_by_id(id);
         
-        self.callframe().closure_mut().upvalue_mut_by_id(id).set(value);
+//        self.callframe().closure_mut().upvalue_mut_by_id(id).set(value);
+        panic!("OpCode SetUpvalue not implemented.");
 
-        Ok(())
+//        Ok(())
     }
 
     fn opcode_setupvalue8(&mut self) -> Result<(), String> {
@@ -451,8 +452,8 @@ impl VM {
 
     fn opcode_capture(&mut self, id: usize) -> Result<(), String> {
         // Get the function from constants table
-        let value = self.read_callframe().read_function().read_constants().value_by_id(id).clone();
-        let upvalue_count = value.as_rc_object().as_function().upvalue_count();
+        let value = self.read_callframe().function_ref().read_constants().value_by_id(id).clone();
+        let upvalue_count = value.as_function().upvalue_count();
         // Wrap it in a closure
         let mut closure = Closure::new(value);
         
@@ -679,18 +680,20 @@ impl VM {
         return Ok(());
     }
 
-    fn call(&mut self, rc_closure: Rc<Obj>, argc: u8) {
-        if let Obj::Closure(closure) = rc_closure.borrow() {
-            let want_argc = closure.function().arity();
+//    fn call(&mut self, rc_closure: Rc<Obj>, argc: u8) {
+    fn call(&mut self, callee: Value, argc: u8) {
+//        if let Obj::Closure(closure) = rc_closure.borrow() {
+            let want_argc = callee.as_closure().function().arity();
             if argc != want_argc {
                 // TODO: Proper error handling
                 panic!("Expected {} arguments but got {}", want_argc, argc);
             }
-        }
+//        }
 
 //        let stack_bottom = (self.stack.size() as u32) - (argc as u32);
         let stack_bottom = (self.stack.size() as u32) - (argc as u32) - 1;
-        let callframe = CallFrame::new(rc_closure, stack_bottom);
+//        let callframe = CallFrame::new(rc_closure, stack_bottom);
+        let callframe = CallFrame::new(callee, stack_bottom);
         self.callframes.push(callframe);
     }
     
@@ -698,11 +701,12 @@ impl VM {
     fn call_value(&mut self, value: Value, argc: u8) {
         match value {
             Value::Obj(ref obj) => {
-                let rc_object = value.as_rc_object();
+                //let rc_object = value.as_rc_object();
                 match obj.borrow() {
                     Obj::Closure(_) => {
                         //let value = self.pop();
-                        self.call(rc_object, argc);
+                        //self.call(rc_object, argc);
+                        self.call(value, argc);
                     }
                     _ => {
                         panic!("VM.call_value({}, {}) not implemented.", value, argc);

@@ -53,12 +53,62 @@ impl Value {
             _ => panic!("{:?} is not a Number", self),
         }
     }
-    pub fn as_rc_object(&self) -> Rc<Obj> {
+
+//    pub fn as_rc_object(&self) -> &Rc<Obj> {
+//        match self {
+//            Value::Obj(obj) => return &obj,
+//            _ => panic!("{:?} is not an Object", self),
+//        }
+//    }
+    
+    pub fn is_string(&self) -> bool {
         match self {
-            Value::Obj(obj) => return obj.clone(),
-            _ => panic!("{:?} is not an Object", self),
+            Value::Obj(obj) 	=> obj.is_string(),
+            _ 			=> false
         }
     }
+
+    pub fn is_function(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> obj.is_function(),
+            _ 			=> false
+        }
+    }
+
+    pub fn is_closure(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> obj.is_closure(),
+            _ 			=> false
+        }
+    }
+
+    pub fn as_string(&self) -> &String {
+        match self {
+            Value::Obj(obj) 	=> obj.as_string(),
+            _ 			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_function(&self) -> &Function {
+        match self {
+            Value::Obj(obj) 	=> obj.as_function(),
+            _ 			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_closure(&self) -> &Closure {
+        match self {
+            Value::Obj(obj) 	=> obj.as_closure(),
+            _ 			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
     
     pub fn truthy(&self) -> bool {
         match self {

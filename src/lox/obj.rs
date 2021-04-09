@@ -60,12 +60,42 @@ impl Obj {
 //            _ => panic!("{} is not a String Object"),
 //        }
 //    }
+
+    pub fn is_string(&self) -> bool {
+        match self {
+            Obj::String(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_function(&self) -> bool {
+        match self {
+            Obj::Function(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_closure(&self) -> bool {
+        match self {
+            Obj::Closure(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn as_string(&self) -> &String {
+        match self {
+            Obj::String(s) => return &s,
+            _ => panic!("{:?} is not a Function Object", self),
+        }
+    }
+
     pub fn as_function(&self) -> &Function {
         match self {
             Obj::Function(f) => return &f,
             _ => panic!("{:?} is not a Function Object", self),
         }
     }
+
     pub fn as_closure(&self) -> &Closure {
         match self {
             Obj::Closure(c) => return &c,

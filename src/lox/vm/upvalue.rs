@@ -32,28 +32,13 @@ impl<T: Clone + std::fmt::Display> Upvalue<T> {
     }
     
     pub fn get(&self) -> T {
-        // self.value is Rc<RefCell<T>>
-        // self.value.as_ref() is RefCell<T>
-        // self.value.as_ref().borrow() -->  expected `&T`, found struct `Ref`
-        //let inner = self.value.as_ref().borrow();
-        //println!("inner={}", inner);        
         return self.value.borrow().clone();
-//        return inner.clone(); // 
     }
     
-    pub fn set(&mut self, value: T) {
-        println!("Upvalue.set() value changed from {} to {}", self.value.borrow(), value);
-        *self.value.borrow_mut() = value;
-    }
-    
-//    fn rc(&self) -> &Rc<Value> {
-//        return &self.rc_value;
+//    pub fn set(&mut self, value: T) {
+//        println!("Upvalue.set() value changed from {} to {}", self.value.borrow(), value);
+//        *self.value.borrow_mut() = value;
 //    }
-    
-//    fn get(&self) -> &Value {
-//        return self.rc_value.as_ref();
-//    }
-
     
 }
 
