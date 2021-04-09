@@ -235,9 +235,11 @@ impl Parser {
         // Body
         self.consume(TokenKind::LeftCurly, "Expect '{' before function body.", input, output);
         self.block(input, output); // Handles the closing curly
-        self.emit_return(output);
         
-        //self.end_scope(output); // Not needed since parser exits here
+        self.emit_return(output);
+
+        //self.end_scope(output); // Not needed and code would be unreachable
+        
         Ok(())
     }
     
@@ -373,7 +375,7 @@ impl Parser {
             }
             None => {
                 // TODO: Proper error handling
-                panic!("Undeclared variable");
+                panic!("Undeclared variable \"{}\"", name_token.lexeme());
             }
         }
     }
@@ -399,15 +401,17 @@ impl Parser {
     fn end_scope(&mut self, output: &mut ParserOutput) {
         self.scopes.pop();
         let scope_depth = self.scopes.len();
-        //println!("Parser.end_scope() depth={}", depth);
+        println!("Parser.end_scope() depth={}", scope_depth);
         loop {
             if output.locals.local_count() == 0 { break; }
             if output.locals.last_local().unwrap().depth() <= scope_depth { break; }
-            //println!("Parser.end_scope() destroy local variable '{}'", self.locals.last().unwrap().name());
+            println!("Parser.end_scope() destroy local variable '{}'", output.locals.last_local().unwrap().name());
 
             if output.locals.last_local().unwrap().is_captured() {
+                println!(" with close upvalue");
                 output.compiler.emit_op(&OpCode::CloseUpvalue);
             } else {
+                println!(" with pop");
                 output.compiler.emit_op(&OpCode::Pop);
             }
             output.locals.pop_local();
@@ -444,10 +448,29 @@ impl Parser {
         
         // Wrap the compiled Function in a Closure and store as a constant
         function = inner_output.compiler.take_function();
+        let upvalues = output.locals.upvalue_count();
+        function.set_upvalue_count(upvalues);
         let value = Value::function(function);
         println!("{:?}", value);
         let constant_id = output.compiler.make_constant(value);
         output.compiler.emit_op_variant(&OpCodeSet::capture(), constant_id as u64);
+        for i in 0..upvalues {
+            let upvalue = output.locals.upvalue_ref_by_id(i);
+            let local_bit = if upvalue.is_local() { 128 } else { 0 };
+            let id = upvalue.id();
+            let mut id_len = 1;
+            if id > 255 { id_len = 2; }
+            if id > 65535 { id_len = 4; }
+            output.compiler.emit_byte(local_bit + id_len);
+            match id_len {
+                1 => output.compiler.emit_byte(id as u8),
+                2 => output.compiler.emit_word(id as u16),
+                4 => output.compiler.emit_dword(id as u32),
+                _ => {}, // Impossible
+            }
+        }
+        
+        
         output.locals.end_function();
     }
 

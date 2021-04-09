@@ -1,7 +1,6 @@
 
 use std::rc::Rc;
 use std::borrow::Borrow;
-use std::ptr;
 
 use super::obj::Obj;
 use super::function::Function;
@@ -38,6 +37,9 @@ impl Value {
     pub fn closure(c: Closure) -> Value {
         Value::Obj(Rc::new(Obj::closure(c)))
     }
+//    pub fn upvalue(v: Value) -> Value {
+//        Value::Obj(Rc::new(Obj::upvalue(v)))
+//    }
     
     pub fn as_boolean(&self) -> bool {
         match self {
@@ -172,16 +174,7 @@ impl PartialEq for Value {
             (Value::Null, Value::Null) 			 => true,
             (Value::Bool(a), Value::Bool(b)) 		 => a == b,
             (Value::Number(a), Value::Number(b)) 	 => a == b,
-            (Value::Obj(ra), Value::Obj(rb)) => {
-                // Value::Obj is Rc<Obj>, dereference and compare
-                match (ra.borrow(), rb.borrow()) {
-                    (Obj::String(a), Obj::String(b)) 	 => a == b,
-                    // Obj types other than Obj::String must be same object
-                    (Obj::Function(a), Obj::Function(b)) => ptr::eq(a, b),
-                    (Obj::Closure(a), Obj::Closure(b)) 	 => ptr::eq(a, b),
-                    _ => false, // Obj types mismatch
-                }
-            }
+            (Value::Obj(ra), Value::Obj(rb)) 	 	 => ra == rb,
             _ => false, // Value types mismatch
         }    
     }
@@ -192,13 +185,7 @@ impl std::cmp::PartialOrd for Value {
     fn partial_cmp(&self, other: &Value) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
-            (Value::Obj(ra), Value::Obj(rb)) => {
-                // Value::Obj is Rc<Obj>, dereference and compare
-                match (ra.borrow(), rb.borrow()) {
-                    (Obj::String(a), Obj::String(b)) => Some(a.cmp(b)),
-                    _ => None, // Obj types mismatch or can't be ordered
-                }
-            }
+            (Value::Obj(ra), Value::Obj(rb)) => ra.partial_cmp(rb),
             _ => None, // Value types mismatch
         }
     }
@@ -211,20 +198,8 @@ impl std::fmt::Display for Value {
             Value::Null		=> write!(f, "Value::Null"),
             Value::Bool(b)	=> write!(f, "Value::Bool({})", b),
             Value::Number(n)	=> write!(f, "Value::Number({})", n),
-            Value::Obj(ra)	=> {
-                match ra.borrow() {
-                    Obj::String(st) => {
-                        // Escape non-ascii and non-printable ascii chars
-                        write!(f, "Value::String({:?})", st)
-                    }
-                    Obj::Function(fu) => {
-                        write!(f, "Value::Function({})", fu.name())
-                    }
-                    Obj::Closure(cl) => {
-                        write!(f, "Value::Closure({})", cl.function().name())
-                    }
-                }
-            }
+            Value::Obj(rc)	=> write!(f, "Value::{}", rc),
         }
     }
 }
+

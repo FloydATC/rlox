@@ -4,7 +4,7 @@ use std::rc::Rc;
 use super::opcode::OpCode;
 use super::obj::Obj;
 use super::function::Function;
-//use super::closure::Closure;
+use super::closure::Closure;
 
 
 #[allow(dead_code)]
@@ -26,8 +26,18 @@ impl CallFrame {
         }
     }
 
+    pub fn closure(&self) -> &Closure {
+        return self.closure.as_closure();
+    }
+
+    pub fn closure_mut(&mut self) -> &mut Closure {
+        let inner = Rc::get_mut(&mut self.closure)
+            .expect("Could not get mutable reference to self.closure, because other references exist.");
+        return inner.as_closure_mut();
+    }
+
     pub fn read_function(&self) -> &Function {
-        let closure = self.closure.as_closure(); // Hmm.
+        let closure = self.closure.as_closure();
         return closure.function();
     }
     

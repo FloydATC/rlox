@@ -2,7 +2,11 @@
 #[cfg(test)]
 mod test;
 
+pub mod upvalue;
+use upvalue::Upvalue;
+
 use std::rc::Rc;
+//use std::cell::RefCell;
 use std::borrow::Borrow;
 
 use super::callframe::CallFrame;
@@ -29,6 +33,7 @@ pub struct VM {
     //constants: Constants<Value>,
     globals: Globals<Value>,
     //objects: Vec<Obj>,
+    open_upvalues: Vec<Upvalue<Value>>, // Note: Runtime representation
 }
 
 
@@ -40,6 +45,7 @@ impl VM {
             //constants:		Constants::new(),
             globals:		Globals::new(),
             //objects: 		vec![],
+            open_upvalues:	vec![],
         }
     }
 }
@@ -103,9 +109,10 @@ impl VM {
         
         loop {
             let ip = self.read_callframe().ip();
+            let fn_name = self.read_callframe().read_function().name();
 
             // Trace VM state
-            println!("IP=0x{:04x} SP=0x{:04x}", ip, self.stack.size());
+            println!("IP={}:0x{:04x} SP=0x{:04x}", fn_name, ip, self.stack.size());
             println!(" stack={:?}", self.stack);
 
             let opcode = self.callframe().read_op();
@@ -132,7 +139,8 @@ impl VM {
                         }
                         OpCode::Return 		=> {
                             let return_value = self.pop();
-                            //self.close_upvalues();
+                            println!("OpCode::Return, close_upvalues");
+                            self.close_upvalues(self.read_callframe().stack_bottom() as usize);
                             self.callframes.pop();
                             if self.callframes.len() == 0 { return 0; }
                             
@@ -289,8 +297,12 @@ impl VM {
         return self.opcode_getlocal(id);
     }
 
-    fn opcode_getupvalue(&mut self, _id: usize) -> Result<(), String> {
-        Err("OpCode GETUPVALUE not implemented".to_string())
+    fn opcode_getupvalue(&mut self, id: usize) -> Result<(), String> {
+        println!("getupvalue id={} of closure upvalues", id);
+        let value: Value = self.callframe().closure().upvalue_ref_by_id(id).get().clone();
+        println!(" got value={}", value);
+        self.push(value);
+        Ok(())
     }
 
     fn opcode_getupvalue8(&mut self) -> Result<(), String> {
@@ -388,8 +400,17 @@ impl VM {
         return self.opcode_setlocal(id);
     }
 
-    fn opcode_setupvalue(&mut self, _id: usize) -> Result<(), String> {
-        Err("OpCode SETUPVALUE not implemented".to_string())
+    fn opcode_setupvalue(&mut self, id: usize) -> Result<(), String> {
+        println!("setupvalue id={} of closure upvalues", id);
+        let value = self.peek(0).clone();
+        println!(" value={}", value);
+        
+        // How do I assign to this?
+        //self.callframe().closure().upvalue_by_id(id);
+        
+        self.callframe().closure_mut().upvalue_mut_by_id(id).set(value);
+
+        Ok(())
     }
 
     fn opcode_setupvalue8(&mut self) -> Result<(), String> {
@@ -431,8 +452,34 @@ impl VM {
     fn opcode_capture(&mut self, id: usize) -> Result<(), String> {
         // Get the function from constants table
         let value = self.read_callframe().read_function().read_constants().value_by_id(id).clone();
+        let upvalue_count = value.as_rc_object().as_function().upvalue_count();
         // Wrap it in a closure
-        let closure = Closure::new(value);
+        let mut closure = Closure::new(value);
+        
+        // This opcode is followed by one variable length entry per upvalue
+        for i in 0..upvalue_count {
+            println!("VM capturing upvalue {} of {}", i, upvalue_count);
+        
+            // Decode is_local and id
+            let byte = self.callframe().read_byte();
+            let is_local = if (byte & 128) == 128 { true } else { false };
+            let id_len = byte & 127; // 1=byte, 2=word, 4=dword
+            let mut id: usize = 0;
+            match id_len {
+                1 => id = self.callframe().read_byte() as usize,
+                2 => id = self.callframe().read_word() as usize,
+                4 => id = self.callframe().read_dword() as usize,
+                _ => {}
+            }
+            // Capture upvalue and insert into closure
+            println!("  id={} is_local={}", id, is_local);
+            if is_local {
+                closure.add_upvalue(self.capture_upvalue(id));
+            } else {
+                closure.add_upvalue(self.read_callframe().closure().upvalue_ref_by_id(id).clone());
+            }
+        }
+        
         // Push the closure onto the stack
         self.push(Value::closure(closure));
         Ok(())
@@ -669,6 +716,67 @@ impl VM {
     }
 }
 
+
+
+#[allow(dead_code)]
+impl VM {
+    // Capturing an upvalue means copying a value from the stack
+    // and storing it in self.open_upvalues: Vec<Upvalue<Value>>
+    // clox stores an array of pointers and hijacks the GC code,
+    // while I'm relying on a vector.
+    fn capture_upvalue(&mut self, slot: usize) -> Upvalue<Value> {
+        println!("VM.capture_upvalue() slot={}", slot);
+    
+        // If slot is already captured, return the upvalue index
+        // Why are we doing this?? 
+//        for (index, upvalue) in self.open_upvalues.iter().enumerate() {
+//            println!("VM.capture_upvalue() scanning index={} slot={}", index, upvalue.slot);
+//            if upvalue.slot == slot { return upvalue.rc().clone(); }
+//        }
+        
+        let depth = self.stack.size()
+            - self.read_callframe().stack_bottom() as usize
+            - 1
+            - slot;
+        let index = self.open_upvalues.len();
+        println!("VM.capture_upvalue() capturing as index={} of open_upvalues", index);
+        self.open_upvalues.push(Upvalue::new(slot, self.stack.peek(depth).clone()));
+        return self.open_upvalues.last().unwrap().clone();
+    }
+
+    // What exactly does closing an upvalue mean? Not sure.    
+    fn close_upvalues(&mut self, last_slot: usize) {
+        println!("VM.close_upvalues() last_slot={}", last_slot);
+        loop {
+            match self.open_upvalues.first_mut() {
+                Some(upvalue) => {
+                    // while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
+                    // Keep going while last_slot >= upvalue.slot()             
+                    if upvalue.slot() < last_slot { 
+                        println!("exiting because upvalue.slot={} and last_slot={}", upvalue.slot(), last_slot);
+                        return; 
+                    }
+                    
+                    // clox contains this bizarre code:
+                    // upvalue->closed = *upvalue->location; // closed is now a value..?
+                    // upvalue->location = &upvalue->closed; // location now points at closed..?
+                    // This could be just because of the GC and stuff. My head hurts.
+
+                    // The only bit that makes sort of sense to me is this:
+                    // vm->openUpvalues = upvalue->next;
+                    
+                    // In clox, openUpvalues is a linked list so we must walk it 
+                    // from the start, not sure if that makes sense here.
+                }
+                None => {
+                    return;
+                }
+            }
+            self.open_upvalues.remove(0);
+            println!("VM.close_upvalues() {} upvalues open", self.open_upvalues.len());
+        }
+    }
+}
 
 impl Drop for VM {
     fn drop(&mut self) {

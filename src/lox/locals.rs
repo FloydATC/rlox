@@ -1,7 +1,10 @@
 
+mod upvalue;
 
+use upvalue::Upvalue;
 use super::local::Local;
-use super::upvalue::Upvalue;
+
+//use super::upvalue::Upvalue;
 
 
 // A LocalSet represents a set of local variables and upvalues
@@ -102,6 +105,7 @@ impl LocalSet {
     // b) an upvalue (if is_local == false)
     // in the parent LocalSet
     fn add_upvalue(&mut self, id: usize, is_local: bool) -> usize {
+        println!("LocalSet.add_upvalue() id={} is_local={}", id, is_local);
     
         // Scan existing upvalues
         for (i, upvalue) in self.upvalues.iter().enumerate() {
@@ -120,6 +124,7 @@ impl LocalSet {
     // or create one if name is found to be a local
     // in one of the parents
     fn resolve_upvalue(&mut self, name: &str) -> Option<usize> {
+        println!("LocalSet.resolve_upvalue() name={}", name);
         match &mut self.parent {
             None => {
                 // If we have no parent, there can be no upvalues

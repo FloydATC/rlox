@@ -14,7 +14,7 @@ mod scanner;
 mod tokenizer;
 mod token;
 mod local;
-mod upvalue;
+//mod upvalue;
 mod scope;
 mod codeloop;
 mod parser;

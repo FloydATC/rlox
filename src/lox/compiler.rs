@@ -1,6 +1,8 @@
 
-//use super::scanner::Scanner;
-//use super::parser::Parser;
+// Unlike clox, rlox splits parsing and compilation into separate
+// modules; the compiler deals only with the actual encoding of 
+// logical opcodes into bytecode representation for a single function
+
 use super::opcode::{OpCode, OpCodeSet};
 use super::value::Value;
 use super::function::Function;
@@ -11,16 +13,13 @@ mod test;
 
 
 // ======== Layout ========
-//#[allow(dead_code)]
 pub struct Compiler {
-    //enclosing: 	Option<&mut Compiler>,
     function: 	Option<Function>,
 }
 
 
 // ======== Public interface ========
-#[allow(dead_code)]
-//#[allow(unused_mut)]
+//#[allow(dead_code)]
 impl Compiler {
     pub fn new(function: Function) -> Compiler {
         //println!("Compiler::new()");
@@ -42,11 +41,6 @@ impl Compiler {
             .read_chunk()
             .length();
     }
-
-//    pub fn make_constant(&mut self, _value: Value) -> u32 {
-//        return 255; // TODO
-//    }
-
 
     // Pick OpCode variant based on argument size
     pub fn emit_op_variant(&mut self, ops: &OpCodeSet, arg: u64) {

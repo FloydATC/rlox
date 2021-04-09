@@ -1,5 +1,8 @@
 
-
+// This is the compile time representation of an upvalue;
+// it contains information about what outer upvalue or local
+// this upvalue refers to.
+// The runtime representation of an upvalue is nested in "vm.rs"
 #[allow(dead_code)]
 pub struct Upvalue {
     id:		usize,
@@ -24,3 +27,4 @@ impl Upvalue {
         return self.is_local;
     }
 }
+

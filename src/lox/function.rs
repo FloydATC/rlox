@@ -14,11 +14,12 @@ pub enum FunctionKind {
 
 //#[allow(dead_code)]
 pub struct Function {
-    name:  	String,
-    kind:	FunctionKind,
-    arity: 	u8,
-    chunk: 	Chunk,
-    constants:  Constants<Value>,
+    name:  		String,
+    kind:		FunctionKind,
+    arity: 		u8,
+    chunk: 		Chunk,
+    constants:  	Constants<Value>,
+    upvalue_count:	usize,
 }
 
 
@@ -26,11 +27,12 @@ pub struct Function {
 impl Function {
     pub fn new(name: &str, kind: FunctionKind) -> Function {
         Function {
-            name:	name.to_string(),
+            name:		name.to_string(),
             kind,
-            arity:	0,
-            chunk: 	Chunk::new(),
-            constants:	Constants::new(),
+            arity:		0,
+            chunk: 		Chunk::new(),
+            constants:		Constants::new(),
+            upvalue_count:	0,
         }
     }
     pub fn chunk(&mut self) -> &mut Chunk {
@@ -62,6 +64,14 @@ impl Function {
 
     pub fn read_constants(&self) -> &Constants<Value> {
         return &self.constants;
+    }
+    
+    pub fn set_upvalue_count(&mut self, upvalue_count: usize) {
+        self.upvalue_count = upvalue_count;
+    }
+    
+    pub fn upvalue_count(&self) -> usize {
+        return self.upvalue_count;
     }
 }
 

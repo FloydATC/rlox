@@ -106,9 +106,9 @@ impl Chunk {
             OpCode::SetGlobal16 	=> self.opcode_word(ip),
             OpCode::SetGlobal32 	=> self.opcode_dword(ip),
 
-            OpCode::Capture8 		=> self.opcode_byte(ip),
-            OpCode::Capture16 		=> self.opcode_word(ip),
-            OpCode::Capture32 		=> self.opcode_dword(ip),
+            OpCode::Capture8 		=> self.opcode_capture8(ip),
+            OpCode::Capture16 		=> self.opcode_capture16(ip),
+            OpCode::Capture32 		=> self.opcode_capture32(ip),
 
             OpCode::Not 		=> self.opcode_immediate(ip),
             OpCode::Negate 		=> self.opcode_immediate(ip),
@@ -181,14 +181,36 @@ impl Chunk {
         return result;
     }
 
-//    fn opcode_bad(&self, ip: &mut usize) -> String {
-//        let mut result = String::new();
-//        result += "**UNKNOWN**";
-//        *ip = *ip + 1;
-//        return result;
-//    }
-}
 
+    // I have no idea how to decode these from the viewpoint
+    // of a chunk because they require insight into the function
+    // that the opcode will operate on.
+    fn opcode_capture8(&self, ip: &mut u32) -> String {
+        let mut result = String::new();
+        result = result + self.opcode_byte(ip).as_str();
+        result = result + self.opcode_capture_upvalues(ip).as_str();
+        return result;
+    }
+
+    fn opcode_capture16(&self, ip: &mut u32) -> String {
+        let mut result = String::new();
+        result = result + self.opcode_word(ip).as_str();
+        result = result + self.opcode_capture_upvalues(ip).as_str();
+        return result;
+    }
+
+    fn opcode_capture32(&self, ip: &mut u32) -> String {
+        let mut result = String::new();
+        result = result + self.opcode_dword(ip).as_str();
+        result = result + self.opcode_capture_upvalues(ip).as_str();
+        return result;
+    }
+    
+    fn opcode_capture_upvalues(&self, _ip: &mut u32) -> String {
+        return " // WARNING: Disassembly incomplete".to_string();
+    }
+
+}
 
 impl std::fmt::Debug for Chunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
