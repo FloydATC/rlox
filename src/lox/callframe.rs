@@ -10,35 +10,36 @@ use super::closure::Closure;
 
 #[allow(dead_code)]
 pub struct CallFrame {
-    closure: 		Value,
+    closure_value:	Value,
     ip: 		u32,
     stack_bottom:	u32,
 }
 
 
-#[allow(dead_code)]
+//#[allow(dead_code)]
 impl CallFrame {
     pub fn new(closure: Value, stack_bottom: u32) -> CallFrame {
+        if !closure.is_closure() {
+            panic!("{} is not a Closure", closure);
+        }
         println!("CallFrame.new() stack_bottom={}", stack_bottom);
         CallFrame { 
-            closure,
-            ip: 	0,
+            closure_value:	closure,
+            ip: 		0,
             stack_bottom,
         }
     }
 
     pub fn closure(&self) -> &Closure {
-        return self.closure.as_closure();
+        return self.closure_value.as_closure();
     }
 
-//    pub fn closure_mut(&mut self) -> &mut Closure {
-//        let inner = Rc::get_mut(&mut self.closure.as_rc_object())
-//            .expect("Could not get mutable reference to self.closure, because other references exist.");
-//        return inner.as_closure_mut();
-//    }
+    pub fn closure_mut(&mut self) -> &mut Closure {
+        return self.closure_value.as_closure_mut();
+    }
 
     pub fn function_ref(&self) -> &Function {
-        return self.closure.as_closure().function();
+        return self.closure_value.as_closure().function();
     }
     
     pub fn read_op(&mut self) -> Option<OpCode> {

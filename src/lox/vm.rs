@@ -405,13 +405,9 @@ impl VM {
         let value = self.peek(0).clone();
         println!(" value={}", value);
         
-        // How do I assign to this?
-        //self.callframe().closure().upvalue_by_id(id);
-        
-//        self.callframe().closure_mut().upvalue_mut_by_id(id).set(value);
-        panic!("OpCode SetUpvalue not implemented.");
+        self.callframe().closure_mut().upvalue_mut_by_id(id).set(value);
 
-//        Ok(())
+        Ok(())
     }
 
     fn opcode_setupvalue8(&mut self) -> Result<(), String> {

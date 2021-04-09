@@ -122,6 +122,17 @@ impl Value {
         }
     }
     
+    pub fn as_closure_mut(&mut self) -> &mut Closure {
+//        match self {
+//            Value::Obj(obj) 	=> {
+//            }
+//            _ 			=> {
+//                panic!("{} is not an object", self)
+//            }
+//        }
+        panic!("I have no idea how to do this");
+    }
+    
     
     pub fn is_truthy(&self) -> bool {
         match self {

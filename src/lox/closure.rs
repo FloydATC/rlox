@@ -1,22 +1,18 @@
 
 
-//use std::rc::Rc;
-
 use super::function::Function;
 use super::value::Value;
-//use super::obj::Obj;
 use super::vm::upvalue::Upvalue; // Runtime representation
+
 
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Closure {
-    // This is a reference to a function that lives in a Value
-    // stored in a constants table somewhere. 
-    //rc_function: Rc<Obj>,
-    function: 	Value,
+    // Functions are first class objects so they're stored in Value
+    function_value: 	Value,
     
-    // I *think* this should be a vector of references to values that
-    // live in vm.open_upvalues
+    // I *think* this must be a vector of references to values
+    // An Upvalue object contains a slot no. and Rc<RefCell<T>>
     upvalues: 	Vec<Upvalue<Value>>,
 }
 
@@ -24,28 +20,20 @@ pub struct Closure {
 #[allow(dead_code)]
 impl Closure {
     pub fn new(function: Value) -> Self {
-        //let rc_object = function.as_rc_object().clone();
-        //match function.as_rc_object().as_ref() {
-        //    Obj::Function(_) => {
         if !function.is_function() {
             panic!("{} is not a Function", function);
         }
         Self { 
-            function, 
-            upvalues: vec![],
+            function_value:	function, 
+            upvalues: 		vec![],
         }
-        //    }
-        //    _ => {
-        //        panic!("{} is not a Function", function);
-        //    }
-        //}
     }
     
     pub fn function(&self) -> &Function {
-        return self.function.as_function();
+        return self.function_value.as_function();
     }
 
-// This may only be needed for GC. Not sure.    
+// This may only be needed for GC in clox. Not sure.    
 //    pub fn upvalue_count(&self) -> usize {
 //        return self.rc_upvalues.len();
 //    }

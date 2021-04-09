@@ -35,10 +35,10 @@ impl<T: Clone + std::fmt::Display> Upvalue<T> {
         return self.value.borrow().clone();
     }
     
-//    pub fn set(&mut self, value: T) {
-//        println!("Upvalue.set() value changed from {} to {}", self.value.borrow(), value);
-//        *self.value.borrow_mut() = value;
-//    }
+    pub fn set(&mut self, value: T) {
+        println!("Upvalue.set() slot={} change value from {} to {}", self.slot, self.value.borrow(), value);
+        *self.value.borrow_mut() = value;
+    }
     
 }
 
