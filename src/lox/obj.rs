@@ -1,32 +1,7 @@
 
-//use std::rc::Rc;
-//use std::ptr;
 
 use super::function::Function;
 use super::closure::Closure;
-//use super::value::Value;
-
-
-// This is the runtime representation of an Upvalue 
-// For the compile time representation, see "upvalue.rs"
-// The question is, do we really need this?
-// clox keeps upvalues here to make GC easy. We don't GC.
-//#[allow(dead_code)]
-//#[derive(Debug)]
-//pub struct Upvalue {
-//    location:	Value,	// reference? Rc? Box?
-//    closed:	bool,
-//    next:	???,	// Option?
-//}
-
-//impl Upvalue {
-//    fn new(v: Value) -> Self {
-//        Self {
-//            location:	v,
-//            closed:	false,
-//        }
-//    }
-//}
 
 
 #[allow(dead_code)]
@@ -35,7 +10,6 @@ pub enum Obj {
     String(String),
     Function(Function),
     Closure(Closure),
-//    Upvalue(Upvalue),
 }
 
 
@@ -50,16 +24,6 @@ impl Obj {
     pub fn closure(c: Closure) -> Obj {
         Obj::Closure(c)
     }
-//    pub fn upvalue(v: Value) -> Obj {
-//        Obj::Upvalue(Upvalue::new(v))
-//    }
-
-//    pub fn as_string(&self) -> &str {
-//        match self {
-//            Obj::String(s) => return &s,
-//            _ => panic!("{} is not a String Object"),
-//        }
-//    }
 
     pub fn is_string(&self) -> bool {
         match self {
@@ -79,6 +43,13 @@ impl Obj {
         match self {
             Obj::Closure(_) 	=> true,
             _			=> false,
+        }
+    }
+
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Obj::String(s)	=> s != "",	// true if not empty
+            _			=> true,	// All other objects are truthy
         }
     }
 
@@ -147,12 +118,8 @@ impl std::fmt::Display for Obj {
             Obj::Closure(cl) => {
                 write!(f, "Obj::Closure({})", cl.function().name())
             }
-//            Obj::Upvalue(v) => {
-//                write!(f, "Obj::Upvalue({})", v.location)
-//            }
         }
     }
 }
-
 
 

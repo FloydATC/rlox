@@ -38,7 +38,6 @@ impl CallFrame {
 //    }
 
     pub fn function_ref(&self) -> &Function {
-        //let closure = self.closure.as_rc_object().as_closure();
         return self.closure.as_closure().function();
     }
     

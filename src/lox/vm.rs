@@ -503,7 +503,7 @@ impl VM {
 
     fn opcode_not(&mut self) -> Result<(), String> {
         let value = self.pop();
-        self.push(Value::boolean(!value.truthy()));
+        self.push(Value::boolean(!value.is_truthy()));
         Ok(())
     }
     
@@ -622,13 +622,13 @@ impl VM {
     
     fn opcode_jmpfalsep(&mut self) -> Result<(), String> {
         let ip = self.callframe().read_dword();
-        if !self.pop().truthy() { self.callframe().jmp(ip); }
+        if !self.pop().is_truthy() { self.callframe().jmp(ip); }
         Ok(())
     }
 
     fn opcode_jmpfalseq(&mut self) -> Result<(), String> {
         let ip = self.callframe().read_dword();
-        if !self.peek(0).truthy() { self.callframe().jmp(ip); }
+        if !self.peek(0).is_truthy() { self.callframe().jmp(ip); }
         Ok(())
     }
 

@@ -1,4 +1,7 @@
 
+#[cfg(test)]
+mod test;
+
 use std::rc::Rc;
 use std::borrow::Borrow;
 
@@ -7,7 +10,6 @@ use super::function::Function;
 use super::closure::Closure;
 
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Value {
     Null,
@@ -37,9 +39,6 @@ impl Value {
     pub fn closure(c: Closure) -> Value {
         Value::Obj(Rc::new(Obj::closure(c)))
     }
-//    pub fn upvalue(v: Value) -> Value {
-//        Value::Obj(Rc::new(Obj::upvalue(v)))
-//    }
     
     pub fn as_boolean(&self) -> bool {
         match self {
@@ -54,13 +53,27 @@ impl Value {
         }
     }
 
-//    pub fn as_rc_object(&self) -> &Rc<Obj> {
-//        match self {
-//            Value::Obj(obj) => return &obj,
-//            _ => panic!("{:?} is not an Object", self),
-//        }
-//    }
-    
+    pub fn is_null(&self) -> bool {
+        match self {
+            Value::Null		=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_boolean(&self) -> bool {
+        match self {
+            Value::Bool(_)	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_number(&self) -> bool {
+        match self {
+            Value::Number(_)	=> true,
+            _			=> false,
+        }
+    }
+
     pub fn is_string(&self) -> bool {
         match self {
             Value::Obj(obj) 	=> obj.is_string(),
@@ -110,17 +123,12 @@ impl Value {
     }
     
     
-    pub fn truthy(&self) -> bool {
+    pub fn is_truthy(&self) -> bool {
         match self {
-            Value::Null => false,
-            Value::Bool(b) => *b,
-            Value::Number(n) => *n != 0.0,
-            Value::Obj(ra) => {
-                match &*ra.borrow() {
-                    Obj::String(a) => a.len() > 0,
-                    _ => true,
-                }
-            }
+            Value::Null 	=> false,
+            Value::Bool(b) 	=> *b,
+            Value::Number(n) 	=> *n != 0.0,
+            Value::Obj(obj) 	=> obj.is_truthy(),
         }
     }
 }
@@ -147,7 +155,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not add operands {:?} and {:?}.", &self, &other));
+        return Err(format!("Can not add operands {} and {}.", &self, &other));
     }
 
     pub fn subtract(self: &Value, other: &Value) -> Result<Value, String> {
@@ -157,7 +165,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not subtract operands {:?} and {:?}.", &self, &other));
+        return Err(format!("Can not subtract operands {} and {}.", &self, &other));
     }
 
     pub fn multiply(self: &Value, other: &Value) -> Result<Value, String> {
@@ -168,20 +176,16 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a * b));
             }
-            (Value::Obj(ra), Value::Number(b)) => {
-                // Value::Obj is Rc<Obj>, dereference and compare
-                match &*ra.borrow() {
-                    Obj::String(a) => {
-                        let count = *b as usize;
-                        let string = a.repeat(count);
-                        return Ok(Value::string(&string));
-                    }
-                    _ => {}
+            (Value::Obj(_), Value::Number(b)) => {
+                if self.is_string() {
+                    let count = *b as usize;
+                    let string = self.as_string().repeat(count);
+                    return Ok(Value::string(&string));
                 }
             }
             _ => {}
         }
-        return Err(format!("Can not multiply operands {:?} and {:?}.", &self, &other));
+        return Err(format!("Can not multiply operands {} and {}.", &self, &other));
     }
 
     pub fn divide(self: &Value, other: &Value) -> Result<Value, String> {
@@ -191,7 +195,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not divide operands {:?} and {:?}.", &self, &other));
+        return Err(format!("Can not divide operands {} and {}.", &self, &other));
     }
 
     pub fn modulo(self: &Value, other: &Value) -> Result<Value, String> {
@@ -201,7 +205,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not divide operands {:?} and {:?}.", &self, &other));
+        return Err(format!("Can not divide operands {} and {}.", &self, &other));
     }
 }
 
@@ -235,7 +239,7 @@ impl std::cmp::PartialOrd for Value {
     fn partial_cmp(&self, other: &Value) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
-            (Value::Obj(ra), Value::Obj(rb)) => ra.partial_cmp(rb),
+            (Value::Obj(a), Value::Obj(b)) 	 => a.partial_cmp(b),
             _ => None, // Value types mismatch
         }
     }
