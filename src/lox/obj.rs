@@ -1,6 +1,7 @@
 
 
 use super::function::Function;
+use super::class::Class;
 use super::closure::Closure;
 
 
@@ -8,6 +9,7 @@ use super::closure::Closure;
 #[derive(Debug)]
 pub enum Obj {
     Function(Function),
+    Class(Class),
     Closure(Closure),
 }
 
@@ -18,6 +20,9 @@ impl Obj {
 
     pub fn function(f: Function) -> Obj {
         Obj::Function(f)
+    }
+    pub fn class(c: Class) -> Obj {
+        Obj::Class(c)
     }
     pub fn closure(c: Closure) -> Obj {
         Obj::Closure(c)
@@ -31,6 +36,13 @@ impl Obj {
     pub fn is_function(&self) -> bool {
         match self {
             Obj::Function(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_class(&self) -> bool {
+        match self {
+            Obj::Class(_) 	=> true,
             _			=> false,
         }
     }
@@ -66,12 +78,27 @@ impl Obj {
         }
     }
 
+    pub fn as_class(&self) -> &Class {
+        match self {
+            Obj::Class(c) => return &c,
+            _ => panic!("{:?} is not a Class Object", self),
+        }
+    }
+
+    pub fn as_class_mut(&mut self) -> &mut Class {
+        match self {
+            Obj::Class(c) => return c,
+            _ => panic!("{:?} is not a Class Object", self),
+        }
+    }
+
     pub fn as_closure(&self) -> &Closure {
         match self {
             Obj::Closure(c) => return &c,
             _ => panic!("{:?} is not a Closure Object", self),
         }
     }
+
     pub fn as_closure_mut(&mut self) -> &mut Closure {
         match self {
             Obj::Closure(c) => return c,
@@ -88,6 +115,7 @@ impl PartialEq for Obj {
         match (self, other) {
             // Obj types must be same object
             (Obj::Function(a), Obj::Function(b)) => std::ptr::eq(a, b),
+            (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),
             (Obj::Closure(a), Obj::Closure(b))   => std::ptr::eq(a, b),
             _ => false, // Obj types mismatch
         }
@@ -109,6 +137,9 @@ impl std::fmt::Display for Obj {
         match self {
             Obj::Function(fu) => {
                 write!(f, "Obj::Function({})", fu.name())
+            }
+            Obj::Class(cl) => {
+                write!(f, "Obj::Class({})", cl.name())
             }
             Obj::Closure(cl) => {
                 write!(f, "Obj::Closure({})", cl.name())

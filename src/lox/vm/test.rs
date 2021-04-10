@@ -1017,3 +1017,11 @@ fn vm_closure_setupvalue_3() {
     assert_eq!(rc, 468);
 }
 
+// Classes
+#[test]
+fn vm_class_empty() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c {} exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}

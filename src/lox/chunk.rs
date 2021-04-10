@@ -110,6 +110,10 @@ impl Chunk {
             OpCode::Capture16 		=> self.opcode_capture16(ip),
             OpCode::Capture32 		=> self.opcode_capture32(ip),
 
+            OpCode::Class8 		=> self.opcode_byte(ip),
+            OpCode::Class16 		=> self.opcode_word(ip),
+            OpCode::Class32 		=> self.opcode_dword(ip),
+
             OpCode::Not 		=> self.opcode_immediate(ip),
             OpCode::Negate 		=> self.opcode_immediate(ip),
 

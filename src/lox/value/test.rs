@@ -2,6 +2,7 @@
 
 use super::Value;
 use crate::lox::function::{Function, FunctionKind};
+use crate::lox::class::Class;
 use crate::lox::closure::Closure;
 
 #[test]
@@ -12,6 +13,7 @@ fn value_null() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	false);
@@ -25,6 +27,7 @@ fn value_boolean_1() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	true);
@@ -39,6 +42,7 @@ fn value_boolean_2() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	false);
@@ -53,6 +57,7 @@ fn value_number_1() {
     assert_eq!(value.is_number(), 	true);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	false);
@@ -67,6 +72,7 @@ fn value_number_2() {
     assert_eq!(value.is_number(), 	true);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	true);
@@ -81,6 +87,7 @@ fn value_number_3() {
     assert_eq!(value.is_number(), 	true);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	true);
@@ -95,6 +102,7 @@ fn value_string_1() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	true);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	false);
@@ -109,6 +117,7 @@ fn value_string_2() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	true);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	true);
@@ -124,6 +133,22 @@ fn value_function() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	true);
+    assert_eq!(value.is_class(), 	false);
+    assert_eq!(value.is_closure(), 	false);
+
+    assert_eq!(value.is_truthy(), 	true);
+}
+
+#[test]
+fn value_class() {
+    let c = Class::new("");
+    let value = Value::class(c);
+    assert_eq!(value.is_null(), 	false);
+    assert_eq!(value.is_boolean(), 	false);
+    assert_eq!(value.is_number(), 	false);
+    assert_eq!(value.is_string(), 	false);
+    assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	true);
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	true);
@@ -140,6 +165,7 @@ fn value_closure() {
     assert_eq!(value.is_number(), 	false);
     assert_eq!(value.is_string(), 	false);
     assert_eq!(value.is_function(), 	false);
+    assert_eq!(value.is_class(), 	false);
     assert_eq!(value.is_closure(), 	true);
 
     assert_eq!(value.is_truthy(), 	true);

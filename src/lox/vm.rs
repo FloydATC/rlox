@@ -10,6 +10,7 @@ use super::stack::Stack;
 use super::value::Value;
 use super::globals::Globals;
 use super::locals::Locals;
+use super::class::Class;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
@@ -166,6 +167,10 @@ impl VM {
                 OpCode::Capture8 	=> result = self.opcode_capture8(),
                 OpCode::Capture16 	=> result = self.opcode_capture16(),
                 OpCode::Capture32 	=> result = self.opcode_capture32(),
+
+                OpCode::Class8 		=> result = self.opcode_class8(),
+                OpCode::Class16 	=> result = self.opcode_class16(),
+                OpCode::Class32 	=> result = self.opcode_class32(),
 
                 OpCode::Not 		=> result = self.opcode_not(),
                 OpCode::Negate 		=> result = self.opcode_negate(),
@@ -520,6 +525,31 @@ impl VM {
     fn opcode_capture32(&mut self) -> Result<(), String> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_capture(id);
+    }
+
+    fn opcode_class(&mut self, id: usize) -> Result<(), String> {
+        println!("opcode_class({}) lookup constant", id);
+        let name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        println!("create class");
+        let class = Class::new(name.as_string());
+        println!("create value and push it");
+        self.push(Value::class(class));
+        Ok(())
+    }
+
+    fn opcode_class8(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_byte() as usize;
+        return self.opcode_class(id);
+    }
+    
+    fn opcode_class16(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_word() as usize;
+        return self.opcode_class(id);
+    }
+    
+    fn opcode_class32(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_dword() as usize;
+        return self.opcode_class(id);
     }
 
     fn opcode_not(&mut self) -> Result<(), String> {

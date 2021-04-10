@@ -47,6 +47,10 @@ pub enum OpCode {
     Capture8,
     Capture16,
     Capture32,
+
+    Class8,	// Followed by BYTE indexing table of constants
+    Class16,	// Followed by WORD indexing table of constants
+    Class32,	// Followed by DWORD indexing table of constants
     
     // Pop one value, perform operation, push result
     Not,
@@ -124,6 +128,10 @@ impl OpCode {
             OpCode::Capture16		=> { return "CAP"; }
             OpCode::Capture32		=> { return "CAP"; }
 
+            OpCode::Class8	 	=> { return "CLASS"; }
+            OpCode::Class16		=> { return "CLASS"; }
+            OpCode::Class32		=> { return "CLASS"; }
+
             OpCode::Not			=> { return "NOT"; }
             OpCode::Negate		=> { return "NEG"; }
 
@@ -191,6 +199,10 @@ impl OpCode {
         if byte == OpCode::Capture16 as u8  { return OpCode::Capture16; }
         if byte == OpCode::Capture32 as u8  { return OpCode::Capture32; }
         
+        if byte == OpCode::Class8 as u8  { return OpCode::Class8; }
+        if byte == OpCode::Class16 as u8  { return OpCode::Class16; }
+        if byte == OpCode::Class32 as u8  { return OpCode::Class32; }
+        
         if byte == OpCode::Not as u8 	{ return OpCode::Not; }
         if byte == OpCode::Negate as u8 { return OpCode::Negate; }
 
@@ -239,6 +251,13 @@ impl OpCodeSet {
             byte: 	OpCode::Capture8,
             word:	OpCode::Capture16,
             dword:	OpCode::Capture32,
+        }
+    }
+    pub fn class() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::Class8,
+            word:	OpCode::Class16,
+            dword:	OpCode::Class32,
         }
     }
     pub fn getconst() -> OpCodeSet {

@@ -46,6 +46,7 @@ pub enum TokenKind {
     
     // Keywords
     Break,
+    Class,
     Continue,
     Else,
     Exit,
@@ -175,6 +176,7 @@ impl std::fmt::Debug for TokenKind {
             
             // Keywords
             TokenKind::Break		=> write!(f, "Break"),
+            TokenKind::Class		=> write!(f, "Class"),
             TokenKind::Continue		=> write!(f, "Continue"),
             TokenKind::Else		=> write!(f, "Else"),
             TokenKind::Exit		=> write!(f, "Exit"),

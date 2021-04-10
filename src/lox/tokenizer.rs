@@ -115,6 +115,7 @@ impl Tokenizer {
         }
         match lexeme.as_str() {
             "break" 	=> return Token::new_at(TokenKind::Break, &lexeme, at),
+            "class" 	=> return Token::new_at(TokenKind::Class, &lexeme, at),
             "continue" 	=> return Token::new_at(TokenKind::Continue, &lexeme, at),
             "else" 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
             "exit" 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),

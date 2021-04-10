@@ -700,7 +700,7 @@ impl Parser {
     fn declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.declaration() begin");
         match input.tokenizer.current().kind() {
-            //TokenKind::Class 	=> self.class_declaration(input, output),
+            TokenKind::Class 	=> self.class_declaration(input, output),
             TokenKind::Fun 	=> self.fun_declaration(input, output),
             TokenKind::Var	=> self.var_declaration(input, output),
             _			=> self.statement(input, output),
@@ -708,8 +708,18 @@ impl Parser {
         //println!("Parser.declaration() end");
     }
 
-    fn class_declaration(&mut self, input: &mut ParserInput, _output: &mut ParserOutput) {
+    fn class_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Class token
+        let name_id = self.parse_variable("Expect class name", input, output);
+
+//        self.consume(TokenKind::Identifier, "Expect class name", input, output);      
+        let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
+        self.declare_variable(input, output);
+        output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
+        self.define_variable(name_id, output);
+        
+        self.consume(TokenKind::LeftCurly, "Expect '{' after class name", input, output);
+        self.consume(TokenKind::RightCurly, "Expect '}' after class body", input, output);
     }
 
     fn fun_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -1052,6 +1062,7 @@ impl Parser {
 
             // Keywords
             TokenKind::Break => return ParserRule::null(),
+            TokenKind::Class => return ParserRule::null(),
             TokenKind::Continue => return ParserRule::null(),
             TokenKind::Else => return ParserRule::null(),
             TokenKind::Exit => return ParserRule::null(),

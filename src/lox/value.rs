@@ -7,6 +7,7 @@ use std::cell::{RefCell, Ref, RefMut};
 
 use super::obj::Obj;
 use super::function::Function;
+use super::class::Class;
 use super::closure::Closure;
 
 
@@ -42,6 +43,10 @@ impl Value {
 
     pub fn function(f: Function) -> Value {
         Value::Obj(Rc::new(RefCell::new(Obj::function(f))))
+    }
+
+    pub fn class(c: Class) -> Value {
+        Value::Obj(Rc::new(RefCell::new(Obj::class(c))))
     }
 
     pub fn closure(c: Closure) -> Value {
@@ -85,6 +90,13 @@ impl Value {
     pub fn is_function(&self) -> bool {
         match self {
             Value::Obj(obj) 	=> RefCell::borrow(obj).is_function(),
+            _ 			=> false
+        }
+    }
+
+    pub fn is_class(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_class(),
             _ 			=> false
         }
     }
@@ -144,6 +156,28 @@ impl Value {
         match self {
             Value::Obj(obj)	=> {
                 Ref::map(obj.borrow(), |o| o.as_function())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_class(&self) -> Ref<'_, Class> {
+        match self {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_class())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_class_mut(&mut self) -> RefMut<'_, Class> {
+        match self {
+            Value::Obj(obj)	=> {
+                RefMut::map(obj.borrow_mut(), |o| o.as_class_mut())
             }
             _			=> {
                 panic!("{} is not an object", self)
