@@ -42,8 +42,24 @@ impl<T> Stack<T> {
         self.elements[index] = element;
     }
     
+    // Index from the BOTTOM of the stack
+    pub fn peek_addr(&self, addr: usize) -> &T {
+        &self.elements[addr]
+    }
+
+    // Index from the BOTTOM of the stack
+    pub fn poke_addr(&mut self, element: T, addr: usize) 
+    {
+        self.elements[addr] = element;
+    }
+    
     pub fn size(&self) -> usize {
         return self.elements.len();
+    }
+    
+    pub fn top(&self) -> usize {
+        // Panic if the stack is empty
+        return self.elements.len() - 1;
     }
 }
 

@@ -1009,3 +1009,11 @@ fn vm_closure_setupvalue_2() {
     assert_eq!(rc, 468);
 }
 
+#[test]
+fn vm_closure_setupvalue_3() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun c(y) { exit y; } fun a() { var x = 123; fun b() { x = 234; x=x*2; c(x); } b(); } a();");
+    let rc = vm.execute();
+    assert_eq!(rc, 468);
+}
+

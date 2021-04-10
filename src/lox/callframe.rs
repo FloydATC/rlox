@@ -13,13 +13,13 @@ use super::closure::Closure;
 pub struct CallFrame {
     closure_value:	Value,
     ip: 		u32,
-    stack_bottom:	u32,
+    stack_bottom:	usize,
 }
 
 
 //#[allow(dead_code)]
 impl CallFrame {
-    pub fn new(closure: Value, stack_bottom: u32) -> CallFrame {
+    pub fn new(closure: Value, stack_bottom: usize) -> CallFrame {
         if !closure.is_closure() {
             panic!("{} is not a Closure", closure);
         }
@@ -93,7 +93,7 @@ impl CallFrame {
         self.ip = ip;
     }
     
-    pub fn stack_bottom(&self) -> u32 {
+    pub fn stack_bottom(&self) -> usize {
         return self.stack_bottom;
     }
 }

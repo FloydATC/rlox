@@ -122,6 +122,8 @@ impl VM {
             match opcode {
                 OpCode::Exit		=> {
                     let return_value = self.pop();
+                    println!("OpCode::Exit, close_upvalues");
+                    self.close_upvalues(self.callframe().stack_bottom() as usize);
                     // Rather than wasting time unwinding the stacks,
                     // simply discard them because the script is terminating.
                     // If execute gets called again, we need a clean slate.
@@ -292,9 +294,33 @@ impl VM {
 
     fn opcode_getupvalue(&mut self, id: usize) -> Result<(), String> {
         println!("getupvalue id={} of closure upvalues", id);
-        let value: Value = self.callframe().closure_ref().upvalue_ref_by_id(id).get().clone();
-        println!(" got value={}", value);
-        self.push(value);
+        let stack_addr;
+        let inner;
+        
+        // The following references must go out of scope before we
+        // can manipulate the stack
+        {        
+            let callframe = self.callframe();
+            let closure = callframe.closure_ref();
+            let upvalue = closure.upvalue_ref_by_id(id);
+            stack_addr = upvalue.addr();
+            inner = upvalue.get();
+        }
+
+        // We have collected the necessary information about the upvalue
+        match inner {
+            Some(value)	=> {
+                // This upvalue has been closed and now exists off the stack
+                println!(" closed upvalue={}", value);
+                self.push(value);
+            }
+            None => {
+                // This value still lives on the stack
+                let value = self.stack.peek_addr(stack_addr).clone();
+                println!(" open upvalue={}", value);
+                self.push(value);
+            }
+        }
         Ok(())
     }
 
@@ -396,10 +422,29 @@ impl VM {
     fn opcode_setupvalue(&mut self, id: usize) -> Result<(), String> {
         println!("setupvalue id={} of closure upvalues", id);
         let value = self.peek(0).clone();
-        println!(" value={}", value);
+        let stack_addr;
         
-        self.callframe_mut().closure_mut().upvalue_mut_by_id(id).set(value);
-
+        // The following references must go out of scope before we
+        // can manipulate the stack, so we do the checking inside here:
+        {
+            let callframe = self.callframe_mut();
+            let mut closure = callframe.closure_mut();
+            let upvalue = closure.upvalue_mut_by_id(id);
+            if upvalue.is_closed() {
+                // Not sure if we will ever actually write to a
+                // closed upvalue, but we can do so if needed.
+                println!("  upvalue already closed, update as {}", value);
+                upvalue.close(value);
+                return Ok(()); // Note: Early return
+            } else {
+                println!("  upvalue still on the stack, update as {}", value);
+                stack_addr = upvalue.addr();
+                // Can't poke here because self is borrowed
+            }
+        }
+        
+        // We only get this far if the upvalue is not closed
+        self.stack.poke_addr(value, stack_addr);
         Ok(())
     }
 
@@ -464,7 +509,7 @@ impl VM {
             // Capture upvalue and insert into closure
             println!("  id={} is_local={}", id, is_local);
             if is_local {
-                closure.add_upvalue(self.capture_upvalue(id));
+                closure.add_upvalue(self.capture_upvalue(self.callframe().stack_bottom() + id));
             } else {
                 closure.add_upvalue(self.callframe().closure_ref().upvalue_ref_by_id(id).clone());
             }
@@ -637,6 +682,7 @@ impl VM {
     }
     
     fn opcode_closeupvalue(&mut self) -> Result<(), String> {
+        self.close_upvalues(self.stack.top());
         Err("OpCode::CloseUpvalue not yet implemented.".to_string())
     }
     
@@ -677,19 +723,14 @@ impl VM {
         return Ok(());
     }
 
-//    fn call(&mut self, rc_closure: Rc<Obj>, argc: u8) {
     fn call(&mut self, callee: Value, argc: u8) {
-//        if let Obj::Closure(closure) = rc_closure.borrow() {
-            let want_argc = callee.as_closure().function_ref().arity();
-            if argc != want_argc {
-                // TODO: Proper error handling
-                panic!("Expected {} arguments but got {}", want_argc, argc);
-            }
-//        }
+        let want_argc = callee.as_closure().function_ref().arity();
+        if argc != want_argc {
+            // TODO: Proper error handling
+            panic!("Expected {} arguments but got {}", want_argc, argc);
+        }
 
-//        let stack_bottom = (self.stack.size() as u32) - (argc as u32);
-        let stack_bottom = (self.stack.size() as u32) - (argc as u32) - 1;
-//        let callframe = CallFrame::new(rc_closure, stack_bottom);
+        let stack_bottom = self.stack.size() - (argc as usize) - 1;
         let callframe = CallFrame::new(callee, stack_bottom);
         self.callframes.push(callframe);
     }
@@ -701,24 +742,6 @@ impl VM {
         } else {
             panic!("VM.call_value({}, {}) not implemented.", value, argc);
         }
-//        match value {
-//            Value::Obj(ref obj) => {
-//                //let rc_object = value.as_rc_object();
-//                match obj.borrow() {
-//                    Obj::Closure(_) => {
-//                        //let value = self.pop();
-//                        //self.call(rc_object, argc);
-//                        self.call(value, argc);
-//                    }
-//                    _ => {
-//                        panic!("VM.call_value({}, {}) not implemented.", value, argc);
-//                    }
-//                }
-//            }
-//            _ => {
-//                panic!("VM.call_value({}, {}) not implemented.", value, argc);
-//            }
-//        }
     }
 }
 
@@ -728,42 +751,57 @@ impl VM {
 impl VM {
     // Capturing an upvalue means copying a value from the stack
     // and storing it in self.open_upvalues: Vec<Upvalue<Value>>
-    // Or... at least that's what I *think* it means.
+    // Or... at least that's what I *think* it means??
     // clox stores an array of pointers and hijacks the GC code,
     // while I'm relying on a vector.
-    fn capture_upvalue(&mut self, slot: usize) -> Upvalue<Value> {
-        println!("VM.capture_upvalue() slot={}", slot);
+    fn capture_upvalue(&mut self, stack_addr: usize) -> Upvalue<Value> {
+        println!("VM.capture_upvalue() stack_addr={} stack={:?}", stack_addr, self.stack);
     
-        // If slot is already captured, return the upvalue index
+        // If slot is already captured, return the upvalue
         // But WHY???
-//        for (index, upvalue) in self.open_upvalues.iter().enumerate() {
-//            println!("VM.capture_upvalue() scanning index={} slot={}", index, upvalue.slot);
-//            if upvalue.slot == slot { return upvalue.rc().clone(); }
-//        }
+        for (index, upvalue) in self.open_upvalues.iter().enumerate() {
+            println!("VM.capture_upvalue() scanning index={} addr={}", index, upvalue.addr());
+            if upvalue.addr() == stack_addr { return upvalue.clone(); }
+            
+            // The side-effect here is that we can have more than one 
+            // upvalue object referencing the same stack position and 
+            // carrying references to the same RefCell<Value>. 
+            // Okay, this is why we're using RefCell,  
+            // but it also means we can't add ANY state tracking to 
+            // an upvalue, like, oh I don't know, "is_closed" maybe?
+            // The duplicates would be disjoint so we can't do that.
+            // *sigh*
+            
+        }
         
-        let depth = self.stack.size()
-            - self.callframe().stack_bottom() as usize
-            - 1
-            - slot;
         let index = self.open_upvalues.len();
         println!("VM.capture_upvalue() capturing as index={} of open_upvalues", index);
-        self.open_upvalues.push(Upvalue::new(slot, self.stack.peek(depth).clone()));
+        // clox adds them to the beginning of a linked list,
+        // while we push them to a vector
+        let upvalue = Upvalue::new(stack_addr);
+        self.open_upvalues.push(upvalue);
         return self.open_upvalues.last().unwrap().clone();
     }
 
     // What exactly does closing an upvalue mean? Not sure.    
-    fn close_upvalues(&mut self, last_slot: usize) {
-        println!("VM.close_upvalues() last_slot={}", last_slot);
+    // It gets called before the end of a scope and at the end
+    // of a function so surely it must be about saving values that
+    // are about to disappear from the stack
+    fn close_upvalues(&mut self, stack_addr: usize) {
+        println!("VM.close_upvalues() stack_addr={} stack={:?}", stack_addr, self.stack);
         loop {
-            println!("stack={:?}", self.stack);
-            match self.open_upvalues.first_mut() {
+//            println!("stack={:?}", self.stack);
+//            match self.open_upvalues.first_mut() {
+            match self.open_upvalues.last_mut() {
                 Some(upvalue) => {
                     println!("  consider closing {}", upvalue);
                     
                     // while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
                     // Keep going while last_slot >= upvalue.slot()             
-                    if upvalue.slot() < last_slot { 
-                        println!("  upvalue.slot() < last_slot, exiting");
+                    // in clox, slot is a pointer to the stack, 
+                    // while here it's an index relative to the callframe
+                    if upvalue.addr() < stack_addr { 
+                        println!("  upvalue.addr() < stack_addr, exiting");
                         return; 
                     }
                     
@@ -772,7 +810,10 @@ impl VM {
                     // upvalue->location = &upvalue->closed; // location now points at closed..?
                     // This could be just because of the GC and stuff. My head hurts.
                     // Something tells me this is what "closing" means, and I don't understand.
-                    
+                    // Copying the value from the stack and into the upvalue object?
+                    // Then what does setupvalue do??
+                    let value = self.stack.peek_addr(upvalue.addr()).clone();
+                    upvalue.close(value);
 
                     // The only bit that makes sort of sense to me is this:
                     // vm->openUpvalues = upvalue->next;
@@ -781,12 +822,14 @@ impl VM {
                     // from the start, not sure if that makes sense here.
                 }
                 None => {
+                    println!("  no more open upvalues, exiting.");
                     return;
                 }
             }
-            println!("  remove");
-            self.open_upvalues.remove(0);
-            println!("VM.close_upvalues() {} upvalues open", self.open_upvalues.len());
+            println!("  closed {}", self.open_upvalues.last().unwrap());
+//            self.open_upvalues.remove(0);
+            self.open_upvalues.pop();
+            println!("  {} upvalue(s) still open", self.open_upvalues.len());
         }
     }
 }
