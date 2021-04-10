@@ -430,6 +430,8 @@ impl VM {
             let callframe = self.callframe_mut();
             let mut closure = callframe.closure_mut();
             let upvalue = closure.upvalue_mut_by_id(id);
+            // clox avoided this branch by using some pointer magic,
+            // that's not an option for us.
             if upvalue.is_closed() {
                 // Not sure if we will ever actually write to a
                 // closed upvalue, but we can do so if needed.
@@ -492,10 +494,13 @@ impl VM {
         let mut closure = Closure::new(value);
         
         // This opcode is followed by one variable length entry per upvalue
-        for i in 0..upvalue_count {
-            println!("VM capturing upvalue {} of {}", i, upvalue_count);
+        for _i in 0..upvalue_count {
+            //println!("VM capturing upvalue {} of {}", _i, upvalue_count);
         
             // Decode is_local and id
+            // Because we allow more than 255 upvalues and local variables,
+            // we have to encode the length if each id. This means the code 
+            // to decode each entry is a bit more complicated than in clox.
             let byte = self.callframe_mut().read_byte();
             let is_local = if (byte & 128) == 128 { true } else { false };
             let id_len = byte & 127; // 1=byte, 2=word, 4=dword
@@ -507,7 +512,7 @@ impl VM {
                 _ => {}
             }
             // Capture upvalue and insert into closure
-            println!("  id={} is_local={}", id, is_local);
+            //println!("  id={} is_local={}", id, is_local);
             if is_local {
                 closure.add_upvalue(self.capture_upvalue(self.callframe().stack_bottom() + id));
             } else {
@@ -808,7 +813,7 @@ impl VM {
                     // but we can't do this while still borrowing a reference to it...
                 }
                 None => {
-                    println!("  no more open upvalues, exiting.");
+                    //println!("  no more open upvalues, exiting.");
                     return;
                 }
             }
