@@ -763,8 +763,7 @@ impl VM {
         // where the actual variable lives. Through the RefCell,
         // they will all refer to the same state (None=open/Some=closed)
         // and value (if closed). I think.
-        for (index, upvalue) in self.open_upvalues.iter().enumerate() {
-            //println!("VM.capture_upvalue() scanning index={} addr={}", index, upvalue.addr());
+        for upvalue in &self.open_upvalues {
             if upvalue.addr() == stack_addr { return upvalue.clone(); }
         }
         
