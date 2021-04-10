@@ -3,7 +3,8 @@
 mod test;
 
 use std::rc::Rc;
-use std::borrow::Borrow;
+use std::cell::{RefCell, Ref, RefMut};
+//use std::borrow::Borrow;
 
 use super::obj::Obj;
 use super::function::Function;
@@ -15,7 +16,8 @@ pub enum Value {
     Null,
     Bool(bool),
     Number(f64),
-    Obj(Rc<Obj>),
+    String(String),
+    Obj(Rc<RefCell<Obj>>),
 }
 
 
@@ -30,14 +32,17 @@ impl Value {
     pub fn number(n: f64) -> Value {
         Value::Number(n)
     }
+//    pub fn string(s: &str) -> Value {
+//        Value::Obj(Rc::new(RefCell::new(Obj::string(&s))))
+//    }
     pub fn string(s: &str) -> Value {
-        Value::Obj(Rc::new(Obj::string(&s)))
+        Value::String(s.to_string())
     }
     pub fn function(f: Function) -> Value {
-        Value::Obj(Rc::new(Obj::function(f)))
+        Value::Obj(Rc::new(RefCell::new(Obj::function(f))))
     }
     pub fn closure(c: Closure) -> Value {
-        Value::Obj(Rc::new(Obj::closure(c)))
+        Value::Obj(Rc::new(RefCell::new(Obj::closure(c))))
     }
     
     pub fn as_boolean(&self) -> bool {
@@ -53,6 +58,15 @@ impl Value {
         }
     }
 
+    pub fn as_string(&self) -> &String {
+        match self {
+            Value::String(s) 	=> return &s,
+            _ 			=> {
+                panic!("{} is not a string", self)
+            }
+        }
+    }
+    
     pub fn is_null(&self) -> bool {
         match self {
             Value::Null		=> true,
@@ -76,70 +90,65 @@ impl Value {
 
     pub fn is_string(&self) -> bool {
         match self {
-            Value::Obj(obj) 	=> obj.is_string(),
+            Value::String(_) 	=> true,
             _ 			=> false
         }
     }
 
     pub fn is_function(&self) -> bool {
         match self {
-            Value::Obj(obj) 	=> obj.is_function(),
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_function(),
             _ 			=> false
         }
     }
 
     pub fn is_closure(&self) -> bool {
         match self {
-            Value::Obj(obj) 	=> obj.is_closure(),
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_closure(),
             _ 			=> false
         }
     }
 
-    pub fn as_string(&self) -> &String {
+    pub fn as_function(&self) -> Ref<'_, Function> {
         match self {
-            Value::Obj(obj) 	=> obj.as_string(),
-            _ 			=> {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_function())
+            }
+            _			=> {
                 panic!("{} is not an object", self)
             }
         }
     }
     
-    pub fn as_function(&self) -> &Function {
+    pub fn as_closure(&self) -> Ref<'_, Closure> {
         match self {
-            Value::Obj(obj) 	=> obj.as_function(),
-            _ 			=> {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_closure())
+            }
+            _			=> {
                 panic!("{} is not an object", self)
             }
         }
     }
     
-    pub fn as_closure(&self) -> &Closure {
+    pub fn as_closure_mut(&mut self) -> RefMut<'_, Closure> {
         match self {
-            Value::Obj(obj) 	=> obj.as_closure(),
-            _ 			=> {
+            Value::Obj(obj)	=> {
+                RefMut::map(obj.borrow_mut(), |o| o.as_closure_mut())
+            }
+            _			=> {
                 panic!("{} is not an object", self)
             }
         }
     }
-    
-    pub fn as_closure_mut(&mut self) -> &mut Closure {
-//        match self {
-//            Value::Obj(obj) 	=> {
-//            }
-//            _ 			=> {
-//                panic!("{} is not an object", self)
-//            }
-//        }
-        panic!("I have no idea how to do this");
-    }
-    
     
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Null 	=> false,
             Value::Bool(b) 	=> *b,
             Value::Number(n) 	=> *n != 0.0,
-            Value::Obj(obj) 	=> obj.is_truthy(),
+            Value::String(s) 	=> s != "",
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_truthy(),
         }
     }
 }
@@ -154,15 +163,9 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a + b));
             }
-            (Value::Obj(ra), Value::Obj(rb)) => {
-                // Value::Obj is Rc<Obj>, dereference and compare
-                match (&*ra.borrow(), &*rb.borrow()) {
-                    (Obj::String(a), Obj::String(b)) 	 => {
-                        let string = format!("{}{}", a, b);
-                        return Ok(Value::string(&string));
-                    }
-                    _ => {}
-                }
+            (Value::String(a), Value::String(b)) => {
+                let string = format!("{}{}", a, b);
+                return Ok(Value::string(&string));
             }
             _ => {}
         }
@@ -187,12 +190,10 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a * b));
             }
-            (Value::Obj(_), Value::Number(b)) => {
-                if self.is_string() {
-                    let count = *b as usize;
-                    let string = self.as_string().repeat(count);
-                    return Ok(Value::string(&string));
-                }
+            (Value::String(a), Value::Number(b)) => {
+                let count = *b as usize;
+                let string = a.repeat(count);
+                return Ok(Value::string(&string));
             }
             _ => {}
         }
@@ -227,6 +228,7 @@ impl Clone for Value {
             Value::Null => return Value::null(),
             Value::Bool(b) => return Value::boolean(*b),
             Value::Number(n) => return Value::number(*n),
+            Value::String(s) => return Value::string(s),
             Value::Obj(o) => return Value::Obj(o.clone()),
         }
     }
@@ -239,6 +241,7 @@ impl PartialEq for Value {
             (Value::Null, Value::Null) 			 => true,
             (Value::Bool(a), Value::Bool(b)) 		 => a == b,
             (Value::Number(a), Value::Number(b)) 	 => a == b,
+            (Value::String(a), Value::String(b)) 	 => a == b,
             (Value::Obj(ra), Value::Obj(rb)) 	 	 => ra == rb,
             _ => false, // Value types mismatch
         }    
@@ -250,8 +253,9 @@ impl std::cmp::PartialOrd for Value {
     fn partial_cmp(&self, other: &Value) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
+            (Value::String(a), Value::String(b)) => a.partial_cmp(b),
             (Value::Obj(a), Value::Obj(b)) 	 => a.partial_cmp(b),
-            _ => None, // Value types mismatch
+            _ => None, // Value types mismatch or can't be ordered
         }
     }
 }
@@ -263,7 +267,8 @@ impl std::fmt::Display for Value {
             Value::Null		=> write!(f, "Value::Null"),
             Value::Bool(b)	=> write!(f, "Value::Bool({})", b),
             Value::Number(n)	=> write!(f, "Value::Number({})", n),
-            Value::Obj(rc)	=> write!(f, "Value::{}", rc),
+            Value::String(s)	=> write!(f, "Value::String({})", s),
+            Value::Obj(rc)	=> write!(f, "Value::{}", RefCell::borrow(rc)),
         }
     }
 }

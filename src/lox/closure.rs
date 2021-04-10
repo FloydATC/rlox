@@ -1,7 +1,9 @@
 
+use std::cell::Ref;
 
 use super::function::Function;
 use super::value::Value;
+//use super::obj::Obj;
 use super::vm::upvalue::Upvalue; // Runtime representation
 
 
@@ -29,7 +31,15 @@ impl Closure {
         }
     }
     
-    pub fn function(&self) -> &Function {
+    pub fn name(&self) -> String {
+        return self.function_value.as_function().name().to_string();
+    }
+    
+//    pub fn function(&self) -> &Function {
+//        return self.function_value.as_function();
+//    }
+
+    pub fn function_ref(&self) -> Ref<'_, Function> {
         return self.function_value.as_function();
     }
 
@@ -39,7 +49,7 @@ impl Closure {
 //    }
 
     pub fn add_upvalue(&mut self, upvalue: Upvalue<Value>) {
-        println!("Closure.add_upvalue() adding value={} as index={} of closure \"{}\"", upvalue, self.upvalues.len(), self.function().name());
+        println!("Closure.add_upvalue() adding value={} as index={} of closure \"{}\"", upvalue, self.upvalues.len(), self.function_ref().name());
         self.upvalues.push(upvalue);
     }
     

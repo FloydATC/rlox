@@ -1,10 +1,11 @@
 
 //use std::rc::Rc;
+use std::cell::{Ref, RefMut};
 
 use super::value::Value;
 use super::opcode::OpCode;
 //use super::obj::Obj;
-use super::function::Function;
+//use super::function::Function;
 use super::closure::Closure;
 
 
@@ -30,42 +31,56 @@ impl CallFrame {
         }
     }
 
-    pub fn closure(&self) -> &Closure {
+    pub fn closure_ref(&self) -> Ref<'_, Closure> {
         return self.closure_value.as_closure();
     }
 
-    pub fn closure_mut(&mut self) -> &mut Closure {
+    pub fn closure_mut(&mut self) -> RefMut<'_, Closure> {
         return self.closure_value.as_closure_mut();
     }
 
-    pub fn function_ref(&self) -> &Function {
-        return self.closure_value.as_closure().function();
-    }
+//    pub fn closure_ref(&self) -> Ref<'_, Obj> {
+//        return self.closure_value.as_ref();
+//    }
+
+//    pub fn closure_mut(&mut self) -> &mut Closure {
+//        return self.closure_value.as_closure_mut();
+//    }
+
+//    pub fn function_ref(&self) -> Ref<'_, Function> {
+//        return self.closure_ref().function_ref();
+//        return self.closure_value.as_closure().function();
+//    }
     
-    pub fn read_op(&mut self) -> Option<OpCode> {
-        let len = self.function_ref().read_chunk().length();
-        if self.ip < len {
+    pub fn read_op(&mut self) -> OpCode {
+        //let len = self.function_ref().read_chunk().length();
+        //if self.ip < len {
             let byte = self.read_byte();
-            return Some(OpCode::code(byte));        
-        } else {
-            return None;
-        }
+            return OpCode::code(byte);
+        //} else {
+        //    return None;
+        //}
     }
     
     pub fn read_byte(&mut self) -> u8 {
-        let byte = self.function_ref().read_chunk().read_byte(self.ip);
+        let byte = self.closure_ref().function_ref().read_chunk().read_byte(self.ip);
+    
+    
+//        let byte = self.function_ref().read_chunk().read_byte(self.ip);
         self.ip = self.ip + 1;
         return byte;        
     }
 
     pub fn read_word(&mut self) -> u16 {
-        let word = self.function_ref().read_chunk().read_word(self.ip);
+//        let word = self.function_ref().read_chunk().read_word(self.ip);
+        let word = self.closure_ref().function_ref().read_chunk().read_word(self.ip);
         self.ip = self.ip + 2;
         return word;        
     }
 
     pub fn read_dword(&mut self) -> u32 {
-        let dword = self.function_ref().read_chunk().read_dword(self.ip);
+//        let dword = self.function_ref().read_chunk().read_dword(self.ip);
+        let dword = self.closure_ref().function_ref().read_chunk().read_dword(self.ip);
         self.ip = self.ip + 4;
         return dword;        
     }

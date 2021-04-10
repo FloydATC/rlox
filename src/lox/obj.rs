@@ -116,7 +116,7 @@ impl std::fmt::Display for Obj {
                 write!(f, "Obj::Function({})", fu.name())
             }
             Obj::Closure(cl) => {
-                write!(f, "Obj::Closure({})", cl.function().name())
+                write!(f, "Obj::Closure({})", cl.name())
             }
         }
     }
