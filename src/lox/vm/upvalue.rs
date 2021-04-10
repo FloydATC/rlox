@@ -7,20 +7,18 @@ use std::cell::RefCell;
 // Unlike local variables, each upvalue must be accessible 
 // for read/write from multiple closures at the same time.
 
-// Upvalues make absolutely no sense to me, which means
-// the following code may also make absolutely no sense.
-// On top of this I'm trying to learn Rust.
+// This object can be cloned, all copies will point to the same
+// instance of None (if open) or Some<T> (if closed)
 #[derive(Debug, Clone)]
 pub struct Upvalue<T> {
     addr:       usize,	// Absolute stack position
     value:      Rc<RefCell<Option<T>>>, 
-    // closed: // Not sure what exact purpose this serves. GC only?
 }
 
 impl<T: Clone + std::fmt::Display> Upvalue<T> {
     
     pub fn new(addr: usize) -> Self {
-        //println!("Upvalue created: addr={} value={}", addr, value);
+        //println!("Upvalue created: addr={}", addr);
         Self {
             addr,
             value:      Rc::new(RefCell::new(None)), 

@@ -749,49 +749,41 @@ impl VM {
 
 #[allow(dead_code)]
 impl VM {
-    // Capturing an upvalue means copying a value from the stack
-    // and storing it in self.open_upvalues: Vec<Upvalue<Value>>
-    // Or... at least that's what I *think* it means??
-    // clox stores an array of pointers and hijacks the GC code,
-    // while I'm relying on a vector.
+    // Capture a value on the stack by noting its (absolute) position 
+    // on the stack, but do not copy the value yet. 
+    // Internally, the runtime Upvalue object does this by creating a
+    // Rc<RefCell<Option<Value>>> containing None
+    // Open upvalues are kept in self.open_upvalues, a Vec<Upvalue>
     fn capture_upvalue(&mut self, stack_addr: usize) -> Upvalue<Value> {
-        println!("VM.capture_upvalue() stack_addr={} stack={:?}", stack_addr, self.stack);
+        //println!("VM.capture_upvalue() stack_addr={} stack={:?}", stack_addr, self.stack);
     
         // If slot is already captured, return the upvalue
-        // But WHY???
+        // Not exactly sure why, but I think this is because there may 
+        // be multiple closures between the current one and the one
+        // where the actual variable lives. Through the RefCell,
+        // they will all refer to the same state (None=open/Some=closed)
+        // and value (if closed). I think.
         for (index, upvalue) in self.open_upvalues.iter().enumerate() {
-            println!("VM.capture_upvalue() scanning index={} addr={}", index, upvalue.addr());
+            //println!("VM.capture_upvalue() scanning index={} addr={}", index, upvalue.addr());
             if upvalue.addr() == stack_addr { return upvalue.clone(); }
-            
-            // The side-effect here is that we can have more than one 
-            // upvalue object referencing the same stack position and 
-            // carrying references to the same RefCell<Value>. 
-            // Okay, this is why we're using RefCell,  
-            // but it also means we can't add ANY state tracking to 
-            // an upvalue, like, oh I don't know, "is_closed" maybe?
-            // The duplicates would be disjoint so we can't do that.
-            // *sigh*
-            
         }
         
-        let index = self.open_upvalues.len();
-        println!("VM.capture_upvalue() capturing as index={} of open_upvalues", index);
-        // clox adds them to the beginning of a linked list,
-        // while we push them to a vector
+        //let index = self.open_upvalues.len();
+        //println!("VM.capture_upvalue() capturing as index={} of open_upvalues", index);
+
         let upvalue = Upvalue::new(stack_addr);
         self.open_upvalues.push(upvalue);
         return self.open_upvalues.last().unwrap().clone();
     }
 
-    // What exactly does closing an upvalue mean? Not sure.    
-    // It gets called before the end of a scope and at the end
-    // of a function so surely it must be about saving values that
-    // are about to disappear from the stack
+    // When a captured value is about to get removed from the stack
+    // (go out of scope) we lift the value off the stack and into the
+    // upvalue object.
+    // stack_addr will either point to the top of the stack 
+    // or to the bottom of the stack in the current call frame
     fn close_upvalues(&mut self, stack_addr: usize) {
-        println!("VM.close_upvalues() stack_addr={} stack={:?}", stack_addr, self.stack);
+        //println!("VM.close_upvalues() stack_addr={} stack={:?}", stack_addr, self.stack);
         loop {
-//            println!("stack={:?}", self.stack);
-//            match self.open_upvalues.first_mut() {
             match self.open_upvalues.last_mut() {
                 Some(upvalue) => {
                     println!("  consider closing {}", upvalue);
@@ -800,36 +792,34 @@ impl VM {
                     // Keep going while last_slot >= upvalue.slot()             
                     // in clox, slot is a pointer to the stack, 
                     // while here it's an index relative to the callframe
+                    
+                    // Stop if we find an upvalue object referencing a stack address
+                    // below stack_addr
                     if upvalue.addr() < stack_addr { 
                         println!("  upvalue.addr() < stack_addr, exiting");
                         return; 
                     }
                     
-                    // clox contains this bizarre code:
-                    // upvalue->closed = *upvalue->location; // closed is now a value..?
-                    // upvalue->location = &upvalue->closed; // location now points at closed..?
-                    // This could be just because of the GC and stuff. My head hurts.
-                    // Something tells me this is what "closing" means, and I don't understand.
-                    // Copying the value from the stack and into the upvalue object?
-                    // Then what does setupvalue do??
+                    // Close this upvalue by copying the value off the stack
+                    // and storing it inside the upvalue object
                     let value = self.stack.peek_addr(upvalue.addr()).clone();
                     upvalue.close(value);
-
-                    // The only bit that makes sort of sense to me is this:
-                    // vm->openUpvalues = upvalue->next;
                     
-                    // In clox, openUpvalues is a linked list so we must walk it 
-                    // from the start, not sure if that makes sense here.
+                    // We must now remove this upvalue from self.open_upvalues
+                    // but we can't do this while still borrowing a reference to it...
                 }
                 None => {
                     println!("  no more open upvalues, exiting.");
                     return;
                 }
             }
-            println!("  closed {}", self.open_upvalues.last().unwrap());
-//            self.open_upvalues.remove(0);
+            //println!("  closed {}", self.open_upvalues.last().unwrap());
+            
+            // We're no longer borrowing a reference to self.open_upvalues
+            // so we can safely pop the one we just closed.
             self.open_upvalues.pop();
-            println!("  {} upvalue(s) still open", self.open_upvalues.len());
+
+            //println!("  {} upvalue(s) still open", self.open_upvalues.len());
         }
     }
 }
