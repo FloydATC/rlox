@@ -5,16 +5,9 @@ mod test;
 pub mod upvalue;
 use upvalue::Upvalue;
 
-//use std::rc::Rc;
-//use std::cell::RefCell;
-//use std::borrow::Borrow;
-
 use super::callframe::CallFrame;
 use super::stack::Stack;
 use super::value::Value;
-//use super::obj::Obj;
-//use super::obj::Obj;
-//use super::constants::Constants;
 use super::globals::Globals;
 use super::locals::Locals;
 use super::closure::Closure;
@@ -26,13 +19,10 @@ use super::compiler::Compiler;
 use super::opcode::OpCode;
 
 
-//#[allow(dead_code)]
 pub struct VM {
     callframes: Vec<CallFrame>,
     stack: Stack<Value>,
-    //constants: Constants<Value>,
     globals: Globals<Value>,
-    //objects: Vec<Obj>,
     open_upvalues: Vec<Upvalue<Value>>, // Note: Runtime representation
 }
 
@@ -42,16 +32,13 @@ impl VM {
         VM {
             callframes: 	vec![],
             stack: 		Stack::new(), 
-            //constants:		Constants::new(),
             globals:		Globals::new(),
-            //objects: 		vec![],
             open_upvalues:	vec![],
         }
     }
 }
 
 
-//#[allow(unused_mut)]
 impl VM {
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
         println!("VM.compile() code={}", code);
@@ -122,8 +109,9 @@ impl VM {
             match opcode {
                 OpCode::Exit		=> {
                     let return_value = self.pop();
-                    println!("OpCode::Exit, close_upvalues");
-                    self.close_upvalues(self.callframe().stack_bottom() as usize);
+                    //println!("OpCode::Exit, close_upvalues");
+                    // Execute may be called again so be sure to close any open upvalues
+                    self.close_upvalues(self.callframe().stack_bottom());
                     // Rather than wasting time unwinding the stacks,
                     // simply discard them because the script is terminating.
                     // If execute gets called again, we need a clean slate.
@@ -136,8 +124,8 @@ impl VM {
                 }
                 OpCode::Return 		=> {
                     let return_value = self.pop();
-                    println!("OpCode::Return, close_upvalues");
-                    self.close_upvalues(self.callframe().stack_bottom() as usize);
+                    //println!("OpCode::Return, close_upvalues");
+                    self.close_upvalues(self.callframe().stack_bottom());
                     self.callframes.pop();
                     if self.callframes.len() == 0 { return 0; }
                     
@@ -268,11 +256,7 @@ impl VM {
     }
 
     fn opcode_getlocal(&mut self, id: usize) -> Result<(), String> {
-        //println!("GETL 0x{:02x}", id);
-        let depth = self.stack.size()
-            - self.callframe_mut().stack_bottom() as usize
-            - 1
-            - id;
+        let depth = self.slot_depth(id);
         self.push(self.peek(depth).clone());
         Ok(())
     }
@@ -397,9 +381,7 @@ impl VM {
     }
     
     fn opcode_setlocal(&mut self, id: usize) -> Result<(), String> {
-        let depth = self.stack.size() - 1
-            - self.callframe_mut().stack_bottom() as usize
-            - id;
+        let depth = self.slot_depth(id);
         self.poke(self.peek(0).clone(), depth);
         Ok(())
     }
@@ -420,7 +402,7 @@ impl VM {
     }
 
     fn opcode_setupvalue(&mut self, id: usize) -> Result<(), String> {
-        println!("setupvalue id={} of closure upvalues", id);
+        //println!("setupvalue id={} of closure upvalues", id);
         let value = self.peek(0).clone();
         let stack_addr;
         
@@ -435,11 +417,11 @@ impl VM {
             if upvalue.is_closed() {
                 // Not sure if we will ever actually write to a
                 // closed upvalue, but we can do so if needed.
-                println!("  upvalue already closed, update as {}", value);
+                //println!("  upvalue already closed, update as {}", value);
                 upvalue.close(value);
                 return Ok(()); // Note: Early return
             } else {
-                println!("  upvalue still on the stack, update as {}", value);
+                //println!("  upvalue still on the stack, update as {}", value);
                 stack_addr = upvalue.addr();
                 // Can't poke here because self is borrowed
             }
@@ -715,7 +697,7 @@ impl VM {
 
     fn slot_depth(&self, slot: usize) -> usize {
         return self.stack.size()
-            - self.callframe().stack_bottom() as usize
+            - self.callframe().stack_bottom()
             - 1
             - slot;
     }
@@ -790,9 +772,8 @@ impl VM {
         loop {
             match self.open_upvalues.last_mut() {
                 Some(upvalue) => {
-                    println!("  consider closing {}", upvalue);
+                    //println!("  consider closing {}", upvalue);
                     
-                    // while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
                     // Keep going while last_slot >= upvalue.slot()             
                     // in clox, slot is a pointer to the stack, 
                     // while here it's an index relative to the callframe
@@ -833,9 +814,5 @@ impl Drop for VM {
         //println!("VM.drop()");
     }
 }
-
-
-
-
 
 
