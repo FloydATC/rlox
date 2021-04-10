@@ -4,7 +4,6 @@ mod test;
 
 use std::rc::Rc;
 use std::cell::{RefCell, Ref, RefMut};
-//use std::borrow::Borrow;
 
 use super::obj::Obj;
 use super::function::Function;
@@ -23,50 +22,38 @@ pub enum Value {
 
 #[allow(dead_code)]
 impl Value {
+    // ======== Constructors ========
+
     pub fn null() -> Value {
         Value::Null
     }    
+
     pub fn boolean(b: bool) -> Value {
         Value::Bool(b)
     }
+
     pub fn number(n: f64) -> Value {
         Value::Number(n)
     }
-//    pub fn string(s: &str) -> Value {
-//        Value::Obj(Rc::new(RefCell::new(Obj::string(&s))))
-//    }
+
     pub fn string(s: &str) -> Value {
         Value::String(s.to_string())
     }
+
     pub fn function(f: Function) -> Value {
         Value::Obj(Rc::new(RefCell::new(Obj::function(f))))
     }
+
     pub fn closure(c: Closure) -> Value {
         Value::Obj(Rc::new(RefCell::new(Obj::closure(c))))
     }
+}
     
-    pub fn as_boolean(&self) -> bool {
-        match self {
-            Value::Bool(b) => return *b,
-            _ => panic!("{:?} is not a Boolean", self),
-        }
-    }
-    pub fn as_number(&self) -> f64 {
-        match self {
-            Value::Number(n) => return *n,
-            _ => panic!("{:?} is not a Number", self),
-        }
-    }
 
-    pub fn as_string(&self) -> &String {
-        match self {
-            Value::String(s) 	=> return &s,
-            _ 			=> {
-                panic!("{} is not a string", self)
-            }
-        }
-    }
-    
+#[allow(dead_code)]
+impl Value {
+    // ======== Variant checks ========
+
     pub fn is_null(&self) -> bool {
         match self {
             Value::Null		=> true,
@@ -108,7 +95,51 @@ impl Value {
             _ 			=> false
         }
     }
+}
 
+
+#[allow(dead_code)]
+impl Value {
+    // ======== Property checks ========
+
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Value::Null 	=> false,
+            Value::Bool(b) 	=> *b,
+            Value::Number(n) 	=> *n != 0.0,
+            Value::String(s) 	=> s != "",
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_truthy(),
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl Value {
+    // ======== Getters ========
+
+    pub fn as_boolean(&self) -> bool {
+        match self {
+            Value::Bool(b) => return *b,
+            _ => panic!("{:?} is not a Boolean", self),
+        }
+    }
+
+    pub fn as_number(&self) -> f64 {
+        match self {
+            Value::Number(n) => return *n,
+            _ => panic!("{:?} is not a Number", self),
+        }
+    }
+
+    pub fn as_string(&self) -> &String {
+        match self {
+            Value::String(s) 	=> return &s,
+            _ 			=> {
+                panic!("{} is not a string", self)
+            }
+        }
+    }
+    
     pub fn as_function(&self) -> Ref<'_, Function> {
         match self {
             Value::Obj(obj)	=> {
@@ -142,19 +173,12 @@ impl Value {
         }
     }
     
-    pub fn is_truthy(&self) -> bool {
-        match self {
-            Value::Null 	=> false,
-            Value::Bool(b) 	=> *b,
-            Value::Number(n) 	=> *n != 0.0,
-            Value::String(s) 	=> s != "",
-            Value::Obj(obj) 	=> RefCell::borrow(obj).is_truthy(),
-        }
-    }
 }
 
 
 impl Value {
+    // ======== Arithmetics ========
+
     pub fn add(self: &Value, other: &Value) -> Result<Value, String> {
         match (&self, &other) {
             (Value::Bool(a), Value::Bool(b)) => {
@@ -221,6 +245,8 @@ impl Value {
     }
 }
 
+
+// ======== Traits ========
 
 impl Clone for Value {
     fn clone(&self) -> Value {
