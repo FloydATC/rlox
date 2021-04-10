@@ -12,14 +12,21 @@ pub enum Obj {
 }
 
 
-#[allow(dead_code)]
+//#[allow(dead_code)]
 impl Obj {
+    // ======== Constructors ========
+
     pub fn function(f: Function) -> Obj {
         Obj::Function(f)
     }
     pub fn closure(c: Closure) -> Obj {
         Obj::Closure(c)
     }
+}
+
+#[allow(dead_code)]
+impl Obj {
+    // ======== Variant checks ========
 
     pub fn is_function(&self) -> bool {
         match self {
@@ -34,12 +41,23 @@ impl Obj {
             _			=> false,
         }
     }
+}
+
+//#[allow(dead_code)]
+impl Obj {
+    // ======== Property checks ========
 
     pub fn is_truthy(&self) -> bool {
         match self {
             _			=> true,	// All objects are truthy (for now)
         }
     }
+}
+
+
+//#[allow(dead_code)]
+impl Obj {
+    // ======== Getters ========
 
     pub fn as_function(&self) -> &Function {
         match self {
@@ -62,6 +80,8 @@ impl Obj {
     }
 }
 
+
+// ======== Traits ========
 
 impl PartialEq for Obj {
     fn eq(&self, other: &Obj) -> bool { 
