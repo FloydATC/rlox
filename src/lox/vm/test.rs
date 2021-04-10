@@ -994,10 +994,18 @@ fn vm_closure_getupvalue_3() {
 }
 
 #[test]
-fn vm_closure_setupvalue() {
+fn vm_closure_setupvalue_1() {
     let mut vm = VM::new();
     let _res = vm.compile("fun a() { var x = 123; fun b() { x = 234; } b(); exit x; } a();");
     let rc = vm.execute();
     assert_eq!(rc, 234);
+}
+
+#[test]
+fn vm_closure_setupvalue_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun a() { var x = 123; fun b() { x = 234; x=x*2; } b(); exit x; } a();");
+    let rc = vm.execute();
+    assert_eq!(rc, 468);
 }
 
