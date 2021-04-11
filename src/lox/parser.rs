@@ -834,8 +834,16 @@ impl Parser {
         }
     }
 
-    fn dot(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn dot(&mut self, can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.consume(TokenKind::Identifier, "Expect property name after '.'", input, output);
+        let name_id = self.identifier_constant(input.tokenizer.previous(), output);
+    
+        if can_assign && input.tokenizer.advance_on(TokenKind::Equal) {
+            self.expression(input, output);
+            output.compiler.emit_op_variant(&OpCodeSet::setproperty(), name_id as u64);
+        } else {
+            output.compiler.emit_op_variant(&OpCodeSet::getproperty(), name_id as u64);
+        }
     }
 
     fn grouping(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {

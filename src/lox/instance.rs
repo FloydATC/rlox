@@ -27,8 +27,21 @@ impl Instance {
 
 
 impl Instance {
+
     pub fn class_name(&self) -> String {
         return self.class_value.as_class().name().to_string();
+    }
+
+    pub fn set(&mut self, field: &str, value: Value) {
+        self.fields.insert(field.to_string(), value);
+    }
+
+    pub fn has(&self, field: &str) -> bool {
+        return self.fields.contains_key(field);
+    }
+    
+    pub fn get(&self, field: &str) -> &Value {
+        return self.fields.get(field).unwrap();
     }
 }
 
@@ -41,6 +54,13 @@ impl std::fmt::Debug for Instance {
             .field("class", &self.class_name())
             .field("fields", &self.fields)
             .finish()
+    }
+}
+
+
+impl std::fmt::Display for Instance {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Instance(class={})", self.class_name())
     }
 }
 

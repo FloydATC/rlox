@@ -26,6 +26,9 @@ pub enum OpCode {
     GetGlobal8	= 0x26,
     GetGlobal16	= 0x27,
     GetGlobal32	= 0x28,
+    GetProperty8	= 0x29,
+    GetProperty16	= 0x2a,
+    GetProperty32	= 0x2b,
     
     // Pop value and put in new variable
     DefGlobal8	= 0x30,	// Followed by BYTE indexing table of globals
@@ -42,6 +45,9 @@ pub enum OpCode {
     SetGlobal8	= 0x46,
     SetGlobal16	= 0x47,
     SetGlobal32	= 0x48,        
+    SetProperty8	= 0x49,
+    SetProperty16	= 0x4a,
+    SetProperty32	= 0x4b,        
     
     // Get constant value (should be function) and push a closure
     Capture8,
@@ -109,6 +115,9 @@ impl OpCode {
             OpCode::GetGlobal8 		=> { return "GETG"; }
             OpCode::GetGlobal16 	=> { return "GETG"; }
             OpCode::GetGlobal32 	=> { return "GETG"; }
+            OpCode::GetProperty8 	=> { return "GETP"; }
+            OpCode::GetProperty16 	=> { return "GETP"; }
+            OpCode::GetProperty32 	=> { return "GETP"; }
         
             OpCode::DefGlobal8 		=> { return "DEFG"; }
             OpCode::DefGlobal16 	=> { return "DEFG"; }
@@ -123,6 +132,9 @@ impl OpCode {
             OpCode::SetGlobal8 		=> { return "SETG"; }
             OpCode::SetGlobal16 	=> { return "SETG"; }
             OpCode::SetGlobal32 	=> { return "SETG"; }
+            OpCode::SetProperty8	=> { return "SETP"; }
+            OpCode::SetProperty16 	=> { return "SETP"; }
+            OpCode::SetProperty32 	=> { return "SETP"; }
 
             OpCode::Capture8	 	=> { return "CAP"; }
             OpCode::Capture16		=> { return "CAP"; }
@@ -180,6 +192,9 @@ impl OpCode {
         if byte == OpCode::GetGlobal8 as u8  { return OpCode::GetGlobal8; }
         if byte == OpCode::GetGlobal16 as u8  { return OpCode::GetGlobal16; }
         if byte == OpCode::GetGlobal32 as u8  { return OpCode::GetGlobal32; }
+        if byte == OpCode::GetProperty8 as u8  { return OpCode::GetProperty8; }
+        if byte == OpCode::GetProperty16 as u8  { return OpCode::GetProperty16; }
+        if byte == OpCode::GetProperty32 as u8  { return OpCode::GetProperty32; }
         
         if byte == OpCode::DefGlobal8 as u8 { return OpCode::DefGlobal8; }
         if byte == OpCode::DefGlobal16 as u8 { return OpCode::DefGlobal16; }
@@ -194,6 +209,9 @@ impl OpCode {
         if byte == OpCode::SetGlobal8 as u8  { return OpCode::SetGlobal8; }
         if byte == OpCode::SetGlobal16 as u8  { return OpCode::SetGlobal16; }
         if byte == OpCode::SetGlobal32 as u8  { return OpCode::SetGlobal32; }
+        if byte == OpCode::SetProperty8 as u8  { return OpCode::SetProperty8; }
+        if byte == OpCode::SetProperty16 as u8  { return OpCode::SetProperty16; }
+        if byte == OpCode::SetProperty32 as u8  { return OpCode::SetProperty32; }
 
         if byte == OpCode::Capture8 as u8  { return OpCode::Capture8; }
         if byte == OpCode::Capture16 as u8  { return OpCode::Capture16; }
@@ -307,6 +325,20 @@ impl OpCodeSet {
             byte: 	OpCode::SetGlobal8,
             word:	OpCode::SetGlobal16,
             dword:	OpCode::SetGlobal32,
+        }
+    }
+    pub fn getproperty() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::GetProperty8,
+            word:	OpCode::GetProperty16,
+            dword:	OpCode::GetProperty32,
+        }
+    }
+    pub fn setproperty() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::SetProperty8,
+            word:	OpCode::SetProperty16,
+            dword:	OpCode::SetProperty32,
         }
     }
 }

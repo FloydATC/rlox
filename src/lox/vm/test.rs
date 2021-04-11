@@ -1025,3 +1025,20 @@ fn vm_class_empty() {
     let rc = vm.execute();
     assert_eq!(rc, 1);
 }
+
+#[test]
+fn vm_class_setproperty() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx {} var ix=cx(); ix.field=123; exit 1;");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_class_getproperty() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx {} var ix=cx(); ix.field=123; exit ix.field;");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+

@@ -92,10 +92,14 @@ impl Chunk {
             OpCode::GetGlobal8 		=> self.opcode_byte(ip),
             OpCode::GetGlobal16 	=> self.opcode_word(ip),
             OpCode::GetGlobal32 	=> self.opcode_dword(ip),
+            OpCode::GetProperty8 		=> self.opcode_byte(ip),
+            OpCode::GetProperty16 	=> self.opcode_word(ip),
+            OpCode::GetProperty32 	=> self.opcode_dword(ip),
 
             OpCode::DefGlobal8 		=> self.opcode_byte(ip),
             OpCode::DefGlobal16 	=> self.opcode_word(ip),
             OpCode::DefGlobal32 	=> self.opcode_dword(ip),
+
             OpCode::SetLocal8 		=> self.opcode_byte(ip),
             OpCode::SetLocal16 		=> self.opcode_word(ip),
             OpCode::SetLocal32 		=> self.opcode_dword(ip),
@@ -105,6 +109,9 @@ impl Chunk {
             OpCode::SetGlobal8 		=> self.opcode_byte(ip),
             OpCode::SetGlobal16 	=> self.opcode_word(ip),
             OpCode::SetGlobal32 	=> self.opcode_dword(ip),
+            OpCode::SetProperty8 		=> self.opcode_byte(ip),
+            OpCode::SetProperty16 	=> self.opcode_word(ip),
+            OpCode::SetProperty32 	=> self.opcode_dword(ip),
 
             OpCode::Capture8 		=> self.opcode_capture8(ip),
             OpCode::Capture16 		=> self.opcode_capture16(ip),

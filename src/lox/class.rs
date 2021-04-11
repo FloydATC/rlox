@@ -33,3 +33,17 @@ impl std::fmt::Debug for Class {
             .finish()
     }
 }
+
+
+impl std::fmt::Display for Class {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Class(name={})", self.name)
+    }
+}
+
+
+impl Drop for Class {
+    fn drop(&mut self) {
+        println!("Class.drop() {}", self.name);
+    }
+}

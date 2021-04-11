@@ -142,6 +142,7 @@ impl VM {
                 OpCode::False 		=> result = self.opcode_false(),
                 OpCode::Null 		=> result = self.opcode_null(),
                 OpCode::True	 	=> result = self.opcode_true(),
+
                 OpCode::GetLocal8 	=> result = self.opcode_getlocal8(),
                 OpCode::GetLocal16 	=> result = self.opcode_getlocal16(),
                 OpCode::GetLocal32 	=> result = self.opcode_getlocal32(),
@@ -151,10 +152,14 @@ impl VM {
                 OpCode::GetGlobal8 	=> result = self.opcode_getglobal8(),
                 OpCode::GetGlobal16 	=> result = self.opcode_getglobal16(),
                 OpCode::GetGlobal32 	=> result = self.opcode_getglobal32(),
+                OpCode::GetProperty8 	=> result = self.opcode_getproperty8(),
+                OpCode::GetProperty16 	=> result = self.opcode_getproperty16(),
+                OpCode::GetProperty32 	=> result = self.opcode_getproperty32(),
 
                 OpCode::DefGlobal8	=> result = self.opcode_defglobal8(),
                 OpCode::DefGlobal16 	=> result = self.opcode_defglobal16(),
                 OpCode::DefGlobal32 	=> result = self.opcode_defglobal32(),
+
                 OpCode::SetLocal8 	=> result = self.opcode_setlocal8(),
                 OpCode::SetLocal16 	=> result = self.opcode_setlocal16(),
                 OpCode::SetLocal32 	=> result = self.opcode_setlocal32(),
@@ -164,6 +169,9 @@ impl VM {
                 OpCode::SetGlobal8 	=> result = self.opcode_setglobal8(),
                 OpCode::SetGlobal16 	=> result = self.opcode_setglobal16(),
                 OpCode::SetGlobal32 	=> result = self.opcode_setglobal32(),
+                OpCode::SetProperty8 	=> result = self.opcode_setproperty8(),
+                OpCode::SetProperty16 	=> result = self.opcode_setproperty16(),
+                OpCode::SetProperty32 	=> result = self.opcode_setproperty32(),
 
                 OpCode::Capture8 	=> result = self.opcode_capture8(),
                 OpCode::Capture16 	=> result = self.opcode_capture16(),
@@ -350,6 +358,41 @@ impl VM {
         return self.opcode_getglobal(id);
     }
     
+    fn opcode_getproperty(&mut self, id: usize) -> Result<(), String> {
+        // Read field name from the constants table
+        let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        let field = constant.as_string();
+
+        let instance = self.pop();// Value with field to be read
+
+        if instance.is_instance() {
+            let instance = instance.as_instance();
+            if !instance.has(field) {
+                return Err(format!("{} does not have a field \"{}\"", instance, field));
+            }
+            let value = instance.get(field).clone();
+            self.push(value);
+        } else {
+            return Err(format!("{} does not have properties", instance).to_string());
+        }
+        Ok(())
+    }
+
+    fn opcode_getproperty8(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_byte() as usize;
+        return self.opcode_getproperty(id);
+    }
+    
+    fn opcode_getproperty16(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_word() as usize;
+        return self.opcode_getproperty(id);
+    }
+    
+    fn opcode_getproperty32(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_dword() as usize;
+        return self.opcode_getproperty(id);
+    }
+    
     fn opcode_false(&mut self) -> Result<(), String> {
         self.push(Value::boolean(false));
         Ok(())
@@ -474,6 +517,39 @@ impl VM {
         return self.opcode_setglobal(id);
     }
 
+    fn opcode_setproperty(&mut self, id: usize) -> Result<(), String> {
+        // Read field name from the constants table
+        let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        let field = constant.as_string();
+
+        let value = self.pop(); // Value to assign
+        let mut instance = self.pop();// Value with field to be written
+
+        if instance.is_instance() {
+            let mut instance = instance.as_instance_mut();
+            instance.set(field, value.clone());
+            self.push(value);
+        } else {
+            return Err(format!("{} does not have properties", instance).to_string());
+        }
+        Ok(())
+    }
+
+    fn opcode_setproperty8(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_byte() as usize;
+        return self.opcode_setproperty(id);
+    }
+    
+    fn opcode_setproperty16(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_word() as usize;
+        return self.opcode_setproperty(id);
+    }
+    
+    fn opcode_setproperty32(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_dword() as usize;
+        return self.opcode_setproperty(id);
+    }
+    
     fn opcode_capture(&mut self, id: usize) -> Result<(), String> {
         // Get the function from constants table
         let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
@@ -760,9 +836,10 @@ impl VM {
             let instance = Value::instance(Instance::new(value));
             // callee is on the stack, but may have arguments after it
             // so we can't pop/push. 
+            // Fortunately, we know exactly how deep it is.
             self.poke(instance, argc as usize);
             // handle constructor arguments, if any
-            // ...
+            
         } else {
             panic!("VM.call_value({}, {}) not implemented.", value, argc);
         }
