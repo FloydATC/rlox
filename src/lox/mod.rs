@@ -4,6 +4,7 @@ mod chunk;
 mod function;
 mod class;
 mod instance;
+mod method;
 mod closure;
 mod callframe;
 mod obj;

@@ -31,17 +31,22 @@ impl Instance {
     pub fn class_name(&self) -> String {
         return self.class_value.as_class().name().to_string();
     }
+    
+    pub fn class(&self) -> &Value {
+        return &self.class_value;
+    }
 
     pub fn set(&mut self, field: &str, value: Value) {
         self.fields.insert(field.to_string(), value);
     }
 
-    pub fn has(&self, field: &str) -> bool {
-        return self.fields.contains_key(field);
-    }
+// Not sure we need this when get() can return None
+//    pub fn has(&self, field: &str) -> bool {
+//        return self.fields.contains_key(field);
+//    }
     
-    pub fn get(&self, field: &str) -> &Value {
-        return self.fields.get(field).unwrap();
+    pub fn get(&self, field: &str) -> Option<&Value> {
+        return self.fields.get(field);
     }
 }
 

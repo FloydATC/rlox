@@ -3,6 +3,7 @@
 use super::function::Function;
 use super::class::Class;
 use super::instance::Instance;
+use super::method::Method;
 use super::closure::Closure;
 
 
@@ -13,6 +14,7 @@ pub enum Obj {
     Class(Class),
     Closure(Closure),
     Instance(Instance),
+    Method(Method),
 }
 
 
@@ -31,6 +33,9 @@ impl Obj {
     }
     pub fn instance(i: Instance) -> Obj {
         Obj::Instance(i)
+    }
+    pub fn method(m: Method) -> Obj {
+        Obj::Method(m)
     }
 }
 
@@ -62,6 +67,13 @@ impl Obj {
     pub fn is_instance(&self) -> bool {
         match self {
             Obj::Instance(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_method(&self) -> bool {
+        match self {
+            Obj::Method(_) 	=> true,
             _			=> false,
         }
     }
@@ -131,6 +143,14 @@ impl Obj {
             _ => panic!("{:?} is not an Instance Object", self),
         }
     }
+
+    pub fn as_method(&self) -> &Method {
+        match self {
+            Obj::Method(i) => return &i,
+            _ => panic!("{:?} is not a Method Object", self),
+        }
+    }
+
 }
 
 
@@ -144,6 +164,7 @@ impl PartialEq for Obj {
             (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),
             (Obj::Closure(a), Obj::Closure(b))   => std::ptr::eq(a, b),
             (Obj::Instance(a), Obj::Instance(b)) => std::ptr::eq(a, b),
+            (Obj::Method(a), Obj::Method(b)) 	 => std::ptr::eq(a, b),
             _ => false, // Obj types mismatch
         }
     }
@@ -173,6 +194,9 @@ impl std::fmt::Display for Obj {
             }
             Obj::Instance(inst) => {
                 write!(f, "Obj::Instance(class={})", inst.class_name())
+            }
+            Obj::Method(m) => {
+                write!(f, "Obj::Method({}.{})", m.receiver_class_name(), m.method_name())
             }
         }
     }

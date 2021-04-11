@@ -475,15 +475,15 @@ impl Parser {
     }
     
     fn method(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
-        println!("Parser.method()");
+        //println!("Parser.method()");
         self.consume(TokenKind::Identifier, "Expect method name", input, output);
         let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
         let name = input.tokenizer.previous().lexeme().to_string();
-        println!("Parser.method() begin compiling method {}", name);
+        //println!("Parser.method() begin compiling method {}", name);
         self.function(&name, FunctionKind::Function, input, output);
-        println!("Parser.method() finished compiling method {}", name);
-        println!("prev={:?}", input.tokenizer.previous());
-        println!("curr={:?}", input.tokenizer.current());
+        //println!("Parser.method() finished compiling method {}", name);
+        //println!("prev={:?}", input.tokenizer.previous());
+        //println!("curr={:?}", input.tokenizer.current());
         output.compiler.emit_op_variant(&OpCodeSet::method(), name_constant as u64);
     }
 

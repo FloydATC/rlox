@@ -35,12 +35,13 @@ impl Class {
         self.methods.insert(name.to_string(), value);
     }
 
-    pub fn has(&self, name: &str) -> bool {
-        return self.methods.contains_key(name);
-    }
+// Not sure we really need this when get() can return None
+//    pub fn has(&self, name: &str) -> bool {
+//        return self.methods.contains_key(name);
+//    }
     
-    pub fn get(&self, name: &str) -> &Value {
-        return self.methods.get(name).unwrap();
+    pub fn get(&self, name: &str) -> Option<&Value> {
+        return self.methods.get(name);
     }
 }
 

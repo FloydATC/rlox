@@ -12,6 +12,7 @@ use super::globals::Globals;
 use super::locals::Locals;
 use super::class::Class;
 use super::instance::Instance;
+use super::method::Method;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
@@ -371,21 +372,23 @@ impl VM {
     fn opcode_getproperty(&mut self, id: usize) -> Result<(), String> {
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
-        let field = constant.as_string();
+        let name = constant.as_string();
 
-        let instance = self.pop();// Value with field to be read
+        let instance = self.pop();	// Receiver Value
 
         if instance.is_instance() {
-            let instance = instance.as_instance();
-            if !instance.has(field) {
-                return Err(format!("{} does not have a field \"{}\"", instance, field));
+            if self.get_instance_field(&instance, &name) {
+                // Name is a field of this instance
+                return Ok(())
+            } else if self.bind_method(&instance, &name) {
+                // Name is a class method of this instance
+                return Ok(());
+            } else {
+                return Err(format!("{} does not have a property \"{}\"", instance, name));
             }
-            let value = instance.get(field).clone();
-            self.push(value);
         } else {
             return Err(format!("{} does not have properties", instance).to_string());
         }
-        Ok(())
     }
 
     fn opcode_getproperty8(&mut self) -> Result<(), String> {
@@ -640,11 +643,11 @@ impl VM {
     }
 
     fn opcode_method(&mut self, id: usize) -> Result<(), String> {
-        println!("opcode_method({}) lookup constant", id);
+        //println!("opcode_method({}) lookup constant", id);
         let method_name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).as_string().clone();
         let method_value = self.pop();
         let mut class_value = self.peek(0).clone();
-        println!("opcode_method: class={} method={} set={}", class_value, method_name, method_value);
+        //println!("opcode_method: class={} method={} set={}", class_value, method_name, method_value);
         class_value.as_class_mut().set(&method_name, method_value);
         Ok(())
     }
@@ -866,7 +869,10 @@ impl VM {
     
     fn call_value(&mut self, value: Value, argc: u8) {
         if value.is_closure() {
-            self.call(value, argc);            
+            self.call(value, argc);
+        } else if value.is_method() {
+            let bound = value.as_method();
+            self.call(bound.method().clone(), argc);
         } else if value.is_class() {
             let instance = Value::instance(Instance::new(value));
             // callee is on the stack, but may have arguments after it
@@ -877,6 +883,40 @@ impl VM {
             
         } else {
             panic!("VM.call_value({}, {}) not implemented.", value, argc);
+        }
+    }
+
+    fn get_instance_field(&mut self, instance: &Value, field: &str) -> bool {
+        let instance = instance.as_instance();
+        
+        let result = instance.get(field);
+        match result {
+            Some(value) => {
+                self.push(value.clone());
+                return true;
+            }
+            None => {
+                return false;
+            }
+        }
+    }
+        
+    fn bind_method(&mut self, receiver_value: &Value, method_name: &str) -> bool {
+        // clox looks up the class by name, 
+        // but the receiver already has a reference to its class.
+        let instance = receiver_value.as_instance();
+        let class = instance.class().as_class();
+        
+        let result = class.get(method_name);
+        match result {
+            Some(method_value) => {
+                let bound_method = Method::new(receiver_value.clone(), method_value.clone());        
+                self.push(Value::method(bound_method));
+                return true;
+            }
+            None => {
+                return false;
+            }
         }
     }
 }

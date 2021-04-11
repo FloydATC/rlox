@@ -1066,3 +1066,36 @@ fn vm_class_method_no_args_3() {
     assert_eq!(rc, 1);
 }
 
+#[test]
+fn vm_class_call_method_no_args() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { exit 1; } } var ix=cx(); ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 1);
+}
+
+#[test]
+fn vm_class_call_method_with_args_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1(rc) { exit rc; } } var ix=cx(); ix.m1(123);");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+#[should_panic]
+fn vm_class_call_method_with_args_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1(rc,x) { exit rc; } } var ix=cx(); ix.m1(123);");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_class_call_method_with_args_3() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1(rc) { exit rc; } } var ix=cx(); ix.m1(123,234);");
+    let _rc = vm.execute();
+}
+
+

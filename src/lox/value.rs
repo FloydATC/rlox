@@ -8,6 +8,7 @@ use std::cell::{RefCell, Ref, RefMut};
 use super::obj::Obj;
 use super::function::Function;
 use super::class::Class;
+use super::method::Method;
 use super::instance::Instance;
 use super::closure::Closure;
 
@@ -56,6 +57,10 @@ impl Value {
 
     pub fn instance(i: Instance) -> Value {
         Value::Obj(Rc::new(RefCell::new(Obj::instance(i))))
+    }
+
+    pub fn method(m: Method) -> Value {
+        Value::Obj(Rc::new(RefCell::new(Obj::method(m))))
     }
 
 }
@@ -117,6 +122,13 @@ impl Value {
     pub fn is_instance(&self) -> bool {
         match self {
             Value::Obj(obj) 	=> RefCell::borrow(obj).is_instance(),
+            _ 			=> false
+        }
+    }
+
+    pub fn is_method(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_method(),
             _ 			=> false
         }
     }
@@ -236,6 +248,17 @@ impl Value {
         match self {
             Value::Obj(obj)	=> {
                 RefMut::map(obj.borrow_mut(), |o| o.as_instance_mut())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_method(&self) -> Ref<'_, Method> {
+        match self {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_method())
             }
             _			=> {
                 panic!("{} is not an object", self)
