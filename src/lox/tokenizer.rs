@@ -117,6 +117,7 @@ impl Tokenizer {
             "break" 	=> return Token::new_at(TokenKind::Break, &lexeme, at),
             "class" 	=> return Token::new_at(TokenKind::Class, &lexeme, at),
             "continue" 	=> return Token::new_at(TokenKind::Continue, &lexeme, at),
+            "debug" 	=> return Token::new_at(TokenKind::Debug, &lexeme, at),
             "else" 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
             "exit" 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
             "fun" 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),

@@ -4,9 +4,10 @@
 #[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum OpCode {
-    Exit	= 0x00,
-    Print	= 0x01,
-    Return 	= 0x02,
+    Debug	= 0x00,
+    Exit	= 0x01,
+    Print	= 0x02,
+    Return 	= 0x03,
     
     // Push constant value onto stack
     GetConst8	= 0x10,	// Followed by BYTE indexing table of constants
@@ -54,9 +55,15 @@ pub enum OpCode {
     Capture16,
     Capture32,
 
+    // Get constant value (should be a name) and ...
+    // ... create a named class
     Class8,	// Followed by BYTE indexing table of constants
     Class16,	// Followed by WORD indexing table of constants
     Class32,	// Followed by DWORD indexing table of constants
+    // ... add named method to class
+    Method8,	// Followed by BYTE indexing table of constants
+    Method16,	// Followed by WORD indexing table of constants
+    Method32,	// Followed by DWORD indexing table of constants
     
     // Pop one value, perform operation, push result
     Not,
@@ -95,6 +102,7 @@ impl OpCode {
         let opcode = OpCode::code(byte);
 
         match opcode {        
+            OpCode::Debug		=> { return "DEBUG"; }
             OpCode::Exit		=> { return "EXIT"; }
             OpCode::Print		=> { return "PRT"; }
             OpCode::Return 		=> { return "RET"; }
@@ -143,6 +151,9 @@ impl OpCode {
             OpCode::Class8	 	=> { return "CLASS"; }
             OpCode::Class16		=> { return "CLASS"; }
             OpCode::Class32		=> { return "CLASS"; }
+            OpCode::Method8	 	=> { return "METHOD"; }
+            OpCode::Method16		=> { return "METHOD"; }
+            OpCode::Method32		=> { return "METHOD"; }
 
             OpCode::Not			=> { return "NOT"; }
             OpCode::Negate		=> { return "NEG"; }
@@ -172,6 +183,7 @@ impl OpCode {
         }
     }
     pub fn code(byte: u8) -> OpCode {
+        if byte == OpCode::Debug as u8 { return OpCode::Debug; }
         if byte == OpCode::Exit as u8 { return OpCode::Exit; }
         if byte == OpCode::Print as u8 { return OpCode::Print; }
         if byte == OpCode::Return as u8 { return OpCode::Return; }
@@ -220,6 +232,9 @@ impl OpCode {
         if byte == OpCode::Class8 as u8  { return OpCode::Class8; }
         if byte == OpCode::Class16 as u8  { return OpCode::Class16; }
         if byte == OpCode::Class32 as u8  { return OpCode::Class32; }
+        if byte == OpCode::Method8 as u8  { return OpCode::Method8; }
+        if byte == OpCode::Method16 as u8  { return OpCode::Method16; }
+        if byte == OpCode::Method32 as u8  { return OpCode::Method32; }
         
         if byte == OpCode::Not as u8 	{ return OpCode::Not; }
         if byte == OpCode::Negate as u8 { return OpCode::Negate; }
@@ -276,6 +291,13 @@ impl OpCodeSet {
             byte: 	OpCode::Class8,
             word:	OpCode::Class16,
             dword:	OpCode::Class32,
+        }
+    }
+    pub fn method() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::Method8,
+            word:	OpCode::Method16,
+            dword:	OpCode::Method32,
         }
     }
     pub fn getconst() -> OpCodeSet {

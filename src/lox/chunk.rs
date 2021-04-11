@@ -73,6 +73,7 @@ impl Chunk {
         let mut result = String::new();
         result += &format!("0x{:02x} ", self.code[*ip as usize]);
         let instruction = match OpCode::code(self.code[*ip as usize]) {
+            OpCode::Debug 		=> self.opcode_immediate(ip),
             OpCode::Exit 		=> self.opcode_immediate(ip),
             OpCode::Print 		=> self.opcode_immediate(ip),
             OpCode::Return 		=> self.opcode_immediate(ip),
@@ -120,6 +121,9 @@ impl Chunk {
             OpCode::Class8 		=> self.opcode_byte(ip),
             OpCode::Class16 		=> self.opcode_word(ip),
             OpCode::Class32 		=> self.opcode_dword(ip),
+            OpCode::Method8 		=> self.opcode_byte(ip),
+            OpCode::Method16 		=> self.opcode_word(ip),
+            OpCode::Method32 		=> self.opcode_dword(ip),
 
             OpCode::Not 		=> self.opcode_immediate(ip),
             OpCode::Negate 		=> self.opcode_immediate(ip),

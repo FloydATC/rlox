@@ -134,6 +134,7 @@ impl VM {
                     self.push(return_value);
                     result = Ok(());
                 }
+                OpCode::Debug		=> result = self.opcode_debug(),
                 OpCode::Print		=> result = self.opcode_print(),
 
                 OpCode::GetConst8 	=> result = self.opcode_getconst8(),
@@ -180,6 +181,9 @@ impl VM {
                 OpCode::Class8 		=> result = self.opcode_class8(),
                 OpCode::Class16 	=> result = self.opcode_class16(),
                 OpCode::Class32 	=> result = self.opcode_class32(),
+                OpCode::Method8 	=> result = self.opcode_method8(),
+                OpCode::Method16 	=> result = self.opcode_method16(),
+                OpCode::Method32 	=> result = self.opcode_method32(),
 
                 OpCode::Not 		=> result = self.opcode_not(),
                 OpCode::Negate 		=> result = self.opcode_negate(),
@@ -238,6 +242,12 @@ impl VM {
         // TODO: Needs a return value
         let callee = self.peek(arg_count as usize).clone();
         self.call_value(callee, arg_count);        
+        Ok(())
+    }
+
+    fn opcode_debug(&mut self) -> Result<(), String> {
+        let value = self.pop();
+        println!("DEBUG> {:?}", value);
         Ok(())
     }
 
@@ -605,11 +615,11 @@ impl VM {
     }
 
     fn opcode_class(&mut self, id: usize) -> Result<(), String> {
-        println!("opcode_class({}) lookup constant", id);
+        //println!("opcode_class({}) lookup constant", id);
         let name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
-        println!("create class");
+        //println!("create class");
         let class = Class::new(name.as_string());
-        println!("create value and push it");
+        //println!("create value and push it");
         self.push(Value::class(class));
         Ok(())
     }
@@ -627,6 +637,31 @@ impl VM {
     fn opcode_class32(&mut self) -> Result<(), String> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_class(id);
+    }
+
+    fn opcode_method(&mut self, id: usize) -> Result<(), String> {
+        println!("opcode_method({}) lookup constant", id);
+        let method_name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).as_string().clone();
+        let method_value = self.pop();
+        let mut class_value = self.peek(0).clone();
+        println!("opcode_method: class={} method={} set={}", class_value, method_name, method_value);
+        class_value.as_class_mut().set(&method_name, method_value);
+        Ok(())
+    }
+
+    fn opcode_method8(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_byte() as usize;
+        return self.opcode_method(id);
+    }
+    
+    fn opcode_method16(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_word() as usize;
+        return self.opcode_method(id);
+    }
+    
+    fn opcode_method32(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_dword() as usize;
+        return self.opcode_method(id);
     }
 
     fn opcode_not(&mut self) -> Result<(), String> {

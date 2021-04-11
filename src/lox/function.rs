@@ -5,7 +5,7 @@ use super::constants::Constants;
 
 
 #[allow(dead_code)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum FunctionKind {
     Function,
     Script,
@@ -80,6 +80,7 @@ impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Function")
             .field("name", &self.name)
+            .field("kind", &self.kind)
             .field("arity", &self.arity)
             .field("chunk", &self.chunk)
             .field("constants", &self.constants)

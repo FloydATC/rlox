@@ -1,7 +1,14 @@
 
 
+use std::collections::HashMap;
+
+
+use super::value::Value;
+
+
 pub struct Class {
     name	: String,
+    methods	: HashMap<String,Value>,
 }
 
 
@@ -11,6 +18,7 @@ impl Class {
     pub fn new(name: &str) -> Self {
         Self {
             name:	name.to_string(),
+            methods:	HashMap::new(),
         }
     }
 
@@ -23,6 +31,17 @@ impl Class {
         return &self.name;
     }
     
+    pub fn set(&mut self, name: &str, value: Value) {
+        self.methods.insert(name.to_string(), value);
+    }
+
+    pub fn has(&self, name: &str) -> bool {
+        return self.methods.contains_key(name);
+    }
+    
+    pub fn get(&self, name: &str) -> &Value {
+        return self.methods.get(name).unwrap();
+    }
 }
 
 
@@ -30,6 +49,7 @@ impl std::fmt::Debug for Class {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Class")
             .field("name", &self.name)
+            .field("methods", &self.methods)
             .finish()
     }
 }

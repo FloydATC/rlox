@@ -473,6 +473,19 @@ impl Parser {
         
         output.locals.end_function();
     }
+    
+    fn method(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        println!("Parser.method()");
+        self.consume(TokenKind::Identifier, "Expect method name", input, output);
+        let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
+        let name = input.tokenizer.previous().lexeme().to_string();
+        println!("Parser.method() begin compiling method {}", name);
+        self.function(&name, FunctionKind::Function, input, output);
+        println!("Parser.method() finished compiling method {}", name);
+        println!("prev={:?}", input.tokenizer.previous());
+        println!("curr={:?}", input.tokenizer.current());
+        output.compiler.emit_op_variant(&OpCodeSet::method(), name_constant as u64);
+    }
 
     // Parse arguments passed when calling a callee
     fn argument_list(&mut self, input: &mut ParserInput, output: &mut ParserOutput) -> Result<u8, String> {
@@ -502,6 +515,8 @@ impl Parser {
             self.break_statement(input, output);
         } else if input.tokenizer.advance_on(TokenKind::Continue) {
             self.continue_statement(input, output);
+        } else if input.tokenizer.advance_on(TokenKind::Debug) {
+            self.debug_statement(input, output);
         } else if input.tokenizer.advance_on(TokenKind::Exit) {
             self.exit_statement(input, output);
         } else if input.tokenizer.advance_on(TokenKind::If) {
@@ -540,6 +555,12 @@ impl Parser {
         self.consume(TokenKind::Semicolon, "Expect ';' after 'continue'", input, output);
     }
 
+    fn debug_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
+        self.expression(input, output);
+        self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+        output.compiler.emit_op(&OpCode::Debug); // Print result using std::fmt::Debug
+    }
+    
     fn expression_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         //println!("Parser.expression_statement()");
         self.expression(input, output);
@@ -579,7 +600,7 @@ impl Parser {
     fn print_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         self.expression(input, output);
         self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
-        output.compiler.emit_op(&OpCode::Print); // Print result
+        output.compiler.emit_op(&OpCode::Print); // Print result using std::fmt::Display
     }
     
     fn return_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -711,15 +732,25 @@ impl Parser {
     fn class_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
         input.tokenizer.advance(); // Consume Class token
         let name_id = self.parse_variable("Expect class name", input, output);
-
-//        self.consume(TokenKind::Identifier, "Expect class name", input, output);      
-        let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
+        let name_token = input.tokenizer.previous().clone();
+        let name_constant = self.identifier_constant(&name_token, output);
         self.declare_variable(input, output);
         output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
         self.define_variable(name_id, output);
-        
+        // At runtime, load the class onto the stack so we can manipulate it
+        self.named_variable(&name_token, false, input, output);
         self.consume(TokenKind::LeftCurly, "Expect '{' after class name", input, output);
+        //println!("Parser.class_declaration() begin parsing methods");
+        loop {
+            if input.tokenizer.matches(TokenKind::RightCurly) { break; }
+            if input.tokenizer.eof() { break; }
+            // We don't have field declarations, only methods
+            self.method(input, output);
+        }
+        //println!("Parser.class_declaration() finished parsing methods");
         self.consume(TokenKind::RightCurly, "Expect '}' after class body", input, output);
+        // We're done manipulating the class
+        output.compiler.emit_op(&OpCode::Pop);
     }
 
     fn fun_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -1072,6 +1103,7 @@ impl Parser {
             TokenKind::Break => return ParserRule::null(),
             TokenKind::Class => return ParserRule::null(),
             TokenKind::Continue => return ParserRule::null(),
+            TokenKind::Debug => return ParserRule::null(),
             TokenKind::Else => return ParserRule::null(),
             TokenKind::Exit => return ParserRule::null(),
             TokenKind::If => return ParserRule::null(),
