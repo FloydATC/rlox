@@ -11,6 +11,7 @@ use super::value::Value;
 use super::globals::Globals;
 use super::locals::Locals;
 use super::class::Class;
+use super::instance::Instance;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
@@ -752,10 +753,16 @@ impl VM {
         self.callframes.push(callframe);
     }
     
-    // Stack: Value to be called
     fn call_value(&mut self, value: Value, argc: u8) {
         if value.is_closure() {
             self.call(value, argc);            
+        } else if value.is_class() {
+            let instance = Value::instance(Instance::new(value));
+            // callee is on the stack, but may have arguments after it
+            // so we can't pop/push. 
+            self.poke(instance, argc as usize);
+            // handle constructor arguments, if any
+            // ...
         } else {
             panic!("VM.call_value({}, {}) not implemented.", value, argc);
         }

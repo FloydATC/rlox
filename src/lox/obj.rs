@@ -2,6 +2,7 @@
 
 use super::function::Function;
 use super::class::Class;
+use super::instance::Instance;
 use super::closure::Closure;
 
 
@@ -11,6 +12,7 @@ pub enum Obj {
     Function(Function),
     Class(Class),
     Closure(Closure),
+    Instance(Instance),
 }
 
 
@@ -26,6 +28,9 @@ impl Obj {
     }
     pub fn closure(c: Closure) -> Obj {
         Obj::Closure(c)
+    }
+    pub fn instance(i: Instance) -> Obj {
+        Obj::Instance(i)
     }
 }
 
@@ -50,6 +55,13 @@ impl Obj {
     pub fn is_closure(&self) -> bool {
         match self {
             Obj::Closure(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_instance(&self) -> bool {
+        match self {
+            Obj::Instance(_) 	=> true,
             _			=> false,
         }
     }
@@ -105,6 +117,20 @@ impl Obj {
             _ => panic!("{:?} is not a Closure Object", self),
         }
     }
+
+    pub fn as_instance(&self) -> &Instance {
+        match self {
+            Obj::Instance(i) => return &i,
+            _ => panic!("{:?} is not an Instance Object", self),
+        }
+    }
+
+    pub fn as_instance_mut(&mut self) -> &mut Instance {
+        match self {
+            Obj::Instance(i) => return i,
+            _ => panic!("{:?} is not an Instance Object", self),
+        }
+    }
 }
 
 
@@ -117,6 +143,7 @@ impl PartialEq for Obj {
             (Obj::Function(a), Obj::Function(b)) => std::ptr::eq(a, b),
             (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),
             (Obj::Closure(a), Obj::Closure(b))   => std::ptr::eq(a, b),
+            (Obj::Instance(a), Obj::Instance(b)) => std::ptr::eq(a, b),
             _ => false, // Obj types mismatch
         }
     }
@@ -143,6 +170,9 @@ impl std::fmt::Display for Obj {
             }
             Obj::Closure(cl) => {
                 write!(f, "Obj::Closure({})", cl.name())
+            }
+            Obj::Instance(inst) => {
+                write!(f, "Obj::Instance(class={})", inst.class_name())
             }
         }
     }

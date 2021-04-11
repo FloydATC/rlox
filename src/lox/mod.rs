@@ -3,6 +3,7 @@ mod opcode;
 mod chunk;
 mod function;
 mod class;
+mod instance;
 mod closure;
 mod callframe;
 mod obj;
