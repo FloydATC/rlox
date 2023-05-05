@@ -32,6 +32,7 @@ impl Method {
 }
 
 
+#[allow(dead_code)]
 impl Method {
     // ======== Methods ========
     

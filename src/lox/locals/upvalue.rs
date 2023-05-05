@@ -4,6 +4,7 @@
 // this upvalue refers to.
 // The runtime representation of an upvalue is nested in "vm.rs"
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Upvalue {
     id:		usize,
     is_local:	bool,

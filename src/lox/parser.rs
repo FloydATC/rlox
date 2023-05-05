@@ -94,7 +94,6 @@ impl ParserRule {
 #[allow(dead_code)]
 pub struct Parser {
     scopes: 	Vec<Scope>,
-//    locals: 	Vec<Local>,
     codeloops:	Vec<CodeLoop>,
 }
 
@@ -105,7 +104,6 @@ impl Parser {
         //println!("Parser::new()");
         Parser {
             scopes: 	vec![],
-//            locals: 	vec![Local::new("",0)], // Reserve stack slot zero
             codeloops:	vec![],
         }
     }
@@ -238,7 +236,7 @@ impl Parser {
         
         self.emit_return(output);
 
-        //self.end_scope(output); // Not needed and code would be unreachable
+        self.end_scope(output);
         
         Ok(())
     }
@@ -298,7 +296,7 @@ impl Parser {
                 if let Some(id) = output.locals.resolve_local(name) {
                     if output.locals.local_ref_by_id(id).depth() == scope_depth {
                         // TODO: Proper error handling
-                        panic!("Variable with this name already declared");
+                        panic!("Variable named {:?} already declared: {:?}", name, output.locals);
                     }
                 }
 
@@ -426,7 +424,7 @@ impl Parser {
     // handing it a new compilation unit (Compiler with a Function object)
     // and letting it borrow our other inputs and outputs.
     fn function(&mut self, name: &str, kind: FunctionKind, input: &mut ParserInput, output: &mut ParserOutput) {
-        output.locals.begin_function();
+        output.locals.begin_function(kind == FunctionKind::Method);
     
         // Create a new compilation unit
         let mut function = Function::new(name, kind);    
@@ -480,7 +478,7 @@ impl Parser {
         let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
         let name = input.tokenizer.previous().lexeme().to_string();
         //println!("Parser.method() begin compiling method {}", name);
-        self.function(&name, FunctionKind::Function, input, output);
+        self.function(&name, FunctionKind::Method, input, output);
         //println!("Parser.method() finished compiling method {}", name);
         //println!("prev={:?}", input.tokenizer.previous());
         //println!("curr={:?}", input.tokenizer.current());
@@ -917,8 +915,9 @@ impl Parser {
     fn ternary(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
-    fn this_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+    fn this_(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        //panic!("Not yet implemented.");
+        self.variable(false, input, output)
     }
 
     fn unary(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -1109,6 +1108,11 @@ impl Parser {
             TokenKind::If => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
+            TokenKind::This => return ParserRule {
+                prefix: 	Some(Parser::this_), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
             TokenKind::Var => return ParserRule::null(),
             TokenKind::Fun => return ParserRule::null(),
             TokenKind::While => return ParserRule::null(),

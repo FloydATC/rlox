@@ -1,5 +1,6 @@
 
 
+#[derive(Debug)]
 pub struct Local {
     name:	String,
     depth:	usize,	// Scope depth within function
@@ -36,7 +37,7 @@ impl Local {
     }
     
     pub fn is_defined(&self) -> bool {
-        return self.defined;
+        return self.name == "this" || self.defined;
     }
 
     pub fn is_captured(&self) -> bool {

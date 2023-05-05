@@ -68,7 +68,7 @@ impl VM {
             compiler: 	&mut compiler,
             //constants: 	&mut self.constants,
             globals: 	&mut self.globals,
-            locals:	&mut Locals::new(), // Discard after compile
+            locals:	&mut Locals::new(false), // Discard after compile
         };
         let result = parser.parse(&mut input, &mut output);
         
@@ -387,7 +387,7 @@ impl VM {
                 return Err(format!("{} does not have a property \"{}\"", instance, name));
             }
         } else {
-            return Err(format!("{} does not have properties", instance).to_string());
+            return Err(format!("{} does not have properties to get", instance).to_string());
         }
     }
 
@@ -543,7 +543,7 @@ impl VM {
             instance.set(field, value.clone());
             self.push(value);
         } else {
-            return Err(format!("{} does not have properties", instance).to_string());
+            return Err(format!("{} does not have properties to set", instance).to_string());
         }
         Ok(())
     }
@@ -872,6 +872,7 @@ impl VM {
             self.call(value, argc);
         } else if value.is_method() {
             let bound = value.as_method();
+            self.stack.poke(bound.receiver().clone(), argc as usize);
             self.call(bound.method().clone(), argc);
         } else if value.is_class() {
             let instance = Value::instance(Instance::new(value));

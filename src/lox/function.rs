@@ -8,6 +8,7 @@ use super::constants::Constants;
 #[derive(PartialEq, Debug)]
 pub enum FunctionKind {
     Function,
+    Method,
     Script,
 }
 

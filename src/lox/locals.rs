@@ -11,6 +11,7 @@ use super::local::Local;
 // for a single function declaration.
 // The goal is to hide this as an implementation detail of Locals
 // so its caller does not have to worry about lifetimes.
+#[derive(Debug)]
 struct LocalSet {
     locals:	Vec<Local>,
     upvalues:	Vec<Upvalue>,
@@ -19,9 +20,10 @@ struct LocalSet {
 
 
 impl LocalSet {
-    fn new(parent: Option<Box<LocalSet>>) -> Self {
+    fn new(parent: Option<Box<LocalSet>>, with_receiver: bool) -> Self {
+        let receiver = if with_receiver { "this" } else { "" };
         Self {
-            locals:	vec![Local::new("",0)], // Reserve stack slot zero
+            locals:	vec![Local::new(receiver,0)], // Reserve stack slot zero
             upvalues:	vec![],
             parent,
         }
@@ -152,27 +154,28 @@ impl LocalSet {
 }
 
 
+#[derive(Debug)]
 pub struct Locals {
     current: 	Option<Box<LocalSet>>,
 }
 
 
 impl Locals {
-    pub fn new() -> Self {
+    pub fn new(with_receiver: bool) -> Self {
         Self {
-            current: Some(Box::new(LocalSet::new(None))),
+            current: Some(Box::new(LocalSet::new(None, with_receiver))),
         }
     }
 
     // Begin a new LocalSet (=function declaration)
-    pub fn begin_function(&mut self) {
+    pub fn begin_function(&mut self, with_receiver: bool) {
         
         // Is this even possible? As long as I never do anything
         // stupid with self.localsets the references would remain valid,
         // but I'm afraid there's no way to make such a promise.
         
         let parent = self.current.take();
-        self.current = Some(Box::new(LocalSet::new(parent)));
+        self.current = Some(Box::new(LocalSet::new(parent, with_receiver)));
     }
     
     // End the current LocalSet (=function declaration)

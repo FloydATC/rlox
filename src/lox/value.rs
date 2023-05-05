@@ -386,7 +386,7 @@ impl std::fmt::Display for Value {
             Value::Null		=> write!(f, "Value::Null"),
             Value::Bool(b)	=> write!(f, "Value::Bool({})", b),
             Value::Number(n)	=> write!(f, "Value::Number({})", n),
-            Value::String(s)	=> write!(f, "Value::String({})", s),
+            Value::String(s)	=> write!(f, "Value::String({:?})", s),
             Value::Obj(rc)	=> write!(f, "Value::{}", RefCell::borrow(rc)),
         }
     }

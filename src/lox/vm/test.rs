@@ -1098,4 +1098,154 @@ fn vm_class_call_method_with_args_3() {
     let _rc = vm.execute();
 }
 
+#[test]
+#[should_panic]
+fn vm_class_method_declare_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { var this; } }");
+    let _rc = vm.execute();
+}
 
+#[test]
+#[should_panic]
+fn vm_class_method_define_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { var this=123; } }");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_function_declare_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f1() { var this; }");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_function_define_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f1() { var this=123; }");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_function_copy_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f1() { var t=this; }");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_function_return_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("fun f1() { return this; }");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_root_declare_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var this;");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_root_define_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var this=123;");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_root_get_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("exit this;");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_root_copy_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var t=this;");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_root_exit_this() {
+    let mut vm = VM::new();
+    let _res = vm.compile("exit this;");
+    let _rc = vm.execute();
+}
+
+#[test]
+fn vm_class_method_return_this_v1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { this.v1=123; this.v2=234; return this.v1; } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_class_method_return_this_v2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { this.v1=123; this.v2=234; return this.v2; } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 234);
+}
+
+#[test]
+fn vm_class_method_return_nested_this_v1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { this.v1=123; this.v2=234; fun f1() { return this.v1; } return f1(); } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_class_method_return_nested_this_v2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { this.v1=123; this.v2=234; fun f1() { return this.v2; } return f1(); } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 234);
+}
+
+#[test]
+fn vm_class_method_return_double_nested_this_v1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { this.v1=123; this.v2=234; fun f1() { fun f2() { return this.v1; } return f2(); } return f1(); } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_class_method_return_double_nested_this_v2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { m1() { this.v1=123; this.v2=234; fun f1() { fun f2() { return this.v2; } return f2(); } return f1(); } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 234);
+}
+
+#[test]
+fn vm_class_instance_state() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { set(v) { this.v=v; } dbl() { this.v=this.v*2; } get() { return this.v; } } var ix=cx(); ix.set(123); ix.dbl(); exit ix.get();");
+    let rc = vm.execute();
+    assert_eq!(rc, 246);
+}
+
+//#[test]
+//fn vm_nested_classes() {
+//    let mut vm = VM::new();
+//    let _res = vm.compile("class c1 { m1() { class c2 { m1() { return 234; } } return 123; } } var ix=c1(); exit ix.m1();");
+//    let rc = vm.execute();
+//    assert_eq!(rc, 123);
+//}

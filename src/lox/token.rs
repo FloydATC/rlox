@@ -55,6 +55,7 @@ pub enum TokenKind {
     If,
     Print,
     Return,
+    This,
     Var,
     While,
     
@@ -186,6 +187,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::If		=> write!(f, "If"),
             TokenKind::Print		=> write!(f, "Print"),
             TokenKind::Return 		=> write!(f, "Return"),
+            TokenKind::This 		=> write!(f, "This"),
             TokenKind::Var		=> write!(f, "Var"),
             TokenKind::While		=> write!(f, "While"),
             
