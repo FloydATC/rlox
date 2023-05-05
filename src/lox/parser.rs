@@ -3,6 +3,7 @@ use super::token::{Token, TokenKind};
 use super::function::{Function, FunctionKind};
 use super::value::Value;
 use super::globals::Globals;
+use super::hierarchy::Hierarchy;
 use super::locals::Locals;
 //use super::local::Local;
 use super::scope::Scope;
@@ -94,6 +95,7 @@ impl ParserRule {
 #[allow(dead_code)]
 pub struct Parser {
     scopes: 	Vec<Scope>,
+    classes:    Hierarchy<Token>,
     codeloops:	Vec<CodeLoop>,
 }
 
@@ -104,6 +106,7 @@ impl Parser {
         //println!("Parser::new()");
         Parser {
             scopes: 	vec![],
+            classes:    Hierarchy::new(),
             codeloops:	vec![],
         }
     }
@@ -296,7 +299,7 @@ impl Parser {
                 if let Some(id) = output.locals.resolve_local(name) {
                     if output.locals.local_ref_by_id(id).depth() == scope_depth {
                         // TODO: Proper error handling
-                        panic!("Variable named {:?} already declared: {:?}", name, output.locals);
+                        panic!("Variable named {:?} already declared: {:#?}", name, output.locals);
                     }
                 }
 
@@ -438,6 +441,7 @@ impl Parser {
         
         // Create a new Parser and call parse_function()
         let mut parser = Parser::new();
+        parser.classes = self.classes.clone();
         let result = parser.parse_function(input, &mut inner_output);
         if let Err(msg) = result {
             // TODO: Proper error handling
@@ -732,7 +736,8 @@ impl Parser {
         let name_id = self.parse_variable("Expect class name", input, output);
         let name_token = input.tokenizer.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
-        self.declare_variable(input, output);
+        self.classes.push(name_token.lexeme(), name_token.clone());
+        //self.declare_variable(input, output); // Already declared in parse_variable()!
         output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
         self.define_variable(name_id, output);
         // At runtime, load the class onto the stack so we can manipulate it
@@ -748,6 +753,8 @@ impl Parser {
         //println!("Parser.class_declaration() finished parsing methods");
         self.consume(TokenKind::RightCurly, "Expect '}' after class body", input, output);
         // We're done manipulating the class
+        //println!("defined new class: {:?}", self.classes.current_path());
+        self.classes.pop();
         output.compiler.emit_op(&OpCode::Pop);
     }
 
@@ -916,6 +923,7 @@ impl Parser {
         panic!("Not yet implemented.");
     }
     fn this_(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        if self.classes.current_name().is_none() { panic!("Can not use 'this' outside of a class."); }
         //panic!("Not yet implemented.");
         self.variable(false, input, output)
     }

@@ -5,6 +5,7 @@ mod function;
 mod class;
 mod instance;
 mod method;
+mod hierarchy;
 mod closure;
 mod callframe;
 mod obj;
