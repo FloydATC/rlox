@@ -16,6 +16,7 @@ pub struct Class {
 impl Class {
 
     pub fn new(name: &str) -> Self {
+        println!("Class::new() {}", name);
         Self {
             name:	name.to_string(),
             methods:	HashMap::new(),
