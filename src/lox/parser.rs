@@ -1,6 +1,6 @@
 
 use super::token::{Token, TokenKind};
-use super::function::{Function, FunctionKind};
+use super::function::{Function, FunctionKind, INITIALIZER};
 use super::value::Value;
 use super::globals::Globals;
 use super::hierarchy::Hierarchy;
@@ -138,11 +138,12 @@ impl Parser {
     }
     
     fn emit_return(&self, output: &mut ParserOutput) {
-        //if compiler.type == TYPE_INITIALIZER {
-        //    output.compiler.emit_op(&OpCode::GetLocal);
-        //    output.compiler.emit_byte(0);
-        //} else {
-        output.compiler.emit_op(&OpCode::Null);
+        if output.compiler.function().kind().return_self() {
+            output.compiler.emit_op(&OpCode::GetLocal8);
+            output.compiler.emit_byte(0);
+        } else {
+            output.compiler.emit_op(&OpCode::Null);
+        }
         //}
         output.compiler.emit_op(&OpCode::Return);
     }
@@ -427,7 +428,7 @@ impl Parser {
     // handing it a new compilation unit (Compiler with a Function object)
     // and letting it borrow our other inputs and outputs.
     fn function(&mut self, name: &str, kind: FunctionKind, input: &mut ParserInput, output: &mut ParserOutput) {
-        output.locals.begin_function(kind == FunctionKind::Method);
+        output.locals.begin_function(kind.has_receiver());
     
         // Create a new compilation unit
         let mut function = Function::new(name, kind);    
@@ -482,7 +483,8 @@ impl Parser {
         let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
         let name = input.tokenizer.previous().lexeme().to_string();
         //println!("Parser.method() begin compiling method {}", name);
-        self.function(&name, FunctionKind::Method, input, output);
+        let kind = if name == INITIALIZER { FunctionKind::Initializer } else { FunctionKind::Method };
+        self.function(&name, kind, input, output);
         //println!("Parser.method() finished compiling method {}", name);
         //println!("prev={:?}", input.tokenizer.previous());
         //println!("curr={:?}", input.tokenizer.current());
@@ -606,14 +608,12 @@ impl Parser {
     }
     
     fn return_statement(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
-        if output.compiler.function().kind() == &FunctionKind::Script {
-            // TODO: Proper error handling
-            panic!("Can't return from top level code.");
-        }
+        let function_kind = output.compiler.function().kind();
+        if function_kind.is_toplevel() { panic!("Can't return from top level code."); }
         if input.tokenizer.advance_on(TokenKind::Semicolon) {
-            // No expression after 'return'
-            output.compiler.emit_op(&OpCode::Null);
+            self.emit_return(output); // Pushes 'this' or null as needed
         } else {
+            if function_kind.return_self() { panic!("Can't return a value from initializer."); }
             self.expression(input, output);
             self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
         }

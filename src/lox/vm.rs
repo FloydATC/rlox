@@ -14,7 +14,7 @@ use super::class::Class;
 use super::instance::Instance;
 use super::method::Method;
 use super::closure::Closure;
-use super::function::{Function, FunctionKind};
+use super::function::{Function, FunctionKind, INITIALIZER};
 use super::scanner::Scanner;
 use super::tokenizer::Tokenizer;
 use super::parser::{Parser, ParserInput, ParserOutput};
@@ -219,7 +219,7 @@ impl VM {
                 }
                 Err(message) => {
                     eprintln!(
-                        "{} at ip={}\n{:?}", 
+                        "{} at ip={:#06x}\n{:?}", 
                         message,
                         ip, 
                         self.callframe().closure_ref().function_ref()
@@ -875,13 +875,21 @@ impl VM {
             self.stack.poke(bound.receiver().clone(), argc as usize);
             self.call(bound.method().clone(), argc);
         } else if value.is_class() {
+            let initializer = match value.as_class().get(INITIALIZER) {
+                None => None,
+                Some(function) => Some(function.clone()),
+            };
             let instance = Value::instance(Instance::new(value));
             // callee is on the stack, but may have arguments after it
             // so we can't pop/push. 
             // Fortunately, we know exactly how deep it is.
             self.poke(instance, argc as usize);
             // handle constructor arguments, if any
-            
+            if let Some(function) = initializer {
+                self.call(function, argc);
+            } else if argc != 0 {
+                panic!("Expected 0 arguments but got {}", argc);
+            }
         } else {
             panic!("VM.call_value({}, {}) not implemented.", value, argc);
         }

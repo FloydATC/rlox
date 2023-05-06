@@ -1257,3 +1257,69 @@ fn vm_nested_classes_2() {
     let rc = vm.execute();
     assert_eq!(rc, 234);
 }
+
+#[test]
+#[should_panic]
+fn vm_instance_init_no_args_expected() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init() { this.v1=123; } m1() { return this.v1; } } var ix=cx(1); exit ix.m1();");
+    let _rc = vm.execute();
+}
+
+#[test]
+#[should_panic]
+fn vm_instance_init_args_missing() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init(v) { this.v1=v; } m1() { return this.v1; } } var ix=cx(); exit ix.m1();");
+    let _rc = vm.execute();
+}
+
+#[test]
+fn vm_instance_init_no_args_ok() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init() { this.v1=123; } m1() { return this.v1; } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_instance_init_args_one_ok() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init(v) { this.v1=v; } m1() { return this.v1; } } var ix=cx(123); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_instance_init_args_two_ok_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init(v1,v2) { this.v1=v1; } m1() { return this.v1; } } var ix=cx(123,234); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_instance_init_args_two_ok_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init(v1,v2) { this.v1=v2; } m1() { return this.v1; } } var ix=cx(123,234); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 234);
+}
+
+#[test]
+fn vm_instance_init_return() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init() { this.v1=123; return; } m1() { return this.v1; } } var ix=cx(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+#[should_panic]
+fn vm_instance_init_return_value() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class cx { init() { this.v1=123; return 234; } m1() { return this.v1; } } var ix=cx(); exit ix.m1();");
+    let _rc = vm.execute();
+}
+
+
