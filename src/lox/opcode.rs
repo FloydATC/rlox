@@ -30,6 +30,9 @@ pub enum OpCode {
     GetProperty8	= 0x29,
     GetProperty16	= 0x2a,
     GetProperty32	= 0x2b,
+    GetSuper8	= 0x2c,
+    GetSuper16	= 0x2d,
+    GetSuper32	= 0x2f,
     
     // Pop value and put in new variable
     DefGlobal8	= 0x30,	// Followed by BYTE indexing table of globals
@@ -103,9 +106,9 @@ impl OpCode {
         let opcode = OpCode::code(byte);
 
         match opcode {        
-            OpCode::Debug		=> { return "DBG"; }
+            OpCode::Debug		=> { return "DEBUG"; }
             OpCode::Exit		=> { return "EXIT"; }
-            OpCode::Print		=> { return "PRT"; }
+            OpCode::Print		=> { return "PRINT"; }
             OpCode::Return 		=> { return "RET"; }
 
             OpCode::GetConst8 		=> { return "GETC"; }
@@ -127,6 +130,9 @@ impl OpCode {
             OpCode::GetProperty8 	=> { return "GETP"; }
             OpCode::GetProperty16 	=> { return "GETP"; }
             OpCode::GetProperty32 	=> { return "GETP"; }
+            OpCode::GetSuper8 	=> { return "GETS"; }
+            OpCode::GetSuper16 	=> { return "GETS"; }
+            OpCode::GetSuper32 	=> { return "GETS"; }
         
             OpCode::DefGlobal8 		=> { return "DEFG"; }
             OpCode::DefGlobal16 	=> { return "DEFG"; }
@@ -149,9 +155,9 @@ impl OpCode {
             OpCode::Capture16		=> { return "CAP"; }
             OpCode::Capture32		=> { return "CAP"; }
 
-            OpCode::Class8	 	=> { return "CLS"; }
-            OpCode::Class16		=> { return "CLS"; }
-            OpCode::Class32		=> { return "CLS"; }
+            OpCode::Class8	 	=> { return "CLASS"; }
+            OpCode::Class16		=> { return "CLASS"; }
+            OpCode::Class32		=> { return "CLASS"; }
             OpCode::Method8	 	=> { return "MTHD"; }
             OpCode::Method16		=> { return "MTHD"; }
             OpCode::Method32		=> { return "MTHD"; }
@@ -178,8 +184,8 @@ impl OpCode {
 
             OpCode::Pop 		=> { return "POP"; }
             OpCode::PopN 		=> { return "POP"; }
-            OpCode::CloseUpvalue	=> { return "CLU"; }
-            OpCode::Inherit     => { return "INHT"; }
+            OpCode::CloseUpvalue	=> { return "CLOSE"; }
+            OpCode::Inherit     => { return "INHRT"; }
             
             OpCode::BAD 		=> { return "???"; }
         }
@@ -209,6 +215,9 @@ impl OpCode {
         if byte == OpCode::GetProperty8 as u8  { return OpCode::GetProperty8; }
         if byte == OpCode::GetProperty16 as u8  { return OpCode::GetProperty16; }
         if byte == OpCode::GetProperty32 as u8  { return OpCode::GetProperty32; }
+        if byte == OpCode::GetSuper8 as u8  { return OpCode::GetSuper8; }
+        if byte == OpCode::GetSuper16 as u8  { return OpCode::GetSuper16; }
+        if byte == OpCode::GetSuper32 as u8  { return OpCode::GetSuper32; }
         
         if byte == OpCode::DefGlobal8 as u8 { return OpCode::DefGlobal8; }
         if byte == OpCode::DefGlobal16 as u8 { return OpCode::DefGlobal16; }
@@ -364,6 +373,13 @@ impl OpCodeSet {
             byte: 	OpCode::SetProperty8,
             word:	OpCode::SetProperty16,
             dword:	OpCode::SetProperty32,
+        }
+    }
+    pub fn get_super() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::GetSuper8,
+            word:	OpCode::GetSuper16,
+            dword:	OpCode::GetSuper32,
         }
     }
 }

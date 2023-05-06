@@ -127,6 +127,7 @@ impl Tokenizer {
             "of" 	=> return Token::new_at(TokenKind::Of, &lexeme, at),
             "print" 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
             "return" 	=> return Token::new_at(TokenKind::Return, &lexeme, at),
+            "super" 	=> return Token::new_at(TokenKind::Super, &lexeme, at),
             "this" 	=> return Token::new_at(TokenKind::This, &lexeme, at),
             "true" 	=> return Token::new_at(TokenKind::True, &lexeme, at),
             "var" 	=> return Token::new_at(TokenKind::Var,	&lexeme, at),

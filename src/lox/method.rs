@@ -19,10 +19,13 @@ impl Method {
 
     pub fn new(receiver: Value, method: Value) -> Self {
         if !receiver.is_instance() {
-            panic!("{} is not an object Instance", receiver);
+            panic!("Receiver {} is not an object Instance", receiver);
         }
+//        if !receiver.is_class() {
+//            panic!("{} is not an object Class", receiver);
+//        }
         if !method.is_closure() {
-            panic!("{} is not a Closure", method);
+            panic!("Closure {} is not a Closure", method);
         }
         Self {
             receiver:	receiver,
@@ -38,6 +41,7 @@ impl Method {
     
     pub fn receiver_class_name(&self) -> String {
         return self.receiver.as_instance().class_name();
+//        return self.receiver.as_class().name().to_string();
     }
     
     pub fn receiver(&self) -> &Value {

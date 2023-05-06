@@ -96,6 +96,9 @@ impl Chunk {
             OpCode::GetProperty8 		=> self.opcode_byte(ip),
             OpCode::GetProperty16 	=> self.opcode_word(ip),
             OpCode::GetProperty32 	=> self.opcode_dword(ip),
+            OpCode::GetSuper8 		=> self.opcode_byte(ip),
+            OpCode::GetSuper16 	=> self.opcode_word(ip),
+            OpCode::GetSuper32 	=> self.opcode_dword(ip),
 
             OpCode::DefGlobal8 		=> self.opcode_byte(ip),
             OpCode::DefGlobal16 	=> self.opcode_word(ip),

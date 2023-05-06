@@ -1370,3 +1370,10 @@ fn vm_class_overload_parent() {
     assert_eq!(rc, 123);
 }
 
+#[test]
+fn vm_class_super() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 { m1() { return 123; } } class c2 of c1 { m1() { return 234; } m2() { return super.m1(); } } var ix=c2(); exit ix.m2();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}

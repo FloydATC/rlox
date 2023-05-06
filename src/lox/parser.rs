@@ -1,4 +1,5 @@
 
+use super::class::{THIS, SUPER};
 use super::class_descriptor::ClassDescriptor;
 use super::token::{Token, TokenKind};
 use super::function::{Function, FunctionKind, INITIALIZER};
@@ -742,15 +743,18 @@ impl Parser {
         output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
         self.define_variable(name_id, output);
 
-        // class Name of Superclass
+        // Check for superclass with syntax: class Name of Superclass {}
         if input.tokenizer.advance_on(TokenKind::Of) {
             self.consume(TokenKind::Identifier, "Expected superclass name", input, output);
             self.variable(false, input, output); // Look up superclass by name, load it on the stack
-            if name_token.lexeme() == input.tokenizer.previous().lexeme() { panic!("A class can not inherit from itself"); }
+            let superclass_token = input.tokenizer.previous().clone();
+            if name_token.lexeme() == superclass_token.lexeme() { panic!("A class can not inherit from itself"); }
             self.begin_scope();
 
-            // Add synthetic variable "super", defined as parent class
-            // ...
+            // Copy superclass from globals to a local variable 'super'
+            output.locals.declare_local(SUPER, 0);
+            self.named_variable(&superclass_token, false, input, output);
+            self.define_variable(0, output);
 
             // Load current class onto the stack and copy methods from parent
             self.named_variable(&name_token, false, input, output);
@@ -939,15 +943,27 @@ impl Parser {
     fn subscr(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
-    fn super_(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
-        panic!("Not yet implemented.");
+
+    fn super_(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
+        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class", SUPER); }
+        if !self.classes.current().unwrap().has_parent() { panic!("Can not use '{}' in a class with no superclass", SUPER); }
+        self.consume(TokenKind::Dot, format!("Expected '.' after '{}'", SUPER).as_str(), input, output);
+        self.consume(TokenKind::Identifier, "Expected identifier superclass method name", input, output);
+        let name_token = input.tokenizer.previous().clone();
+        let name_constant = self.identifier_constant(&name_token, output);
+
+        self.named_variable(&name_token.synthetic(THIS, TokenKind::This), false, input, output);
+        self.named_variable(&name_token.synthetic(SUPER, TokenKind::Super), false, input, output);
+        println!("super_() emitting OpCode::Get_Super");
+        output.compiler.emit_op_variant(&OpCodeSet::get_super(), name_constant as u64);
     }
+
     fn ternary(&mut self, _can_assign: bool, _input: &mut ParserInput, _output: &mut ParserOutput) {
         panic!("Not yet implemented.");
     }
+
     fn this_(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
-        if self.classes.current_name().is_none() { panic!("Can not use 'this' outside of a class."); }
-        //panic!("Not yet implemented.");
+        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class.", THIS); }
         self.variable(false, input, output)
     }
 
@@ -1140,6 +1156,11 @@ impl Parser {
             TokenKind::Of => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
+            TokenKind::Super => return ParserRule {
+                prefix: 	Some(Parser::super_), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            }, 
             TokenKind::This => return ParserRule {
                 prefix: 	Some(Parser::this_), 
                 infix: 		None, 

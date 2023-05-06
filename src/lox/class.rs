@@ -6,6 +6,10 @@ use std::collections::HashMap;
 use super::value::Value;
 
 
+pub const THIS: &str = "this";
+pub const SUPER: &str = "super";
+
+
 pub struct Class {
     name: String,
     methods: HashMap<String,Value>,

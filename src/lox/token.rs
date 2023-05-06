@@ -56,6 +56,7 @@ pub enum TokenKind {
     Of,
     Print,
     Return,
+    Super,
     This,
     Var,
     While,
@@ -115,7 +116,16 @@ impl Token {
         }
     }
     
+
+    pub fn synthetic(&self, lexeme: &str, kind: TokenKind) -> Self {
+        Token {
+            kind,
+            lexeme: lexeme.to_string(),
+            at: self.at.clone(),
+        }
+    }
     
+
     pub fn matches(&self, kind: TokenKind) -> bool {
         return self.kind == kind;
     }
@@ -189,6 +199,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::Of		=> write!(f, "Of"),
             TokenKind::Print		=> write!(f, "Print"),
             TokenKind::Return 		=> write!(f, "Return"),
+            TokenKind::Super 		=> write!(f, "Super"),
             TokenKind::This 		=> write!(f, "This"),
             TokenKind::Var		=> write!(f, "Var"),
             TokenKind::While		=> write!(f, "While"),

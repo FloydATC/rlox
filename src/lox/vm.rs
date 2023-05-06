@@ -104,7 +104,7 @@ impl VM {
             let opcode = self.callframe_mut().read_op();
 
             // Trace VM state
-            println!("IP={}:0x{:04x} opcode={} SP=0x{:04x}", fn_name, ip, OpCode::name(opcode as u8), self.stack.size());
+            println!("IP={}:0x{:04x} SP=0x{:04x} CF=0x{:04x} Next={} ", fn_name, ip, self.stack.size(), self.callframe().stack_bottom(), OpCode::name(opcode as u8));
             println!(" stack={:?}", self.stack);
             
             let result;
@@ -157,6 +157,9 @@ impl VM {
                 OpCode::GetProperty8 	=> result = self.opcode_getproperty8(),
                 OpCode::GetProperty16 	=> result = self.opcode_getproperty16(),
                 OpCode::GetProperty32 	=> result = self.opcode_getproperty32(),
+                OpCode::GetSuper8 	=> result = self.opcode_getsuper8(),
+                OpCode::GetSuper16 	=> result = self.opcode_getsuper16(),
+                OpCode::GetSuper32 	=> result = self.opcode_getsuper32(),
 
                 OpCode::DefGlobal8	=> result = self.opcode_defglobal8(),
                 OpCode::DefGlobal16 	=> result = self.opcode_defglobal16(),
@@ -262,6 +265,7 @@ impl VM {
     fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {
         //let value = self.constants.value_by_id(id).clone();
         let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        //println!("opcode_getconst() loaded constant id=0x{:08x} onto stack: {}", id, value);
         self.push(value);
         Ok(())
     }
@@ -282,8 +286,9 @@ impl VM {
     }
 
     fn opcode_getlocal(&mut self, id: usize) -> Result<(), String> {
-        let depth = self.slot_depth(id);
+        let depth = self.slot_depth(id); // Stack index from bottom
         self.push(self.peek(depth).clone());
+        //println!("opcode_getlocal() fetched local variable id 0x{:08x} onto stack: {}", id, self.peek(0));
         Ok(())
     }
 
@@ -303,7 +308,7 @@ impl VM {
     }
 
     fn opcode_getupvalue(&mut self, id: usize) -> Result<(), String> {
-        println!("getupvalue id={} of closure upvalues", id);
+        //print!("opcode_getupvalue() id 0x{:08x}:", id);
         let stack_addr;
         let inner;
         
@@ -321,13 +326,13 @@ impl VM {
         match inner {
             Some(value)	=> {
                 // This upvalue has been closed and now exists off the stack
-                println!(" closed upvalue={}", value);
+                //println!(" closed upvalue={}", value);
                 self.push(value);
             }
             None => {
                 // This value still lives on the stack
                 let value = self.stack.peek_addr(stack_addr).clone();
-                println!(" open upvalue={}", value);
+                //println!(" open upvalue={}", value);
                 self.push(value);
             }
         }
@@ -352,6 +357,7 @@ impl VM {
     fn opcode_getglobal(&mut self, id: usize) -> Result<(), String> {
         // Compiler guarantees the variable is defined
         self.push(self.globals.value_by_id(id).unwrap().clone());
+        //println!("opcode_getglobal() loaded global 0x{:08x} onto stack: {}", id, self.globals.value_by_id(id).unwrap());
         Ok(())
     }
 
@@ -375,17 +381,19 @@ impl VM {
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let name = constant.as_string();
 
-        let instance = self.pop();	// Receiver Value
+        let instance = self.peek(0).clone();	// Receiver Value
 
         if instance.is_instance() {
-            if self.get_instance_field(&instance, &name) {
+            if let Some(value) = instance.as_instance().get(&name) {
+                self.pop();
+                self.push(value.clone());
+//            if self.get_instance_field(&instance, &name) {
                 // Name is a field of this instance
+                //println!("opcode_getproperty() Field '{}' of {} pushed onto stack", name, instance);
                 return Ok(())
-            } else if self.bind_method(&instance, &name) {
-                // Name is a class method of this instance
-                return Ok(());
             } else {
-                return Err(format!("{} does not have a property \"{}\"", instance, name));
+                //println!("opcode_getproperty() Method '{}' of {} pushed onto stack", name, instance);
+                return self.bind_method(&instance.as_instance().class(), &name);
             }
         } else {
             return Err(format!("{} does not have properties to get", instance).to_string());
@@ -407,6 +415,37 @@ impl VM {
         return self.opcode_getproperty(id);
     }
     
+    fn opcode_getsuper(&mut self, id: usize) -> Result<(), String> {
+        //println!("opcode_getsuper() invoked");
+        // Read field name from the constants table
+        let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        let method_name = constant.as_string();
+
+        let superclass = self.pop();
+        //println!("opcode_getsuper() binding method '{}' to superclass {}", method_name, superclass);
+
+        if self.bind_method(&superclass, method_name).is_err() {
+            return Err(format!("Could not bind method '{}' to superclass {}", method_name, superclass));
+        }
+        //println!("opcode_getsuper() finished");
+        Ok(())
+    }
+
+    fn opcode_getsuper8(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_byte() as usize;
+        return self.opcode_getsuper(id);
+    }
+    
+    fn opcode_getsuper16(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_word() as usize;
+        return self.opcode_getsuper(id);
+    }
+    
+    fn opcode_getsuper32(&mut self) -> Result<(), String> {
+        let id = self.callframe_mut().read_dword() as usize;
+        return self.opcode_getsuper(id);
+    }
+    
     fn opcode_false(&mut self) -> Result<(), String> {
         self.push(Value::boolean(false));
         Ok(())
@@ -424,6 +463,7 @@ impl VM {
 
     fn opcode_defglobal(&mut self, id: usize) -> Result<(), String> {
         let value = self.pop();
+        //println!("opcode_defglobal() popped {} off stack, define as global 0x{:08x}", value, id);
         self.globals.define_by_id(id, value);
         Ok(())
     }
@@ -444,8 +484,9 @@ impl VM {
     }
     
     fn opcode_setlocal(&mut self, id: usize) -> Result<(), String> {
-        let depth = self.slot_depth(id);
+        let depth = self.slot_depth(id); // Stack index from bottom
         self.poke(self.peek(0).clone(), depth);
+        //println!("opcode_setlocal() stored top of stack in local variable id 0x{:08x}: {}", id, self.peek(0));
         Ok(())
     }
     
@@ -512,6 +553,7 @@ impl VM {
 
     fn opcode_setglobal(&mut self, id: usize) -> Result<(), String> {
         let value = self.peek(0).clone();
+        //println!("opcode_setglobal() set id 0x{:08x} as {}", id, value);
         self.globals.define_by_id(id, value);
         Ok(())
     }
@@ -542,6 +584,7 @@ impl VM {
         if instance.is_instance() {
             let mut instance = instance.as_instance_mut();
             instance.set(field, value.clone());
+            //println!("opcode_setproperty() set field '{}' of {} to {}", field, instance, value);
             self.push(value);
         } else {
             return Err(format!("{} does not have properties to set", instance).to_string());
@@ -624,6 +667,7 @@ impl VM {
         //println!("create class");
         let class = Class::new(name.as_string());
         //println!("create value and push it");
+        //println!("opcode_class() Spawned class {} using constant 0x{:08x}: {}", class, id, name);
         self.push(Value::class(class));
         Ok(())
     }
@@ -644,11 +688,10 @@ impl VM {
     }
 
     fn opcode_method(&mut self, id: usize) -> Result<(), String> {
-        //println!("opcode_method({}) lookup constant", id);
         let method_name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).as_string().clone();
         let method_value = self.pop();
         let mut class_value = self.peek(0).clone();
-        //println!("opcode_method: class={} method={} set={}", class_value, method_name, method_value);
+        //println!("opcode_method() popped {} off stack, added as method '{}' of {}", method_value, method_name, class_value);
         class_value.as_class_mut().set(&method_name, method_value);
         Ok(())
     }
@@ -800,23 +843,23 @@ impl VM {
     }
 
     fn opcode_pop(&mut self) -> Result<(), String> {
-        let value = self.pop();
-        println!("POP = {}", value);
+        let _value = self.pop();
+        //println!("POP = {}", value);
         Ok(())
     }
     
     fn opcode_popn(&mut self) -> Result<(), String> {
         let count = self.callframe_mut().read_byte();
         for _ in 0..count {
-            let value = self.pop();
-            println!("POP = {}", value);
+            let _value = self.pop();
+            //println!("POP = {}", value);
         }
         Ok(())
     }
     
     fn opcode_closeupvalue(&mut self) -> Result<(), String> {
         self.close_upvalues(self.stack.top());
-        Err("OpCode::CloseUpvalue not yet implemented.".to_string())
+        Ok(())
     }
     
     fn opcode_inherit(&mut self) -> Result<(), String> {
@@ -826,11 +869,15 @@ impl VM {
             return Err(format!("Can not inherit from {} because it is not a class", superclass));
         }
         // Copy parent methods
+        //let mut count = 0;
         for (key, value) in superclass.as_class().methods().iter() {
-            if !class.as_class_mut().methods_mut().contains_key(key) { 
+            if !class.as_class_mut().methods_mut().contains_key(key) {
+                //println!("opcode_inherit() copy '{}' => {}", key, value);
                 class.as_class_mut().methods_mut().insert(key.clone(), value.clone()); 
+                //count = count + 1;
             }
         }
+        //println!("opcode_inherit() class {} inherited {} method(s) from superclass {}", class, count, superclass);
         self.push(class);
         Ok(())
     }
@@ -850,9 +897,11 @@ impl VM {
         let value = self.stack.pop();
         return value;
     }
+
     fn peek(&self, depth: usize) -> &Value {
         return self.stack.peek(depth);
     }
+
     fn poke(&mut self, value: Value, depth: usize) {
         self.stack.poke(value, depth);
     }
@@ -912,6 +961,7 @@ impl VM {
         }
     }
 
+    /*
     fn get_instance_field(&mut self, instance: &Value, field: &str) -> bool {
         let instance = instance.as_instance();
         
@@ -926,22 +976,32 @@ impl VM {
             }
         }
     }
+    */
         
-    fn bind_method(&mut self, receiver_value: &Value, method_name: &str) -> bool {
+    fn bind_method(&mut self, class: &Value, method_name: &str) -> Result<(),String> {
+        let receiver = self.stack.peek(0).clone();
+        //println!("bind_method() invoked, class={} method={} receiver={}", class, method_name, receiver);
+        if !class.is_class() {
+            return Err(format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class));            
+        }
+        if !receiver.is_instance() {
+            return Err(format!("Can not bind '{}' to {} because it is not an instance", method_name, receiver));            
+        }
         // clox looks up the class by name, 
         // but the receiver already has a reference to its class.
-        let instance = receiver_value.as_instance();
-        let class = instance.class().as_class();
+        //let instance = receiver_value.as_instance();
+        //println!("bind_method() instance={}", instance);
+        //let class = instance.class().as_class();
         
-        let result = class.get(method_name);
-        match result {
+        //let result = class.as_class().get(method_name);
+        match class.as_class().get(method_name) {
             Some(method_value) => {
-                let bound_method = Method::new(receiver_value.clone(), method_value.clone());        
+                let bound_method = Method::new(receiver, method_value.clone());        
                 self.push(Value::method(bound_method));
-                return true;
+                return Ok(());
             }
             None => {
-                return false;
+                return Err(format!("Class {} does not have a method named '{}'", class, method_name));
             }
         }
     }
@@ -996,7 +1056,7 @@ impl VM {
                     // Stop if we find an upvalue object referencing a stack address
                     // below stack_addr
                     if upvalue.addr() < stack_addr { 
-                        println!("  upvalue.addr() < stack_addr, exiting");
+                        //println!("  upvalue.addr() < stack_addr, exiting");
                         return; 
                     }
                     
