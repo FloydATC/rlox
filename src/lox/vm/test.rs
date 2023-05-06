@@ -1322,4 +1322,51 @@ fn vm_instance_init_return_value() {
     let _rc = vm.execute();
 }
 
+#[test]
+fn vm_class_inherit_syntax_ok() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 {} class c2 of c1 {} exit 123;");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_class_inherit_method() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 { m1() { return 123; } } class c2 of c1 {} var ix=c2(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_class_inherit_from_nonclass() {
+    let mut vm = VM::new();
+    let _res = vm.compile("var v1=123; class c2 of v1 {}");
+    let rc = vm.execute();
+    assert_eq!(rc, -1); // Runtime error
+}
+
+#[test]
+fn vm_class_inherit_wrong_way() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 {} class c2 of c1 { m1() { return 123; } } var ix=c1(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, -1); // Runtime error
+}
+
+#[test]
+fn vm_class_overload_child() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 { m1() { return 123; } } class c2 of c1 { m1() { return 234; } } var ix=c2(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 234);
+}
+
+#[test]
+fn vm_class_overload_parent() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 { m1() { return 123; } } class c2 of c1 { m1() { return 234; } } var ix=c1(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
 

@@ -92,6 +92,7 @@ pub enum OpCode {
     Pop,
     PopN,		// Followed by BYTE indicating number of values
     CloseUpvalue,
+    Inherit,
     
     BAD 	= 0xff,	// Unknown/bad opcodes resolve to this
 }
@@ -102,7 +103,7 @@ impl OpCode {
         let opcode = OpCode::code(byte);
 
         match opcode {        
-            OpCode::Debug		=> { return "DEBUG"; }
+            OpCode::Debug		=> { return "DBG"; }
             OpCode::Exit		=> { return "EXIT"; }
             OpCode::Print		=> { return "PRT"; }
             OpCode::Return 		=> { return "RET"; }
@@ -148,12 +149,12 @@ impl OpCode {
             OpCode::Capture16		=> { return "CAP"; }
             OpCode::Capture32		=> { return "CAP"; }
 
-            OpCode::Class8	 	=> { return "CLASS"; }
-            OpCode::Class16		=> { return "CLASS"; }
-            OpCode::Class32		=> { return "CLASS"; }
-            OpCode::Method8	 	=> { return "METHOD"; }
-            OpCode::Method16		=> { return "METHOD"; }
-            OpCode::Method32		=> { return "METHOD"; }
+            OpCode::Class8	 	=> { return "CLS"; }
+            OpCode::Class16		=> { return "CLS"; }
+            OpCode::Class32		=> { return "CLS"; }
+            OpCode::Method8	 	=> { return "MTHD"; }
+            OpCode::Method16		=> { return "MTHD"; }
+            OpCode::Method32		=> { return "MTHD"; }
 
             OpCode::Not			=> { return "NOT"; }
             OpCode::Negate		=> { return "NEG"; }
@@ -178,6 +179,7 @@ impl OpCode {
             OpCode::Pop 		=> { return "POP"; }
             OpCode::PopN 		=> { return "POP"; }
             OpCode::CloseUpvalue	=> { return "CLU"; }
+            OpCode::Inherit     => { return "INHT"; }
             
             OpCode::BAD 		=> { return "???"; }
         }
@@ -259,6 +261,7 @@ impl OpCode {
         if byte == OpCode::Pop as u8 	{ return OpCode::Pop; }
         if byte == OpCode::PopN as u8 	{ return OpCode::PopN; }
         if byte == OpCode::CloseUpvalue as u8 	{ return OpCode::CloseUpvalue; }
+        if byte == OpCode::Inherit as u8 	{ return OpCode::Inherit; }
         return OpCode::BAD;	// Do not use
     }
 }

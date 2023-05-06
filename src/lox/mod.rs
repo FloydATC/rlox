@@ -3,6 +3,7 @@ mod opcode;
 mod chunk;
 mod function;
 mod class;
+mod class_descriptor;
 mod instance;
 mod method;
 mod hierarchy;

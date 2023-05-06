@@ -124,6 +124,7 @@ impl Tokenizer {
             "false" 	=> return Token::new_at(TokenKind::False, &lexeme, at),
             "if" 	=> return Token::new_at(TokenKind::If, &lexeme, at),
             "null" 	=> return Token::new_at(TokenKind::Null, &lexeme, at),
+            "of" 	=> return Token::new_at(TokenKind::Of, &lexeme, at),
             "print" 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
             "return" 	=> return Token::new_at(TokenKind::Return, &lexeme, at),
             "this" 	=> return Token::new_at(TokenKind::This, &lexeme, at),

@@ -1,4 +1,5 @@
 
+use super::class_descriptor::ClassDescriptor;
 use super::token::{Token, TokenKind};
 use super::function::{Function, FunctionKind, INITIALIZER};
 use super::value::Value;
@@ -95,7 +96,7 @@ impl ParserRule {
 #[allow(dead_code)]
 pub struct Parser {
     scopes: 	Vec<Scope>,
-    classes:    Hierarchy<Token>,
+    classes:    Hierarchy<ClassDescriptor>,
     codeloops:	Vec<CodeLoop>,
 }
 
@@ -736,10 +737,29 @@ impl Parser {
         let name_id = self.parse_variable("Expect class name", input, output);
         let name_token = input.tokenizer.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
-        self.classes.push(name_token.lexeme(), name_token.clone());
+        self.classes.push(name_token.lexeme(), ClassDescriptor::new(&name_token));
         //self.declare_variable(input, output); // Already declared in parse_variable()!
         output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
         self.define_variable(name_id, output);
+
+        // class Name of Superclass
+        if input.tokenizer.advance_on(TokenKind::Of) {
+            self.consume(TokenKind::Identifier, "Expected superclass name", input, output);
+            self.variable(false, input, output); // Look up superclass by name, load it on the stack
+            if name_token.lexeme() == input.tokenizer.previous().lexeme() { panic!("A class can not inherit from itself"); }
+            self.begin_scope();
+
+            // Add synthetic variable "super", defined as parent class
+            // ...
+
+            // Load current class onto the stack and copy methods from parent
+            self.named_variable(&name_token, false, input, output);
+            output.compiler.emit_op(&OpCode::Inherit);
+
+            // Mark the current class as having a parent            
+            self.classes.current_mut().unwrap().set_parent(input.tokenizer.previous());
+        }
+
         // At runtime, load the class onto the stack so we can manipulate it
         self.named_variable(&name_token, false, input, output);
         self.consume(TokenKind::LeftCurly, "Expect '{' after class name", input, output);
@@ -754,8 +774,11 @@ impl Parser {
         self.consume(TokenKind::RightCurly, "Expect '}' after class body", input, output);
         // We're done manipulating the class
         //println!("defined new class: {:?}", self.classes.current_path());
-        self.classes.pop();
         output.compiler.emit_op(&OpCode::Pop);
+        if self.classes.current().unwrap().has_parent() { 
+            self.end_scope(output); 
+        }
+        self.classes.pop();
     }
 
     fn fun_declaration(&mut self, input: &mut ParserInput, output: &mut ParserOutput) {
@@ -1114,6 +1137,7 @@ impl Parser {
             TokenKind::Else => return ParserRule::null(),
             TokenKind::Exit => return ParserRule::null(),
             TokenKind::If => return ParserRule::null(),
+            TokenKind::Of => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),
             TokenKind::This => return ParserRule {

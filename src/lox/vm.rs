@@ -101,11 +101,11 @@ impl VM {
             let ip = self.callframe().ip();
             let fn_name = self.callframe().closure_ref().function_ref().name().to_string();
 
-            // Trace VM state
-            println!("IP={}:0x{:04x} SP=0x{:04x}", fn_name, ip, self.stack.size());
-            println!(" stack={:?}", self.stack);
-
             let opcode = self.callframe_mut().read_op();
+
+            // Trace VM state
+            println!("IP={}:0x{:04x} opcode={} SP=0x{:04x}", fn_name, ip, OpCode::name(opcode as u8), self.stack.size());
+            println!(" stack={:?}", self.stack);
             
             let result;
 
@@ -209,6 +209,7 @@ impl VM {
                 OpCode::Pop 		=> result = self.opcode_pop(),
                 OpCode::PopN 		=> result = self.opcode_popn(),
                 OpCode::CloseUpvalue	=> result = self.opcode_closeupvalue(),
+                OpCode::Inherit	=> result = self.opcode_inherit(),
 
                 OpCode::BAD 		=> result = self.opcode_bad(),
             }
@@ -816,6 +817,22 @@ impl VM {
     fn opcode_closeupvalue(&mut self) -> Result<(), String> {
         self.close_upvalues(self.stack.top());
         Err("OpCode::CloseUpvalue not yet implemented.".to_string())
+    }
+    
+    fn opcode_inherit(&mut self) -> Result<(), String> {
+        let mut class = self.pop();
+        let superclass = self.pop();
+        if !superclass.is_class() {
+            return Err(format!("Can not inherit from {} because it is not a class", superclass));
+        }
+        // Copy parent methods
+        for (key, value) in superclass.as_class().methods().iter() {
+            if !class.as_class_mut().methods_mut().contains_key(key) { 
+                class.as_class_mut().methods_mut().insert(key.clone(), value.clone()); 
+            }
+        }
+        self.push(class);
+        Ok(())
     }
     
     fn opcode_bad(&mut self) -> Result<(), String> {

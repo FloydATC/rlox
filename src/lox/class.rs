@@ -7,8 +7,8 @@ use super::value::Value;
 
 
 pub struct Class {
-    name	: String,
-    methods	: HashMap<String,Value>,
+    name: String,
+    methods: HashMap<String,Value>,
 }
 
 
@@ -18,8 +18,8 @@ impl Class {
     pub fn new(name: &str) -> Self {
         println!("Class::new() {}", name);
         Self {
-            name:	name.to_string(),
-            methods:	HashMap::new(),
+            name: name.to_string(),
+            methods: HashMap::new(),
         }
     }
 
@@ -44,6 +44,15 @@ impl Class {
     pub fn get(&self, name: &str) -> Option<&Value> {
         return self.methods.get(name);
     }
+
+    pub fn methods(&self) -> &HashMap<String,Value> {
+        return &self.methods;
+    }
+
+    pub fn methods_mut(&mut self) -> &mut HashMap<String,Value> {
+        return &mut self.methods;
+    }
+
 }
 
 

@@ -37,6 +37,14 @@ impl<T: Clone> Hierarchy<T> {
     }
 
 
+    pub fn current_mut(&mut self) -> Option<&mut T> {
+        return match self.hierarchy.last_mut() {
+            None => None,
+            Some((_, object_ref)) => Some(object_ref),
+        }
+    }
+
+
     pub fn current_name(&self) -> Option<&str> {
         return match self.hierarchy.last() {
             None => None,
