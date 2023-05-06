@@ -1377,3 +1377,18 @@ fn vm_class_super() {
     let rc = vm.execute();
     assert_eq!(rc, 123);
 }
+#[test]
+fn vm_nested_classes_1() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 { m1() { class c2 { m1() { return 234; } } return 123; } } var ix=c1(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 123);
+}
+
+#[test]
+fn vm_nested_classes_2() {
+    let mut vm = VM::new();
+    let _res = vm.compile("class c1 { m1() { class c2 { m1() { return 234; } } var ix=c2(); return ix.m1(); } } var ix=c1(); exit ix.m1();");
+    let rc = vm.execute();
+    assert_eq!(rc, 234);
+}
