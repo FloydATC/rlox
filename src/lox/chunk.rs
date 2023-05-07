@@ -72,18 +72,18 @@ impl Chunk {
     fn opcode(&self, ip: &mut u32) -> String {
         let mut result = String::new();
         result += &format!("0x{:02x} ", self.code[*ip as usize]);
-        let instruction = match OpCode::code(self.code[*ip as usize]) {
-            OpCode::Debug 		=> self.opcode_immediate(ip),
-            OpCode::Exit 		=> self.opcode_immediate(ip),
-            OpCode::Print 		=> self.opcode_immediate(ip),
-            OpCode::Return 		=> self.opcode_immediate(ip),
+        let instruction = match self.code[*ip as usize].into() {
+            OpCode::Debug 		    => self.opcode_immediate(ip),
+            OpCode::Exit 		    => self.opcode_immediate(ip),
+            OpCode::Print 		    => self.opcode_immediate(ip),
+            OpCode::Return 		    => self.opcode_immediate(ip),
 
             OpCode::GetConst8 		=> self.opcode_byte(ip),
             OpCode::GetConst16 		=> self.opcode_word(ip),
             OpCode::GetConst32 		=> self.opcode_dword(ip),
-            OpCode::False 		=> self.opcode_immediate(ip),
-            OpCode::Null 		=> self.opcode_immediate(ip),
-            OpCode::True 		=> self.opcode_immediate(ip),
+            OpCode::False 		    => self.opcode_immediate(ip),
+            OpCode::Null 		    => self.opcode_immediate(ip),
+            OpCode::True 		    => self.opcode_immediate(ip),
             OpCode::GetLocal8 		=> self.opcode_byte(ip),
             OpCode::GetLocal16 		=> self.opcode_word(ip),
             OpCode::GetLocal32 		=> self.opcode_dword(ip),
@@ -93,12 +93,12 @@ impl Chunk {
             OpCode::GetGlobal8 		=> self.opcode_byte(ip),
             OpCode::GetGlobal16 	=> self.opcode_word(ip),
             OpCode::GetGlobal32 	=> self.opcode_dword(ip),
-            OpCode::GetProperty8 		=> self.opcode_byte(ip),
+            OpCode::GetProperty8 	=> self.opcode_byte(ip),
             OpCode::GetProperty16 	=> self.opcode_word(ip),
             OpCode::GetProperty32 	=> self.opcode_dword(ip),
             OpCode::GetSuper8 		=> self.opcode_byte(ip),
-            OpCode::GetSuper16 	=> self.opcode_word(ip),
-            OpCode::GetSuper32 	=> self.opcode_dword(ip),
+            OpCode::GetSuper16 	    => self.opcode_word(ip),
+            OpCode::GetSuper32 	    => self.opcode_dword(ip),
 
             OpCode::DefGlobal8 		=> self.opcode_byte(ip),
             OpCode::DefGlobal16 	=> self.opcode_word(ip),
@@ -113,7 +113,7 @@ impl Chunk {
             OpCode::SetGlobal8 		=> self.opcode_byte(ip),
             OpCode::SetGlobal16 	=> self.opcode_word(ip),
             OpCode::SetGlobal32 	=> self.opcode_dword(ip),
-            OpCode::SetProperty8 		=> self.opcode_byte(ip),
+            OpCode::SetProperty8 	=> self.opcode_byte(ip),
             OpCode::SetProperty16 	=> self.opcode_word(ip),
             OpCode::SetProperty32 	=> self.opcode_dword(ip),
 
@@ -121,39 +121,39 @@ impl Chunk {
             OpCode::Capture16 		=> self.opcode_capture16(ip),
             OpCode::Capture32 		=> self.opcode_capture32(ip),
 
-            OpCode::Class8 		=> self.opcode_byte(ip),
+            OpCode::Class8 		    => self.opcode_byte(ip),
             OpCode::Class16 		=> self.opcode_word(ip),
             OpCode::Class32 		=> self.opcode_dword(ip),
             OpCode::Method8 		=> self.opcode_byte(ip),
             OpCode::Method16 		=> self.opcode_word(ip),
             OpCode::Method32 		=> self.opcode_dword(ip),
 
-            OpCode::Not 		=> self.opcode_immediate(ip),
-            OpCode::Negate 		=> self.opcode_immediate(ip),
+            OpCode::Not 		    => self.opcode_immediate(ip),
+            OpCode::Negate 		    => self.opcode_immediate(ip),
 
-            OpCode::Add 		=> self.opcode_immediate(ip),
-            OpCode::Sub 		=> self.opcode_immediate(ip),
-            OpCode::Mul 		=> self.opcode_immediate(ip),
-            OpCode::Div 		=> self.opcode_immediate(ip),
-            OpCode::Mod 		=> self.opcode_immediate(ip),
-            OpCode::Equal		=> self.opcode_immediate(ip),
+            OpCode::Add 		    => self.opcode_immediate(ip),
+            OpCode::Sub 		    => self.opcode_immediate(ip),
+            OpCode::Mul 		    => self.opcode_immediate(ip),
+            OpCode::Div 		    => self.opcode_immediate(ip),
+            OpCode::Mod 		    => self.opcode_immediate(ip),
+            OpCode::Equal		    => self.opcode_immediate(ip),
             OpCode::NotEqual		=> self.opcode_immediate(ip),
-            OpCode::Less		=> self.opcode_immediate(ip),
-            OpCode::Greater		=> self.opcode_immediate(ip),
+            OpCode::Less		    => self.opcode_immediate(ip),
+            OpCode::Greater		    => self.opcode_immediate(ip),
             OpCode::LessEqual		=> self.opcode_immediate(ip),
             OpCode::GreaterEqual	=> self.opcode_immediate(ip),
 
-            OpCode::Jmp			=> self.opcode_dword(ip),
+            OpCode::Jmp			    => self.opcode_dword(ip),
             OpCode::JmpFalseP		=> self.opcode_dword(ip),
             OpCode::JmpFalseQ		=> self.opcode_dword(ip),
-            OpCode::Call		=> self.opcode_byte(ip),
+            OpCode::Call		    => self.opcode_byte(ip),
 
-            OpCode::Pop 		=> self.opcode_immediate(ip),
-            OpCode::PopN 		=> self.opcode_byte(ip),
+            OpCode::Pop 		    => self.opcode_immediate(ip),
+            OpCode::PopN 		    => self.opcode_byte(ip),
             OpCode::CloseUpvalue	=> self.opcode_immediate(ip),
-            OpCode::Inherit	    => self.opcode_immediate(ip),
+            OpCode::Inherit	        => self.opcode_immediate(ip),
 
-            OpCode::BAD 		=> self.opcode_immediate(ip),
+            OpCode::BAD 		    => self.opcode_immediate(ip),
         };
         result += &instruction;
         return result;
@@ -162,7 +162,7 @@ impl Chunk {
     // OpCode has no argument
     fn opcode_immediate(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip as usize]));
+        result.push_str(OpCode::from(self.code[*ip as usize]).mnemonic());
         *ip = *ip + 1;
         return result;
     }
@@ -170,7 +170,7 @@ impl Chunk {
     // OpCode has one byte argument
     fn opcode_byte(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip as usize]));
+        result.push_str(OpCode::from(self.code[*ip as usize]).mnemonic());
         *ip = *ip + 1;
         let byte = self.read_byte(*ip);
         *ip = *ip + 1;
@@ -181,7 +181,7 @@ impl Chunk {
     // OpCode has one word argument
     fn opcode_word(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip as usize]));
+        result.push_str(OpCode::from(self.code[*ip as usize]).mnemonic());
         *ip = *ip + 1;
         let word = self.read_word(*ip);
         *ip = *ip + 2;
@@ -192,7 +192,7 @@ impl Chunk {
     // OpCode has one dword argument
     fn opcode_dword(&self, ip: &mut u32) -> String {
         let mut result = String::new();
-        result.push_str(OpCode::name(self.code[*ip as usize]));
+        result.push_str(OpCode::from(self.code[*ip as usize]).mnemonic());
         *ip = *ip + 1;
         let dword = self.read_dword(*ip);
         *ip = *ip + 4;

@@ -40,7 +40,7 @@ impl CallFrame {
 
     pub fn read_op(&mut self) -> OpCode {
         let byte = self.read_byte();
-        return OpCode::code(byte);
+        return byte.into();
     }
     
     

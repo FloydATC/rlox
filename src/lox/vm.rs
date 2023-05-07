@@ -104,7 +104,7 @@ impl VM {
             let opcode = self.callframe_mut().read_op();
 
             // Trace VM state
-            println!("IP={}:0x{:04x} SP=0x{:04x} CF=0x{:04x} Next={} ", fn_name, ip, self.stack.size(), self.callframe().stack_bottom(), OpCode::name(opcode as u8));
+            println!("IP={}:0x{:04x} SP=0x{:04x} CF=0x{:04x} Next={} ", fn_name, ip, self.stack.size(), self.callframe().stack_bottom(), opcode.mnemonic());
             println!(" stack={:?}", self.stack);
             
             let result;

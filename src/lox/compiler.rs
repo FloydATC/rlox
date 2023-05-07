@@ -64,7 +64,7 @@ impl Compiler {
     }
 
     pub fn emit_op(&mut self, opcode: &OpCode) {
-        self.emit_byte(*opcode as u8);
+        self.emit_byte(opcode.as_byte());
     }
 
 
