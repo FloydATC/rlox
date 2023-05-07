@@ -4,9 +4,6 @@ use super::value::Value;
 use super::constants::Constants;
 
 
-pub const INITIALIZER: &str = "init";
-
-
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
 pub enum FunctionKind {

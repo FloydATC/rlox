@@ -5,6 +5,7 @@ mod test;
 
 use super::token::{Token, TokenKind};
 use super::scanner::Scanner;
+use super::keyword::*;
 
 
 // ======== Layout ========
@@ -114,24 +115,24 @@ impl Tokenizer {
             self.scanner().advance();    
         }
         match lexeme.as_str() {
-            "break" 	=> return Token::new_at(TokenKind::Break, &lexeme, at),
-            "class" 	=> return Token::new_at(TokenKind::Class, &lexeme, at),
-            "continue" 	=> return Token::new_at(TokenKind::Continue, &lexeme, at),
-            "debug" 	=> return Token::new_at(TokenKind::Debug, &lexeme, at),
-            "else" 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
-            "exit" 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
-            "fun" 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),
-            "false" 	=> return Token::new_at(TokenKind::False, &lexeme, at),
-            "if" 	=> return Token::new_at(TokenKind::If, &lexeme, at),
-            "null" 	=> return Token::new_at(TokenKind::Null, &lexeme, at),
-            "of" 	=> return Token::new_at(TokenKind::Of, &lexeme, at),
-            "print" 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
-            "return" 	=> return Token::new_at(TokenKind::Return, &lexeme, at),
-            "super" 	=> return Token::new_at(TokenKind::Super, &lexeme, at),
-            "this" 	=> return Token::new_at(TokenKind::This, &lexeme, at),
-            "true" 	=> return Token::new_at(TokenKind::True, &lexeme, at),
-            "var" 	=> return Token::new_at(TokenKind::Var,	&lexeme, at),
-            "while" 	=> return Token::new_at(TokenKind::While, &lexeme, at),
+            KEYWORD_BREAK 	=> return Token::new_at(TokenKind::Break, &lexeme, at),
+            KEYWORD_CLASS 	=> return Token::new_at(TokenKind::Class, &lexeme, at),
+            KEYWORD_CONTINUE 	=> return Token::new_at(TokenKind::Continue, &lexeme, at),
+            KEYWORD_DEBUG 	=> return Token::new_at(TokenKind::Debug, &lexeme, at),
+            KEYWORD_ELSE 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
+            KEYWORD_EXIT 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
+            KEYWORD_FUN 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),
+            KEYWORD_FALSE 	=> return Token::new_at(TokenKind::False, &lexeme, at),
+            KEYWORD_IF 	=> return Token::new_at(TokenKind::If, &lexeme, at),
+            KEYWORD_NULL 	=> return Token::new_at(TokenKind::Null, &lexeme, at),
+            KEYWORD_OF 	=> return Token::new_at(TokenKind::Of, &lexeme, at),
+            KEYWORD_PRINT 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
+            KEYWORD_RETURN 	=> return Token::new_at(TokenKind::Return, &lexeme, at),
+            KEYWORD_SUPER 	=> return Token::new_at(TokenKind::Super, &lexeme, at),
+            KEYWORD_THIS 	=> return Token::new_at(TokenKind::This, &lexeme, at),
+            KEYWORD_TRUE 	=> return Token::new_at(TokenKind::True, &lexeme, at),
+            KEYWORD_VAR 	=> return Token::new_at(TokenKind::Var,	&lexeme, at),
+            KEYWORD_WHILE 	=> return Token::new_at(TokenKind::While, &lexeme, at),
             _ => return Token::new_at(TokenKind::Identifier, &lexeme, at),
         }
     }

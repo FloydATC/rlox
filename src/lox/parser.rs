@@ -1,8 +1,8 @@
 
-use super::class::{THIS, SUPER};
+use super::keyword::*;
 use super::class_descriptor::ClassDescriptor;
 use super::token::{Token, TokenKind};
-use super::function::{Function, FunctionKind, INITIALIZER};
+use super::function::{Function, FunctionKind};
 use super::value::Value;
 use super::globals::Globals;
 use super::hierarchy::Hierarchy;
@@ -485,7 +485,7 @@ impl Parser {
         let name_constant = self.identifier_constant(input.tokenizer.previous(), output);
         let name = input.tokenizer.previous().lexeme().to_string();
         //println!("Parser.method() begin compiling method {}", name);
-        let kind = if name == INITIALIZER { FunctionKind::Initializer } else { FunctionKind::Method };
+        let kind = if name == KEYWORD_INIT { FunctionKind::Initializer } else { FunctionKind::Method };
         self.function(&name, kind, input, output);
         //println!("Parser.method() finished compiling method {}", name);
         //println!("prev={:?}", input.tokenizer.previous());
@@ -752,7 +752,7 @@ impl Parser {
             self.begin_scope();
 
             // Copy superclass from globals to a local variable 'super'
-            output.locals.declare_local(SUPER, 0);
+            output.locals.declare_local(KEYWORD_SUPER, 0);
             self.named_variable(&superclass_token, false, input, output);
             self.define_variable(0, output);
 
@@ -945,15 +945,15 @@ impl Parser {
     }
 
     fn super_(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
-        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class", SUPER); }
-        if !self.classes.current().unwrap().has_parent() { panic!("Can not use '{}' in a class with no superclass", SUPER); }
-        self.consume(TokenKind::Dot, format!("Expected '.' after '{}'", SUPER).as_str(), input, output);
+        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class", KEYWORD_SUPER); }
+        if !self.classes.current().unwrap().has_parent() { panic!("Can not use '{}' in a class with no superclass", KEYWORD_SUPER); }
+        self.consume(TokenKind::Dot, format!("Expected '.' after '{}'", KEYWORD_SUPER).as_str(), input, output);
         self.consume(TokenKind::Identifier, "Expected identifier superclass method name", input, output);
         let name_token = input.tokenizer.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
 
-        self.named_variable(&name_token.synthetic(THIS, TokenKind::This), false, input, output);
-        self.named_variable(&name_token.synthetic(SUPER, TokenKind::Super), false, input, output);
+        self.named_variable(&name_token.synthetic(KEYWORD_THIS, TokenKind::This), false, input, output);
+        self.named_variable(&name_token.synthetic(KEYWORD_SUPER, TokenKind::Super), false, input, output);
         println!("super_() emitting OpCode::Get_Super");
         output.compiler.emit_op_variant(&OpCodeSet::get_super(), name_constant as u64);
     }
@@ -963,7 +963,7 @@ impl Parser {
     }
 
     fn this_(&mut self, _can_assign: bool, input: &mut ParserInput, output: &mut ParserOutput) {
-        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class.", THIS); }
+        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class.", KEYWORD_THIS); }
         self.variable(false, input, output)
     }
 

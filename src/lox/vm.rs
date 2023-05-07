@@ -5,6 +5,7 @@ mod test;
 pub mod upvalue;
 use upvalue::Upvalue;
 
+use super::keyword::*;
 use super::callframe::CallFrame;
 use super::stack::Stack;
 use super::value::Value;
@@ -14,7 +15,7 @@ use super::class::Class;
 use super::instance::Instance;
 use super::method::Method;
 use super::closure::Closure;
-use super::function::{Function, FunctionKind, INITIALIZER};
+use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
 use super::tokenizer::Tokenizer;
 use super::parser::{Parser, ParserInput, ParserOutput};
@@ -941,7 +942,7 @@ impl VM {
             self.stack.poke(bound.receiver().clone(), argc as usize);
             self.call(bound.method().clone(), argc);
         } else if value.is_class() {
-            let initializer = match value.as_class().get(INITIALIZER) {
+            let initializer = match value.as_class().get(KEYWORD_INIT) {
                 None => None,
                 Some(function) => Some(function.clone()),
             };
