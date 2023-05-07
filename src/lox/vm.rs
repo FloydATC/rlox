@@ -18,7 +18,7 @@ use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::scanner::Scanner;
 use super::tokenizer::Tokenizer;
-use super::parser::{Parser, ParserInput, ParserOutput};
+use super::parser::{Parser, ParserOutput};
 use super::compiler::Compiler;
 use super::opcode::OpCode;
 
@@ -54,17 +54,14 @@ impl VM {
         // figure out exactly how the pieces need to fit together.
         // -------------------------------------------------------
         
-        let scanner = Scanner::str(code);
-        let mut tokenizer = Tokenizer::new(scanner);
+        let scanner = Scanner::<std::io::Cursor<&str>>::str(code);
+        let mut input = Tokenizer::new(scanner);
         let mut function = Function::new("__main__", FunctionKind::Script);    
         let mut compiler = Compiler::new(function);
 
         let mut parser = Parser::new();        
         //let mut parser = Parser::new(tokenizer, compiler);
         //parser.give_constants(constants);
-        let mut input = ParserInput {
-            tokenizer: &mut tokenizer,
-        };
         let mut output = ParserOutput {
             compiler: 	&mut compiler,
             //constants: 	&mut self.constants,

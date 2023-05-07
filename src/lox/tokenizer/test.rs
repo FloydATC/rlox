@@ -2,12 +2,12 @@
 
 use crate::lox::scanner::Scanner;
 use crate::lox::token::TokenKind;
-use super::Tokenizer;
+use super::{Tokenizer, Tokenize};
 
 
 #[test]
 fn tokenizer_emptystring() {
-    let scanner = Scanner::str("");
+    let scanner = Scanner::<std::io::Cursor<&str>>::str("");
     let tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::EOF);
     assert_eq!(tokenizer.current().lexeme(), "\0");
@@ -15,7 +15,7 @@ fn tokenizer_emptystring() {
 
 #[test]
 fn tokenizer_symbols() {
-    let scanner = Scanner::str("+-*/");
+    let scanner = Scanner::<std::io::Cursor<&str>>::str("+-*/");
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -39,7 +39,7 @@ fn tokenizer_symbols() {
 
 #[test]
 fn tokenizer_symbols_and_newlines() {
-    let scanner = Scanner::str("+\n-\n*\n/\n");
+    let scanner = Scanner::<std::io::Cursor<&str>>::str("+\n-\n*\n/\n");
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -59,7 +59,7 @@ fn tokenizer_symbols_and_newlines() {
 
 #[test]
 fn tokenizer_line_comments() {
-    let scanner = Scanner::str(" + // comment\n- // comment");
+    let scanner = Scanner::<std::io::Cursor<&str>>::str(" + // comment\n- // comment");
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -73,7 +73,7 @@ fn tokenizer_line_comments() {
 
 #[test]
 fn tokenizer_block_comment() {
-    let scanner = Scanner::str(" +/*// comment\n * // comment */-");
+    let scanner = Scanner::<std::io::Cursor<&str>>::str(" +/*// comment\n * // comment */-");
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -87,7 +87,7 @@ fn tokenizer_block_comment() {
 
 #[test]
 fn tokenizer_add() {
-    let scanner = Scanner::str("2+3");
+    let scanner = Scanner::<std::io::Cursor<&str>>::str("2+3");
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Base10Number);
     assert_eq!(tokenizer.current().lexeme(), "2");

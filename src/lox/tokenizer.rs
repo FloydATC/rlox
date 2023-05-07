@@ -4,14 +4,24 @@ mod test;
 
 
 use super::token::{Token, TokenKind};
-use super::scanner::Scanner;
+use super::scanner::Scan;
 use super::keyword::*;
+
+
+pub trait Tokenize {
+    fn current(&self) -> &Token;
+    fn previous(&self) -> &Token;
+    fn eof(&self) -> bool;
+    fn advance(&mut self);
+    fn matches(&self, kind: TokenKind) -> bool;
+    fn advance_on(&mut self, kind: TokenKind) -> bool;
+}
 
 
 // ======== Layout ========
 #[allow(dead_code)]
-pub struct Tokenizer {
-    scanner: Option<Scanner>,
+pub struct Tokenizer<T> {
+    scanner: Option<T>,
     current: Option<Token>,
     previous: Option<Token>,
 }
@@ -19,10 +29,10 @@ pub struct Tokenizer {
 
 // ======== Public interface ========
 #[allow(dead_code)]
-impl Tokenizer {
+impl<S: Scan> Tokenizer<S> {
 
     // Construct a Tokenizer that uses Scanner for input
-    pub fn new(scanner: Scanner) -> Tokenizer {
+    pub fn new(scanner: S) -> Tokenizer<S> {
         let mut tokenizer = Tokenizer {
             scanner: 	Some(scanner),
             current: 	None,
@@ -32,8 +42,13 @@ impl Tokenizer {
         return tokenizer;
     }
     
+}
+
+
+impl<S: Scan> Tokenize for Tokenizer<S> {
+
     // Return a reference to current token
-    pub fn current(&self) -> &Token {
+    fn current(&self) -> &Token {
         match &self.current {
             Some(token) => &token,
             None => panic!("No current Token")
@@ -41,7 +56,7 @@ impl Tokenizer {
     }
     
     // Return a reference to previous token
-    pub fn previous(&self) -> &Token {
+    fn previous(&self) -> &Token {
         match &self.previous {
             Some(token) => &token,
             None => panic!("No current Token")
@@ -50,12 +65,12 @@ impl Tokenizer {
     
     // Return true if current token is EOF
     // Otherwise return false
-    pub fn eof(&self) -> bool {
+    fn eof(&self) -> bool {
         return self.matches(TokenKind::EOF);
     }
 
     // Advance to next token
-    pub fn advance(&mut self) {
+    fn advance(&mut self) {
         self.previous = self.current.take();
 
         self.skip_whitespace();
@@ -77,23 +92,24 @@ impl Tokenizer {
     }
 
     // Return true if current tokenkind matches
-    pub fn matches(&self, kind: TokenKind) -> bool {
+    fn matches(&self, kind: TokenKind) -> bool {
         return self.current().matches(kind);
     }
     
     // Advance and return true if current tokenkind matches
     // Otherwise return false
-    pub fn advance_on(&mut self, kind: TokenKind) -> bool {
+    fn advance_on(&mut self, kind: TokenKind) -> bool {
         if !self.matches(kind) { return false; }
         self.advance();
         return true;
     }
+
 }
 
 
 // ======== Private methods ========
-impl Tokenizer {
-    fn scanner(&mut self) -> &mut Scanner {
+impl<S: Scan> Tokenizer<S> {
+    fn scanner(&mut self) -> &mut S {
         return self.scanner.as_mut().unwrap();
     }
 
