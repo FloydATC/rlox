@@ -7,7 +7,9 @@ use super::{Tokenizer, Tokenize};
 
 #[test]
 fn tokenizer_emptystring() {
-    let scanner = Scanner::<std::io::Cursor<&str>>::str("");
+    let code = "";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
     let tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::EOF);
     assert_eq!(tokenizer.current().lexeme(), "\0");
@@ -15,7 +17,9 @@ fn tokenizer_emptystring() {
 
 #[test]
 fn tokenizer_symbols() {
-    let scanner = Scanner::<std::io::Cursor<&str>>::str("+-*/");
+    let code = "+-*/";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -39,7 +43,9 @@ fn tokenizer_symbols() {
 
 #[test]
 fn tokenizer_symbols_and_newlines() {
-    let scanner = Scanner::<std::io::Cursor<&str>>::str("+\n-\n*\n/\n");
+    let code = "+\n-\n*\n/\n";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -59,7 +65,9 @@ fn tokenizer_symbols_and_newlines() {
 
 #[test]
 fn tokenizer_line_comments() {
-    let scanner = Scanner::<std::io::Cursor<&str>>::str(" + // comment\n- // comment");
+    let code = " + // comment\n- // comment";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -73,7 +81,9 @@ fn tokenizer_line_comments() {
 
 #[test]
 fn tokenizer_block_comment() {
-    let scanner = Scanner::<std::io::Cursor<&str>>::str(" +/*// comment\n * // comment */-");
+    let code = " +/*// comment\n * // comment */-";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -87,7 +97,9 @@ fn tokenizer_block_comment() {
 
 #[test]
 fn tokenizer_add() {
-    let scanner = Scanner::<std::io::Cursor<&str>>::str("2+3");
+    let code = "2+3";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Base10Number);
     assert_eq!(tokenizer.current().lexeme(), "2");

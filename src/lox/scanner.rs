@@ -41,11 +41,6 @@ pub struct Scanner<R> {
 impl<R: std::io::BufRead+std::io::Read> Scanner<R> {
 
     // Constructor
-    pub fn str(code: &str) -> Scanner<std::io::Cursor<&str>> {
-        Scanner::new(std::io::Cursor::new(code))
-    }
-
-    // Constructor
     pub fn new(reader: R) -> Scanner<R> {
         Scanner {
             pos:	0,

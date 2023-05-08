@@ -54,7 +54,8 @@ impl VM {
         // figure out exactly how the pieces need to fit together.
         // -------------------------------------------------------
         
-        let scanner = Scanner::<std::io::Cursor<&str>>::str(code);
+        let reader = std::io::Cursor::new(code);
+        let scanner = Scanner::new(reader);
         let mut input = Tokenizer::new(scanner);
         let mut function = Function::new("__main__", FunctionKind::Script);    
         let mut compiler = Compiler::new(function);
