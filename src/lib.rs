@@ -58,20 +58,28 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 let line = read_stdin();
                 if line == "exit" { break; }
                 vm.compile(&line)?;
-                let rc = vm.execute();
-                println!("rc={}", rc);
+                match vm.execute() {
+                    Ok(rc) => println!("rc={}", rc),
+                    Err(runtime_error) => eprint!("{}", runtime_error),
+                }
             }
         }
         Mode::Line => {
             let code = config.line.unwrap();
             vm.compile(&code)?;
-            vm.execute();
+            match vm.execute() {
+                Ok(_) => {},
+                Err(runtime_error) => eprint!("{}", runtime_error),
+            }
         }
         Mode::File => {
             let filename = config.filename.unwrap();
             let code = read_file(&filename);
             vm.compile(&code)?;
-            vm.execute();
+            match vm.execute() {
+                Ok(_) => {},
+                Err(runtime_error) => eprint!("{}", runtime_error),
+            }
         }
     }
     

@@ -16,6 +16,7 @@ use super::instance::Instance;
 use super::method::Method;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
+use super::runtime_error::RuntimeError;
 use super::scanner::Scanner;
 use super::tokenizer::Tokenizer;
 use super::parser::{Parser, ParserOutput};
@@ -93,7 +94,7 @@ impl VM {
 
 
 impl VM {
-    pub fn execute(&mut self) -> i32 {
+    pub fn execute(&mut self) -> Result<i32, RuntimeError> {
         println!("VM.execute()");
         
         loop {
@@ -106,9 +107,7 @@ impl VM {
             println!("IP={}:0x{:04x} SP=0x{:04x} CF=0x{:04x} Next={} ", fn_name, ip, self.stack.size(), self.callframe().stack_bottom(), opcode.mnemonic());
             println!(" stack={:?}", self.stack);
             
-            let result;
-
-            match opcode {
+            let result = match opcode {
                 OpCode::Exit		=> {
                     let return_value = self.pop();
                     //println!("OpCode::Exit, close_upvalues");
@@ -120,8 +119,8 @@ impl VM {
                     self.stack = Stack::new();
                     self.callframes = vec![];
                     match return_value {
-                        Value::Number(n) => return n as i32,
-                        _ => return 0,
+                        Value::Number(n) => return Ok(n as i32),
+                        _ => return Ok(0),
                     }
                 }
                 OpCode::Return 		=> {
@@ -129,106 +128,108 @@ impl VM {
                     //println!("OpCode::Return, close_upvalues");
                     self.close_upvalues(self.callframe().stack_bottom());
                     self.callframes.pop();
-                    if self.callframes.len() == 0 { return 0; }
+                    if self.callframes.len() == 0 { 
+                        return Err(RuntimeError::new(
+                            format!("Can not 'return' from top-level code, use 'exit' instead."), 
+                            None
+                        )); 
+                    }
                     
                     self.push(return_value);
-                    result = Ok(());
+                    Ok(())
                 }
-                OpCode::Debug		=> result = self.opcode_debug(),
-                OpCode::Print		=> result = self.opcode_print(),
+                OpCode::Debug		=> self.opcode_debug(),
+                OpCode::Print		=> self.opcode_print(),
 
-                OpCode::GetConst8 	=> result = self.opcode_getconst8(),
-                OpCode::GetConst16 	=> result = self.opcode_getconst16(),
-                OpCode::GetConst32 	=> result = self.opcode_getconst32(),
-                OpCode::False 		=> result = self.opcode_false(),
-                OpCode::Null 		=> result = self.opcode_null(),
-                OpCode::True	 	=> result = self.opcode_true(),
+                OpCode::GetConst8 	=> self.opcode_getconst8(),
+                OpCode::GetConst16 	=> self.opcode_getconst16(),
+                OpCode::GetConst32 	=> self.opcode_getconst32(),
+                OpCode::False 		=> self.opcode_false(),
+                OpCode::Null 		=> self.opcode_null(),
+                OpCode::True	 	=> self.opcode_true(),
 
-                OpCode::GetLocal8 	=> result = self.opcode_getlocal8(),
-                OpCode::GetLocal16 	=> result = self.opcode_getlocal16(),
-                OpCode::GetLocal32 	=> result = self.opcode_getlocal32(),
-                OpCode::GetUpvalue8 	=> result = self.opcode_getupvalue8(),
-                OpCode::GetUpvalue16 	=> result = self.opcode_getupvalue16(),
-                OpCode::GetUpvalue32 	=> result = self.opcode_getupvalue32(),
-                OpCode::GetGlobal8 	=> result = self.opcode_getglobal8(),
-                OpCode::GetGlobal16 	=> result = self.opcode_getglobal16(),
-                OpCode::GetGlobal32 	=> result = self.opcode_getglobal32(),
-                OpCode::GetProperty8 	=> result = self.opcode_getproperty8(),
-                OpCode::GetProperty16 	=> result = self.opcode_getproperty16(),
-                OpCode::GetProperty32 	=> result = self.opcode_getproperty32(),
-                OpCode::GetSuper8 	=> result = self.opcode_getsuper8(),
-                OpCode::GetSuper16 	=> result = self.opcode_getsuper16(),
-                OpCode::GetSuper32 	=> result = self.opcode_getsuper32(),
+                OpCode::GetLocal8 	=> self.opcode_getlocal8(),
+                OpCode::GetLocal16 	=> self.opcode_getlocal16(),
+                OpCode::GetLocal32 	=> self.opcode_getlocal32(),
+                OpCode::GetUpvalue8 	=> self.opcode_getupvalue8(),
+                OpCode::GetUpvalue16 	=> self.opcode_getupvalue16(),
+                OpCode::GetUpvalue32 	=> self.opcode_getupvalue32(),
+                OpCode::GetGlobal8 	=> self.opcode_getglobal8(),
+                OpCode::GetGlobal16 	=> self.opcode_getglobal16(),
+                OpCode::GetGlobal32 	=> self.opcode_getglobal32(),
+                OpCode::GetProperty8 	=> self.opcode_getproperty8(),
+                OpCode::GetProperty16 	=> self.opcode_getproperty16(),
+                OpCode::GetProperty32 	=> self.opcode_getproperty32(),
+                OpCode::GetSuper8 	=> self.opcode_getsuper8(),
+                OpCode::GetSuper16 	=> self.opcode_getsuper16(),
+                OpCode::GetSuper32 	=> self.opcode_getsuper32(),
 
-                OpCode::DefGlobal8	=> result = self.opcode_defglobal8(),
-                OpCode::DefGlobal16 	=> result = self.opcode_defglobal16(),
-                OpCode::DefGlobal32 	=> result = self.opcode_defglobal32(),
+                OpCode::DefGlobal8	=> self.opcode_defglobal8(),
+                OpCode::DefGlobal16 	=> self.opcode_defglobal16(),
+                OpCode::DefGlobal32 	=> self.opcode_defglobal32(),
 
-                OpCode::SetLocal8 	=> result = self.opcode_setlocal8(),
-                OpCode::SetLocal16 	=> result = self.opcode_setlocal16(),
-                OpCode::SetLocal32 	=> result = self.opcode_setlocal32(),
-                OpCode::SetUpvalue8 	=> result = self.opcode_setupvalue8(),
-                OpCode::SetUpvalue16 	=> result = self.opcode_setupvalue16(),
-                OpCode::SetUpvalue32 	=> result = self.opcode_setupvalue32(),
-                OpCode::SetGlobal8 	=> result = self.opcode_setglobal8(),
-                OpCode::SetGlobal16 	=> result = self.opcode_setglobal16(),
-                OpCode::SetGlobal32 	=> result = self.opcode_setglobal32(),
-                OpCode::SetProperty8 	=> result = self.opcode_setproperty8(),
-                OpCode::SetProperty16 	=> result = self.opcode_setproperty16(),
-                OpCode::SetProperty32 	=> result = self.opcode_setproperty32(),
+                OpCode::SetLocal8 	=> self.opcode_setlocal8(),
+                OpCode::SetLocal16 	=> self.opcode_setlocal16(),
+                OpCode::SetLocal32 	=> self.opcode_setlocal32(),
+                OpCode::SetUpvalue8 	=> self.opcode_setupvalue8(),
+                OpCode::SetUpvalue16 	=> self.opcode_setupvalue16(),
+                OpCode::SetUpvalue32 	=> self.opcode_setupvalue32(),
+                OpCode::SetGlobal8 	=> self.opcode_setglobal8(),
+                OpCode::SetGlobal16 	=> self.opcode_setglobal16(),
+                OpCode::SetGlobal32 	=> self.opcode_setglobal32(),
+                OpCode::SetProperty8 	=> self.opcode_setproperty8(),
+                OpCode::SetProperty16 	=> self.opcode_setproperty16(),
+                OpCode::SetProperty32 	=> self.opcode_setproperty32(),
 
-                OpCode::Capture8 	=> result = self.opcode_capture8(),
-                OpCode::Capture16 	=> result = self.opcode_capture16(),
-                OpCode::Capture32 	=> result = self.opcode_capture32(),
+                OpCode::Capture8 	=> self.opcode_capture8(),
+                OpCode::Capture16 	=> self.opcode_capture16(),
+                OpCode::Capture32 	=> self.opcode_capture32(),
 
-                OpCode::Class8 		=> result = self.opcode_class8(),
-                OpCode::Class16 	=> result = self.opcode_class16(),
-                OpCode::Class32 	=> result = self.opcode_class32(),
-                OpCode::Method8 	=> result = self.opcode_method8(),
-                OpCode::Method16 	=> result = self.opcode_method16(),
-                OpCode::Method32 	=> result = self.opcode_method32(),
+                OpCode::Class8 		=> self.opcode_class8(),
+                OpCode::Class16 	=> self.opcode_class16(),
+                OpCode::Class32 	=> self.opcode_class32(),
+                OpCode::Method8 	=> self.opcode_method8(),
+                OpCode::Method16 	=> self.opcode_method16(),
+                OpCode::Method32 	=> self.opcode_method32(),
 
-                OpCode::Not 		=> result = self.opcode_not(),
-                OpCode::Negate 		=> result = self.opcode_negate(),
+                OpCode::Not 		=> self.opcode_not(),
+                OpCode::Negate 		=> self.opcode_negate(),
 
-                OpCode::Add 		=> result = self.opcode_add(),
-                OpCode::Sub 		=> result = self.opcode_sub(),
-                OpCode::Mul 		=> result = self.opcode_mul(),
-                OpCode::Div 		=> result = self.opcode_div(),
-                OpCode::Mod 		=> result = self.opcode_mod(),
-                OpCode::Equal		=> result = self.opcode_equal(),
-                OpCode::NotEqual	=> result = self.opcode_notequal(),
-                OpCode::Less		=> result = self.opcode_less(),
-                OpCode::Greater		=> result = self.opcode_greater(),
-                OpCode::LessEqual	=> result = self.opcode_lessequal(),
-                OpCode::GreaterEqual	=> result = self.opcode_greaterequal(),
+                OpCode::Add 		=> self.opcode_add(),
+                OpCode::Sub 		=> self.opcode_sub(),
+                OpCode::Mul 		=> self.opcode_mul(),
+                OpCode::Div 		=> self.opcode_div(),
+                OpCode::Mod 		=> self.opcode_mod(),
+                OpCode::Equal		=> self.opcode_equal(),
+                OpCode::NotEqual	=> self.opcode_notequal(),
+                OpCode::Less		=> self.opcode_less(),
+                OpCode::Greater		=> self.opcode_greater(),
+                OpCode::LessEqual	=> self.opcode_lessequal(),
+                OpCode::GreaterEqual	=> self.opcode_greaterequal(),
 
-                OpCode::Jmp 		=> result = self.opcode_jmp(),
-                OpCode::JmpFalseP	=> result = self.opcode_jmpfalsep(),
-                OpCode::JmpFalseQ	=> result = self.opcode_jmpfalseq(),
-                OpCode::Call 		=> result = self.opcode_call(),
+                OpCode::Jmp 		=> self.opcode_jmp(),
+                OpCode::JmpFalseP	=> self.opcode_jmpfalsep(),
+                OpCode::JmpFalseQ	=> self.opcode_jmpfalseq(),
+                OpCode::Call 		=> self.opcode_call(),
 
-                OpCode::Pop 		=> result = self.opcode_pop(),
-                OpCode::PopN 		=> result = self.opcode_popn(),
-                OpCode::CloseUpvalue	=> result = self.opcode_closeupvalue(),
-                OpCode::Inherit	=> result = self.opcode_inherit(),
+                OpCode::Pop 		=> self.opcode_pop(),
+                OpCode::PopN 		=> self.opcode_popn(),
+                OpCode::CloseUpvalue	=> self.opcode_closeupvalue(),
+                OpCode::Inherit	=> self.opcode_inherit(),
 
-                OpCode::BAD 		=> result = self.opcode_bad(),
-            }
+                OpCode::BAD 		=> self.opcode_bad(),
+            };
             
             // On error, dump message and return
-            match result {
-                Ok(()) => {
-                }
-                Err(message) => {
-                    eprintln!(
-                        "{} at ip={:#06x}\n{:?}", 
-                        message,
-                        ip, 
-                        self.callframe().closure_ref().function_ref()
-                    );
-                    return -1;
-                }
+            if let Err(mut runtime_error) = result {
+                eprintln!(
+                    "{} at ip={:#06x}\n{:?}", 
+                    runtime_error.get_message(),
+                    ip, 
+                    self.callframe().closure_ref().function_ref()
+                );
+                runtime_error.set_stack_trace(vec!["-- stacktrace goes here --".to_string()]);
+                return Err(runtime_error);
             }
         }
     }
@@ -241,27 +242,25 @@ impl VM {
         return self.callframes.last().unwrap();
     }
 
-    fn opcode_call(&mut self) -> Result<(), String> {
+    fn opcode_call(&mut self) -> Result<(), RuntimeError> {
         let arg_count = self.callframe_mut().read_byte();
-        // TODO: Needs a return value
         let callee = self.peek(arg_count as usize).clone();
-        self.call_value(callee, arg_count);        
-        Ok(())
+        return self.call_value(callee, arg_count);        
     }
 
-    fn opcode_debug(&mut self) -> Result<(), String> {
+    fn opcode_debug(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         println!("DEBUG> {:?}", value);
         Ok(())
     }
 
-    fn opcode_print(&mut self) -> Result<(), String> {
+    fn opcode_print(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         println!("PRINT> {}", value);
         Ok(())
     }
 
-    fn opcode_getconst(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_getconst(&mut self, id: usize) -> Result<(), RuntimeError> {
         //let value = self.constants.value_by_id(id).clone();
         let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         //println!("opcode_getconst() loaded constant id=0x{:08x} onto stack: {}", id, value);
@@ -269,44 +268,44 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_getconst8(&mut self) -> Result<(), String> {
+    fn opcode_getconst8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_getconst(id);
     }
     
-    fn opcode_getconst16(&mut self) -> Result<(), String> {
+    fn opcode_getconst16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_getconst(id);
     }
     
-    fn opcode_getconst32(&mut self) -> Result<(), String> {
+    fn opcode_getconst32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_getconst(id);
     }
 
-    fn opcode_getlocal(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_getlocal(&mut self, id: usize) -> Result<(), RuntimeError> {
         let depth = self.slot_depth(id); // Stack index from bottom
         self.push(self.peek(depth).clone());
         //println!("opcode_getlocal() fetched local variable id 0x{:08x} onto stack: {}", id, self.peek(0));
         Ok(())
     }
 
-    fn opcode_getlocal8(&mut self) -> Result<(), String> {
+    fn opcode_getlocal8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_getlocal(id);
     }
     
-    fn opcode_getlocal16(&mut self) -> Result<(), String> {
+    fn opcode_getlocal16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_getlocal(id);
     }
     
-    fn opcode_getlocal32(&mut self) -> Result<(), String> {
+    fn opcode_getlocal32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_getlocal(id);
     }
 
-    fn opcode_getupvalue(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_getupvalue(&mut self, id: usize) -> Result<(), RuntimeError> {
         //print!("opcode_getupvalue() id 0x{:08x}:", id);
         let stack_addr;
         let inner;
@@ -338,44 +337,44 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_getupvalue8(&mut self) -> Result<(), String> {
+    fn opcode_getupvalue8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_getupvalue(id);
     }
     
-    fn opcode_getupvalue16(&mut self) -> Result<(), String> {
+    fn opcode_getupvalue16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_getupvalue(id);
     }
     
-    fn opcode_getupvalue32(&mut self) -> Result<(), String> {
+    fn opcode_getupvalue32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_getupvalue(id);
     }
 
-    fn opcode_getglobal(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_getglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
         // Compiler guarantees the variable is defined
         self.push(self.globals.value_by_id(id).unwrap().clone());
         //println!("opcode_getglobal() loaded global 0x{:08x} onto stack: {}", id, self.globals.value_by_id(id).unwrap());
         Ok(())
     }
 
-    fn opcode_getglobal8(&mut self) -> Result<(), String> {
+    fn opcode_getglobal8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_getglobal(id);
     }
     
-    fn opcode_getglobal16(&mut self) -> Result<(), String> {
+    fn opcode_getglobal16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_getglobal(id);
     }
     
-    fn opcode_getglobal32(&mut self) -> Result<(), String> {
+    fn opcode_getglobal32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_getglobal(id);
     }
     
-    fn opcode_getproperty(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_getproperty(&mut self, id: usize) -> Result<(), RuntimeError> {
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let name = constant.as_string();
@@ -395,26 +394,29 @@ impl VM {
                 return self.bind_method(&instance.as_instance().class(), &name);
             }
         } else {
-            return Err(format!("{} does not have properties to get", instance).to_string());
+            return Err(RuntimeError::new(
+                format!("{} does not have properties to get", instance), 
+                None
+            ));
         }
     }
 
-    fn opcode_getproperty8(&mut self) -> Result<(), String> {
+    fn opcode_getproperty8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_getproperty(id);
     }
     
-    fn opcode_getproperty16(&mut self) -> Result<(), String> {
+    fn opcode_getproperty16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_getproperty(id);
     }
     
-    fn opcode_getproperty32(&mut self) -> Result<(), String> {
+    fn opcode_getproperty32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_getproperty(id);
     }
     
-    fn opcode_getsuper(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_getsuper(&mut self, id: usize) -> Result<(), RuntimeError> {
         //println!("opcode_getsuper() invoked");
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
@@ -424,87 +426,90 @@ impl VM {
         //println!("opcode_getsuper() binding method '{}' to superclass {}", method_name, superclass);
 
         if self.bind_method(&superclass, method_name).is_err() {
-            return Err(format!("Could not bind method '{}' to superclass {}", method_name, superclass));
+            return Err(RuntimeError::new(
+                format!("Could not bind method '{}' to superclass {}", method_name, superclass), 
+                None
+            ));
         }
         //println!("opcode_getsuper() finished");
         Ok(())
     }
 
-    fn opcode_getsuper8(&mut self) -> Result<(), String> {
+    fn opcode_getsuper8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_getsuper(id);
     }
     
-    fn opcode_getsuper16(&mut self) -> Result<(), String> {
+    fn opcode_getsuper16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_getsuper(id);
     }
     
-    fn opcode_getsuper32(&mut self) -> Result<(), String> {
+    fn opcode_getsuper32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_getsuper(id);
     }
     
-    fn opcode_false(&mut self) -> Result<(), String> {
+    fn opcode_false(&mut self) -> Result<(), RuntimeError> {
         self.push(Value::boolean(false));
         Ok(())
     }
     
-    fn opcode_null(&mut self) -> Result<(), String> {
+    fn opcode_null(&mut self) -> Result<(), RuntimeError> {
         self.push(Value::null());
         Ok(())
     }
     
-    fn opcode_true(&mut self) -> Result<(), String> {
+    fn opcode_true(&mut self) -> Result<(), RuntimeError> {
         self.push(Value::boolean(true));
         Ok(())
     }
 
-    fn opcode_defglobal(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_defglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
         let value = self.pop();
         //println!("opcode_defglobal() popped {} off stack, define as global 0x{:08x}", value, id);
         self.globals.define_by_id(id, value);
         Ok(())
     }
     
-    fn opcode_defglobal8(&mut self) -> Result<(), String> {
+    fn opcode_defglobal8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_defglobal(id);        
     }
     
-    fn opcode_defglobal16(&mut self) -> Result<(), String> {
+    fn opcode_defglobal16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_defglobal(id);        
     }
     
-    fn opcode_defglobal32(&mut self) -> Result<(), String> {
+    fn opcode_defglobal32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_defglobal(id);        
     }
     
-    fn opcode_setlocal(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_setlocal(&mut self, id: usize) -> Result<(), RuntimeError> {
         let depth = self.slot_depth(id); // Stack index from bottom
         self.poke(self.peek(0).clone(), depth);
         //println!("opcode_setlocal() stored top of stack in local variable id 0x{:08x}: {}", id, self.peek(0));
         Ok(())
     }
     
-    fn opcode_setlocal8(&mut self) -> Result<(), String> {
+    fn opcode_setlocal8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_setlocal(id);
     }
     
-    fn opcode_setlocal16(&mut self) -> Result<(), String> {
+    fn opcode_setlocal16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_setlocal(id);
     }
     
-    fn opcode_setlocal32(&mut self) -> Result<(), String> {
+    fn opcode_setlocal32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_setlocal(id);
     }
 
-    fn opcode_setupvalue(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_setupvalue(&mut self, id: usize) -> Result<(), RuntimeError> {
         //println!("setupvalue id={} of closure upvalues", id);
         let value = self.peek(0).clone();
         let stack_addr;
@@ -535,44 +540,44 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_setupvalue8(&mut self) -> Result<(), String> {
+    fn opcode_setupvalue8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_setupvalue(id);
     }
     
-    fn opcode_setupvalue16(&mut self) -> Result<(), String> {
+    fn opcode_setupvalue16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_setupvalue(id);
     }
     
-    fn opcode_setupvalue32(&mut self) -> Result<(), String> {
+    fn opcode_setupvalue32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_setupvalue(id);
     }
 
-    fn opcode_setglobal(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_setglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
         let value = self.peek(0).clone();
         //println!("opcode_setglobal() set id 0x{:08x} as {}", id, value);
         self.globals.define_by_id(id, value);
         Ok(())
     }
 
-    fn opcode_setglobal8(&mut self) -> Result<(), String> {
+    fn opcode_setglobal8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_setglobal(id);
     }
     
-    fn opcode_setglobal16(&mut self) -> Result<(), String> {
+    fn opcode_setglobal16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_setglobal(id);
     }
     
-    fn opcode_setglobal32(&mut self) -> Result<(), String> {
+    fn opcode_setglobal32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_setglobal(id);
     }
 
-    fn opcode_setproperty(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_setproperty(&mut self, id: usize) -> Result<(), RuntimeError> {
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let field = constant.as_string();
@@ -586,27 +591,30 @@ impl VM {
             //println!("opcode_setproperty() set field '{}' of {} to {}", field, instance, value);
             self.push(value);
         } else {
-            return Err(format!("{} does not have properties to set", instance).to_string());
+            return Err(RuntimeError::new(
+                format!("{} does not have properties to set", instance),
+                None
+            ));
         }
         Ok(())
     }
 
-    fn opcode_setproperty8(&mut self) -> Result<(), String> {
+    fn opcode_setproperty8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_setproperty(id);
     }
     
-    fn opcode_setproperty16(&mut self) -> Result<(), String> {
+    fn opcode_setproperty16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_setproperty(id);
     }
     
-    fn opcode_setproperty32(&mut self) -> Result<(), String> {
+    fn opcode_setproperty32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_setproperty(id);
     }
     
-    fn opcode_capture(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_capture(&mut self, id: usize) -> Result<(), RuntimeError> {
         // Get the function from constants table
         let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let upvalue_count = value.as_function().upvalue_count();
@@ -645,22 +653,22 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_capture8(&mut self) -> Result<(), String> {
+    fn opcode_capture8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_capture(id);
     }
     
-    fn opcode_capture16(&mut self) -> Result<(), String> {
+    fn opcode_capture16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_capture(id);
     }
     
-    fn opcode_capture32(&mut self) -> Result<(), String> {
+    fn opcode_capture32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_capture(id);
     }
 
-    fn opcode_class(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_class(&mut self, id: usize) -> Result<(), RuntimeError> {
         //println!("opcode_class({}) lookup constant", id);
         let name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         //println!("create class");
@@ -671,22 +679,22 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_class8(&mut self) -> Result<(), String> {
+    fn opcode_class8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_class(id);
     }
     
-    fn opcode_class16(&mut self) -> Result<(), String> {
+    fn opcode_class16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_class(id);
     }
     
-    fn opcode_class32(&mut self) -> Result<(), String> {
+    fn opcode_class32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_class(id);
     }
 
-    fn opcode_method(&mut self, id: usize) -> Result<(), String> {
+    fn opcode_method(&mut self, id: usize) -> Result<(), RuntimeError> {
         let method_name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).as_string().clone();
         let method_value = self.pop();
         let mut class_value = self.peek(0).clone();
@@ -695,28 +703,28 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_method8(&mut self) -> Result<(), String> {
+    fn opcode_method8(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_byte() as usize;
         return self.opcode_method(id);
     }
     
-    fn opcode_method16(&mut self) -> Result<(), String> {
+    fn opcode_method16(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_word() as usize;
         return self.opcode_method(id);
     }
     
-    fn opcode_method32(&mut self) -> Result<(), String> {
+    fn opcode_method32(&mut self) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_dword() as usize;
         return self.opcode_method(id);
     }
 
-    fn opcode_not(&mut self) -> Result<(), String> {
+    fn opcode_not(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         self.push(Value::boolean(!value.is_truthy()));
         Ok(())
     }
     
-    fn opcode_negate(&mut self) -> Result<(), String> {
+    fn opcode_negate(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         match value {
             Value::Bool(b) => self.push(Value::boolean(!b)),
@@ -726,7 +734,7 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_add(&mut self) -> Result<(), String> {
+    fn opcode_add(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         let res = a.add(&b);
@@ -737,7 +745,7 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_sub(&mut self) -> Result<(), String> {
+    fn opcode_sub(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         let res = a.subtract(&b);
@@ -748,7 +756,7 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_mul(&mut self) -> Result<(), String> {
+    fn opcode_mul(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         let res = a.multiply(&b);
@@ -759,7 +767,7 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_div(&mut self) -> Result<(), String> {
+    fn opcode_div(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         let res = a.divide(&b);
@@ -770,7 +778,7 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_mod(&mut self) -> Result<(), String> {
+    fn opcode_mod(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         let res = a.modulo(&b);
@@ -781,73 +789,73 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_equal(&mut self) -> Result<(), String> {
+    fn opcode_equal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a == b));
         Ok(())
     }
     
-    fn opcode_notequal(&mut self) -> Result<(), String> {
+    fn opcode_notequal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a != b));
         Ok(())
     }
     
-    fn opcode_less(&mut self) -> Result<(), String> {
+    fn opcode_less(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a < b));
         Ok(())
     }
     
-    fn opcode_greater(&mut self) -> Result<(), String> {
+    fn opcode_greater(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a > b));
         Ok(())
     }
     
-    fn opcode_lessequal(&mut self) -> Result<(), String> {
+    fn opcode_lessequal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a <= b));
         Ok(())
     }
     
-    fn opcode_greaterequal(&mut self) -> Result<(), String> {
+    fn opcode_greaterequal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
         self.push(Value::boolean(a >= b));
         Ok(())
     }
 
-    fn opcode_jmp(&mut self) -> Result<(), String> {
+    fn opcode_jmp(&mut self) -> Result<(), RuntimeError> {
         let ip = self.callframe_mut().read_dword();
         self.callframe_mut().jmp(ip);
         Ok(())
     }
     
-    fn opcode_jmpfalsep(&mut self) -> Result<(), String> {
+    fn opcode_jmpfalsep(&mut self) -> Result<(), RuntimeError> {
         let ip = self.callframe_mut().read_dword();
         if !self.pop().is_truthy() { self.callframe_mut().jmp(ip); }
         Ok(())
     }
 
-    fn opcode_jmpfalseq(&mut self) -> Result<(), String> {
+    fn opcode_jmpfalseq(&mut self) -> Result<(), RuntimeError> {
         let ip = self.callframe_mut().read_dword();
         if !self.peek(0).is_truthy() { self.callframe_mut().jmp(ip); }
         Ok(())
     }
 
-    fn opcode_pop(&mut self) -> Result<(), String> {
+    fn opcode_pop(&mut self) -> Result<(), RuntimeError> {
         let _value = self.pop();
         //println!("POP = {}", value);
         Ok(())
     }
     
-    fn opcode_popn(&mut self) -> Result<(), String> {
+    fn opcode_popn(&mut self) -> Result<(), RuntimeError> {
         let count = self.callframe_mut().read_byte();
         for _ in 0..count {
             let _value = self.pop();
@@ -856,16 +864,19 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_closeupvalue(&mut self) -> Result<(), String> {
+    fn opcode_closeupvalue(&mut self) -> Result<(), RuntimeError> {
         self.close_upvalues(self.stack.top());
         Ok(())
     }
     
-    fn opcode_inherit(&mut self) -> Result<(), String> {
+    fn opcode_inherit(&mut self) -> Result<(), RuntimeError> {
         let mut class = self.pop();
         let superclass = self.pop();
         if !superclass.is_class() {
-            return Err(format!("Can not inherit from {} because it is not a class", superclass));
+            return Err(RuntimeError::new(
+                format!("Can not inherit from {} because it is not a class", superclass), 
+                None
+            ));
         }
         // Copy parent methods
         //let mut count = 0;
@@ -881,8 +892,11 @@ impl VM {
         Ok(())
     }
     
-    fn opcode_bad(&mut self) -> Result<(), String> {
-        Err("Bad OpCode".to_string())
+    fn opcode_bad(&mut self) -> Result<(), RuntimeError> {
+        Err(RuntimeError::new(
+            "Bad OpCode! INTERNAL ERROR in VM and/or bytecode compiler!".to_string(), 
+            None
+        ))
     }
 }
 
@@ -912,33 +926,38 @@ impl VM {
             - slot;
     }
 
-    fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String>{
+
+    // TODO: Currently called at the end of compilation, should be called when execution starts
+    fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String> {
         let closure = Closure::new(Value::function(function));
         let value = Value::closure(closure);
         self.push(value.clone());
-        self.call_value(value, 0); // Main function takes zero arguments
+        let _should_return = self.call_value(value, 0); // Main function takes zero arguments
         return Ok(());
     }
 
-    fn call(&mut self, callee: Value, argc: u8) {
+    fn call(&mut self, callee: Value, argc: u8) -> Result<(), RuntimeError> {
         let want_argc = callee.as_closure().function_ref().arity();
-        if argc != want_argc {
-            // TODO: Proper error handling
-            panic!("Expected {} arguments but got {}", want_argc, argc);
+        if argc != want_argc { 
+            return Err(RuntimeError::new(
+                format!("Expected {} argument(s) but got {}", want_argc, argc),
+                None
+            ));
         }
 
         let stack_bottom = self.stack.size() - (argc as usize) - 1;
         let callframe = CallFrame::new(callee, stack_bottom);
         self.callframes.push(callframe);
+        Ok(())
     }
     
-    fn call_value(&mut self, value: Value, argc: u8) {
+    fn call_value(&mut self, value: Value, argc: u8) -> Result<(), RuntimeError> {
         if value.is_closure() {
-            self.call(value, argc);
+            self.call(value, argc)?;
         } else if value.is_method() {
             let bound = value.as_method();
             self.stack.poke(bound.receiver().clone(), argc as usize);
-            self.call(bound.method().clone(), argc);
+            self.call(bound.method().clone(), argc)?;
         } else if value.is_class() {
             let initializer = match value.as_class().get(KEYWORD_INIT) {
                 None => None,
@@ -951,40 +970,37 @@ impl VM {
             self.poke(instance, argc as usize);
             // handle constructor arguments, if any
             if let Some(function) = initializer {
-                self.call(function, argc);
+                self.call(function, argc)?;
             } else if argc != 0 {
-                panic!("Expected 0 arguments but got {}", argc);
+                return Err(RuntimeError::new(
+                    format!("Expected 0 arguments but got {}", argc),
+                    None
+                ));
             }
         } else {
-            panic!("VM.call_value({}, {}) not implemented.", value, argc);
+            return Err(RuntimeError::new(
+                format!("VM.call_value({}, {}) not implemented.", value, argc),
+                None
+            ));
         }
+        Ok(())
     }
 
-    /*
-    fn get_instance_field(&mut self, instance: &Value, field: &str) -> bool {
-        let instance = instance.as_instance();
         
-        let result = instance.get(field);
-        match result {
-            Some(value) => {
-                self.push(value.clone());
-                return true;
-            }
-            None => {
-                return false;
-            }
-        }
-    }
-    */
-        
-    fn bind_method(&mut self, class: &Value, method_name: &str) -> Result<(),String> {
+    fn bind_method(&mut self, class: &Value, method_name: &str) -> Result<(), RuntimeError> {
         let receiver = self.stack.peek(0).clone();
         //println!("bind_method() invoked, class={} method={} receiver={}", class, method_name, receiver);
         if !class.is_class() {
-            return Err(format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class));            
+            return Err(RuntimeError::new(
+                format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class),
+                None
+            ));            
         }
         if !receiver.is_instance() {
-            return Err(format!("Can not bind '{}' to {} because it is not an instance", method_name, receiver));            
+            return Err(RuntimeError::new(
+                format!("Can not bind '{}' to {} because it is not an instance", method_name, receiver),
+                None
+            ));            
         }
         // clox looks up the class by name, 
         // but the receiver already has a reference to its class.
@@ -1000,7 +1016,10 @@ impl VM {
                 return Ok(());
             }
             None => {
-                return Err(format!("Class {} does not have a method named '{}'", class, method_name));
+                return Err(RuntimeError::new(
+                    format!("Class {} does not have a method named '{}'", class, method_name),
+                    None
+                ));
             }
         }
     }
