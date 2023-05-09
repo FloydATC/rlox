@@ -2,8 +2,9 @@
 #[cfg(test)]
 mod test;
 
-pub mod upvalue;
-use upvalue::Upvalue;
+mod runtime;
+pub use runtime::{Class, Instance, Method, Upvalue};
+
 
 use super::keyword::*;
 use super::callframe::CallFrame;
@@ -11,9 +12,9 @@ use super::stack::Stack;
 use super::value::Value;
 use super::globals::Globals;
 use super::locals::Locals;
-use super::class::Class;
-use super::instance::Instance;
-use super::method::Method;
+//use super::class::Class;
+//use super::instance::Instance;
+//use super::method::Method;
 use super::closure::Closure;
 use super::function::{Function, FunctionKind};
 use super::runtime_error::RuntimeError;

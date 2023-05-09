@@ -4,7 +4,7 @@ use std::cell::Ref;
 use super::function::Function;
 use super::value::Value;
 //use super::obj::Obj;
-use super::vm::upvalue::Upvalue; // Runtime representation
+use super::vm::Upvalue; // Runtime representation
 
 
 #[allow(dead_code)]

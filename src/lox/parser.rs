@@ -1,6 +1,6 @@
 
 use super::keyword::*;
-use super::class_descriptor::ClassDescriptor;
+use super::class::Class;
 use super::token::{Token, TokenKind};
 use super::function::{Function, FunctionKind};
 use super::value::Value;
@@ -94,7 +94,7 @@ impl<I: Tokenize> ParserRule<I> {
 #[allow(dead_code)]
 pub struct Parser<I> {
     scopes: 	Vec<Scope>,
-    classes:    Hierarchy<ClassDescriptor>,
+    classes:    Hierarchy<Class>,
     codeloops:	Vec<CodeLoop>,
     _unused: std::marker::PhantomData<*const I>,
 }
@@ -728,7 +728,7 @@ impl<I: Tokenize> Parser<I> {
         let name_id = self.parse_variable("Expect class name", input, output);
         let name_token = input.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
-        self.classes.push(name_token.lexeme(), ClassDescriptor::new(&name_token));
+        self.classes.push(name_token.lexeme(), Class::new(&name_token));
         //self.declare_variable(input, output); // Already declared in parse_variable()!
         output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
         self.define_variable(name_id, output);

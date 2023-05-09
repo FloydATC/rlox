@@ -7,9 +7,7 @@ use std::cell::{RefCell, Ref, RefMut};
 
 use super::obj::Obj;
 use super::function::Function;
-use super::class::Class;
-use super::method::Method;
-use super::instance::Instance;
+use super::vm::{Class, Method, Instance};
 use super::closure::Closure;
 
 

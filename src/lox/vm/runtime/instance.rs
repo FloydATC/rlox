@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 
-use super::value::Value;
+use crate::lox::value::Value;
 
 
 pub struct Instance {

@@ -1,9 +1,7 @@
 
 
 use super::function::Function;
-use super::class::Class;
-use super::instance::Instance;
-use super::method::Method;
+use super::vm::{Class, Instance, Method};
 use super::closure::Closure;
 
 

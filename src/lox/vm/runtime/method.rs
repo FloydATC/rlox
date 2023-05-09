@@ -1,6 +1,6 @@
 
 
-use super::value::Value;
+use crate::lox::value::Value;
 
 // Note: This object represents a Bound Method at runtime
 

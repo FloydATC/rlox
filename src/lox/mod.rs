@@ -2,8 +2,7 @@
 mod at;
 mod callframe;
 mod chunk;
-mod class;
-mod class_descriptor;
+mod class; // Compile-time representation
 mod closure;
 mod codeloop;
 mod compiler;
@@ -11,11 +10,9 @@ mod constants;
 mod function;
 mod globals;
 mod hierarchy;
-mod instance;
 mod keyword;
 mod local;
 mod locals;
-mod method;
 mod obj;
 mod opcode;
 mod parser;

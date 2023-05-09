@@ -2,7 +2,7 @@
 
 use super::Value;
 use crate::lox::function::{Function, FunctionKind};
-use crate::lox::class::Class;
+use crate::lox::vm::Class;
 use crate::lox::closure::Closure;
 
 #[test]
