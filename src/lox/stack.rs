@@ -61,6 +61,12 @@ impl<T> Stack<T> {
         // Panic if the stack is empty
         return self.elements.len() - 1;
     }
+
+
+    pub fn clear(&mut self) {
+        self.elements.clear();
+    }
+
 }
 
 

@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct Globals<T> {
     index: HashMap<String,usize>,	// Used at script compile time only
     values: Vec<Option<T>>,	

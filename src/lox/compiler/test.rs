@@ -1,5 +1,6 @@
 
-use crate::lox::function::{Function, FunctionKind};
+use crate::lox::function::Function;
+use crate::lox::function_kind::FunctionKind;
 use super::Compiler;
 
 

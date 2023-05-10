@@ -5,7 +5,7 @@ use std::process;
 use std::error::Error;
 
 mod lox;
-
+use lox::{Builder, VM};
 
 pub enum Mode {
     Repl,
@@ -49,7 +49,7 @@ impl Config {
 
 // Called from main() after parsing command line
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let mut vm = lox::VM::new();
+    let mut vm = VM::new();
 
     match config.mode {
         Mode::Repl => {
@@ -57,33 +57,42 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 println!("Interactive mode (Enter 'exit' or hit Ctrl+C when done)");
                 let line = read_stdin();
                 if line == "exit" { break; }
-                vm.compile(&line)?;
-                match vm.execute() {
-                    Ok(rc) => println!("rc={}", rc),
-                    Err(runtime_error) => eprint!("{}", runtime_error),
-                }
+                let reader = std::io::Cursor::new(&line);
+                compile_and_execute(reader, &mut vm, |rc| println!("rc={}", rc));
             }
         }
         Mode::Line => {
-            let code = config.line.unwrap();
-            vm.compile(&code)?;
-            match vm.execute() {
-                Ok(_) => {},
-                Err(runtime_error) => eprint!("{}", runtime_error),
-            }
-        }
+            let line = config.line.unwrap();
+            let reader = std::io::Cursor::new(&line);
+            compile_and_execute(reader, &mut vm, |rc| std::process::exit(rc));
+    }
         Mode::File => {
             let filename = config.filename.unwrap();
             let code = read_file(&filename);
-            vm.compile(&code)?;
-            match vm.execute() {
-                Ok(_) => {},
-                Err(runtime_error) => eprint!("{}", runtime_error),
-            }
+            let reader = std::io::Cursor::new(&code);
+            compile_and_execute(reader, &mut vm, |rc| std::process::exit(rc));
         }
     }
     
     Ok(())
+}
+
+
+fn compile_and_execute<R, F>(input: R, vm: &mut lox::VM, action: F) 
+where
+    R: std::io::BufRead + std::io::Read, 
+    F: FnOnce(i32),
+{
+    let builder = Builder::new();
+    match builder.compile(input) {
+        Ok(bytecode) => {
+            match vm.execute(&bytecode) {
+                Ok(rc) => action(rc),
+                Err(runtime_error) => eprint!("{}", runtime_error),
+            }
+        }
+        Err(compile_error) => eprint!("{}", compile_error),
+    }
 }
 
 

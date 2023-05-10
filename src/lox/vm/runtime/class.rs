@@ -3,12 +3,12 @@
 use std::collections::HashMap;
 
 
-use crate::lox::value::Value;
+use crate::lox::Value;
 
 
 pub struct Class {
     name: String,
-    methods: HashMap<String,Value>,
+    methods: HashMap<String, Value>,
 }
 
 

@@ -1,25 +1,20 @@
 
-use super::keyword::*;
+
+use super::codeloop::CodeLoop;
+use super::compiler::Compiler;
+use super::compile_error::CompileError;
 use super::class::Class;
 use super::token::{Token, TokenKind};
-use super::function::{Function, FunctionKind};
-use super::value::Value;
-use super::globals::Globals;
+use super::function::Function;
+use super::function_kind::FunctionKind;
 use super::hierarchy::Hierarchy;
-use super::locals::Locals;
-//use super::local::Local;
+use super::keyword::*;
+use super::parser_output::ParserOutput;
 use super::scope::Scope;
-use super::codeloop::CodeLoop;
 use super::tokenizer::Tokenize;
 use super::opcode::{OpCode, OpCodeSet};
-use super::compiler::Compiler;
+use super::value::Value;
 
-
-pub struct ParserOutput<'a> {
-    pub compiler: 	&'a mut Compiler,
-    pub globals: 	&'a mut Globals<Value>,
-    pub locals: 	&'a mut Locals,
-}
 
 #[allow(dead_code)]
 #[repr(u8)]
@@ -113,7 +108,7 @@ impl<I: Tokenize> Parser<I> {
     }
 
     // Parse __main__ function only (See: parse_function())    
-    pub fn parse(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), String> {
+    pub fn parse(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<Function, CompileError> {
         
         loop {
             //println!("Parser::parse() loop begins");
@@ -122,7 +117,7 @@ impl<I: Tokenize> Parser<I> {
         }
         self.emit_exit(output);
         
-        return Ok(());
+        return Ok(output.compiler.take_function());
     }
 
 

@@ -1,7 +1,8 @@
 
 
 use super::Value;
-use crate::lox::function::{Function, FunctionKind};
+use crate::lox::function::Function;
+use crate::lox::function_kind::FunctionKind;
 use crate::lox::vm::Class;
 use crate::lox::closure::Closure;
 

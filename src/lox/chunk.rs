@@ -2,6 +2,7 @@
 use super::opcode::OpCode;
 
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct Chunk {
     code: Vec<u8>,    
 }

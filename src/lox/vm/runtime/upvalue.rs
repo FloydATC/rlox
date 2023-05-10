@@ -11,8 +11,8 @@ use std::cell::RefCell;
 // instance of None (if open) or Some<T> (if closed)
 #[derive(Debug, Clone)]
 pub struct Upvalue<T> {
-    addr:       usize,	// Absolute stack position
-    value:      Rc<RefCell<Option<T>>>, 
+    addr: usize,	// Absolute stack position
+    value: Rc<RefCell<Option<T>>>, 
 }
 
 impl<T: Clone + std::fmt::Display> Upvalue<T> {

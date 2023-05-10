@@ -1,6 +1,6 @@
 
 
-use crate::lox::value::Value;
+use crate::lox::Value;
 
 // Note: This object represents a Bound Method at runtime
 
@@ -9,7 +9,7 @@ use crate::lox::value::Value;
 // method is fetched from the object instance at runtime.
 
 pub struct Method {
-    receiver:	Value, // Must contain a Value::Obj::Instance
+    receiver: Value, // Must contain a Value::Obj::Instance
     method:	Value, // Must contain a Value::Obj::Closure
 }
 
@@ -21,9 +21,6 @@ impl Method {
         if !receiver.is_instance() {
             panic!("Receiver {} is not an object Instance", receiver);
         }
-//        if !receiver.is_class() {
-//            panic!("{} is not an object Class", receiver);
-//        }
         if !method.is_closure() {
             panic!("Closure {} is not a Closure", method);
         }

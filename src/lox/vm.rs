@@ -7,21 +7,13 @@ pub use runtime::{Class, Instance, Method, Upvalue};
 
 
 use super::keyword::*;
+use super::ByteCode;
 use super::callframe::CallFrame;
 use super::stack::Stack;
 use super::value::Value;
 use super::globals::Globals;
-use super::locals::Locals;
-//use super::class::Class;
-//use super::instance::Instance;
-//use super::method::Method;
 use super::closure::Closure;
-use super::function::{Function, FunctionKind};
 use super::runtime_error::RuntimeError;
-use super::scanner::Scanner;
-use super::tokenizer::Tokenizer;
-use super::parser::{Parser, ParserOutput};
-use super::compiler::Compiler;
 use super::opcode::OpCode;
 
 
@@ -45,7 +37,9 @@ impl VM {
 }
 
 
+/*
 impl VM {
+
     pub fn compile(&mut self, code: &str) -> Result<(), String> {
         println!("VM.compile() code={}", code);
         
@@ -92,11 +86,12 @@ impl VM {
         }
     }
 }
-
+*/
 
 impl VM {
-    pub fn execute(&mut self) -> Result<i32, RuntimeError> {
+    pub fn execute(&mut self, bytecode: &ByteCode) -> Result<i32, RuntimeError> {
         println!("VM.execute()");
+        self.initialize(&bytecode)?;
         
         loop {
             let ip = self.callframe().ip();
@@ -928,13 +923,15 @@ impl VM {
     }
 
 
-    // TODO: Currently called at the end of compilation, should be called when execution starts
-    fn setup_initial_callframe(&mut self, function: Function) -> Result<(), String> {
-        let closure = Closure::new(Value::function(function));
+    fn initialize(&mut self, bytecode: &ByteCode) -> Result<(), RuntimeError> {
+        self.callframes.clear();
+        self.stack.clear();
+        self.open_upvalues.clear();
+        self.globals = bytecode.globals().clone();
+        let closure = Closure::new(Value::function(bytecode.main().clone()));
         let value = Value::closure(closure);
         self.push(value.clone());
-        let _should_return = self.call_value(value, 0); // Main function takes zero arguments
-        return Ok(());
+        return self.call_value(value, 0); // Main function takes zero arguments
     }
 
     fn call(&mut self, callee: Value, argc: u8) -> Result<(), RuntimeError> {

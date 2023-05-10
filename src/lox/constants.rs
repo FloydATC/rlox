@@ -4,6 +4,7 @@
 mod test;
 
 
+#[derive(Clone)]
 pub struct Constants<T> {
     values: Vec<T>,
 }
