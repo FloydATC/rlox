@@ -1,8 +1,4 @@
 
-use std::io;
-use std::fs;
-use std::process;
-use std::error::Error;
 
 mod lox;
 use lox::{Builder, VM};
@@ -28,8 +24,6 @@ impl Config {
         let mut line = None;
         let mut filename = None;
         
-        //println!("{:?}", args);
-
         if args.len() == 2 {
             mode = Mode::File;
             filename = Some(args[1].clone());
@@ -48,14 +42,14 @@ impl Config {
 
 
 // Called from main() after parsing command line
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+pub fn run(config: Config) -> Result<(), std::io::Error> {
     let mut vm = VM::new();
 
     match config.mode {
         Mode::Repl => {
             loop {
                 println!("Interactive mode (Enter 'exit' or hit Ctrl+C when done)");
-                let line = read_stdin();
+                let line = read_stdin()?;
                 if line == "exit" { break; }
                 let reader = std::io::Cursor::new(&line);
                 compile_and_execute(reader, &mut vm, |rc| println!("rc={}", rc));
@@ -65,11 +59,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             let line = config.line.unwrap();
             let reader = std::io::Cursor::new(&line);
             compile_and_execute(reader, &mut vm, |rc| std::process::exit(rc));
-    }
+        }
         Mode::File => {
-            let filename = config.filename.unwrap();
-            let code = read_file(&filename);
-            let reader = std::io::Cursor::new(&code);
+            let file = std::fs::File::open(config.filename.unwrap())?;
+            let reader = std::io::BufReader::new(file);
             compile_and_execute(reader, &mut vm, |rc| std::process::exit(rc));
         }
     }
@@ -96,27 +89,12 @@ where
 }
 
 
-// Called by run() if config.mode == Mode::File
-fn read_file(filename: &str) -> String {
-
-    let contents = fs::read_to_string(filename)
-        .unwrap_or_else(|err| { 
-            eprintln!("{}: {}", filename, err);
-            process::exit(2);
-        });
-
-    return contents;
-}
-
-
 // Called by run() if config.mode == Mode::Repl
-fn read_stdin() -> String {
+fn read_stdin() -> Result<String, std::io::Error> {
     let mut line = String::new();
 
-    io::stdin()
-        .read_line(&mut line)
-        .expect("Failed to read line");
+    std::io::stdin().read_line(&mut line)?;
         
-    return line.trim().to_string();
+    return Ok(line.trim().to_string());
 }
 

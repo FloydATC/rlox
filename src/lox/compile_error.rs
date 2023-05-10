@@ -1,6 +1,7 @@
 
 
 use super::at::At;
+use crate::lox::Token;
 
 
 #[derive(Debug)]
@@ -13,10 +14,18 @@ pub struct CompileError {
 #[allow(dead_code)]
 impl CompileError {
 
-    pub fn new(message: String, at: Option<At>) -> Self {
+    pub fn new(message: String) -> Self {
         CompileError { 
             message,
-            at,
+            at: None,
+        }
+    }
+
+
+    pub fn new_at(message: String, token: &Token) -> Self {
+        CompileError { 
+            message,
+            at: token.get_at().cloned(),
         }
     }
 
@@ -28,6 +37,11 @@ impl CompileError {
 
     pub fn get_at(&self) -> Option<&At> {
         return self.at.as_ref();
+    }
+
+
+    pub fn set_at(&mut self, at: Option<&At>) {
+        self.at = at.cloned();
     }
 
 }

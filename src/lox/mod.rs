@@ -33,9 +33,16 @@ mod vm;
 pub use at::At;
 pub use builder::Builder;
 pub use byte_code::ByteCode;
+pub use compile_error::CompileError;
+pub use compiler::Compiler;
 pub use function::Function;
+pub use function_kind::FunctionKind;
 pub use globals::Globals;
+pub use locals::Locals;
 pub use runtime_error::RuntimeError;
+pub use scanner::Scanner;
+pub use token::Token;
+pub use tokenizer::Tokenizer;
 pub use value::Value;
 pub use vm::VM;
 

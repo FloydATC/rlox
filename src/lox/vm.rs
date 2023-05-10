@@ -875,15 +875,8 @@ impl VM {
             ));
         }
         // Copy parent methods
-        //let mut count = 0;
-        for (key, value) in superclass.as_class().methods().iter() {
-            if !class.as_class_mut().methods_mut().contains_key(key) {
-                //println!("opcode_inherit() copy '{}' => {}", key, value);
-                class.as_class_mut().methods_mut().insert(key.clone(), value.clone()); 
-                //count = count + 1;
-            }
-        }
-        //println!("opcode_inherit() class {} inherited {} method(s) from superclass {}", class, count, superclass);
+        // Compiler emits INHRT before any MTHD so we know the method table is empty
+        *class.as_class_mut().methods_mut() = superclass.as_class().methods().clone();
         self.push(class);
         Ok(())
     }

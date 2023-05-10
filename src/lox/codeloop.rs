@@ -1,5 +1,9 @@
 
 
+// The CodeLoop struct is used by the compiler to keep track of surrounding loops
+// so jumps can be patched correctly
+
+
 pub struct CodeLoop {
     continue_addr:	u32,
     scope_depth:	usize,

@@ -5,6 +5,7 @@ use super::Globals;
 use super::Value;
 
 
+#[derive(Debug)]
 pub struct ByteCode {
     main_: Function,
     globals_: Globals<Value>,

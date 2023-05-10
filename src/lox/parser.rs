@@ -1,4 +1,7 @@
 
+#[cfg(test)]
+mod test;
+
 
 use super::codeloop::CodeLoop;
 use super::compiler::Compiler;
@@ -64,7 +67,7 @@ impl ParserPrec {
     }
 }
 
-type ParserFn<I> = fn(&mut Parser<I>, bool, &mut I, &mut ParserOutput);
+type ParserFn<I> = fn(&mut Parser<I>, bool, &mut I, &mut ParserOutput) -> Result<(), CompileError>;
 
 
 #[allow(dead_code)]
@@ -113,7 +116,7 @@ impl<I: Tokenize> Parser<I> {
         loop {
             //println!("Parser::parse() loop begins");
             if input.eof() { break; }
-            self.declaration(input, output);
+            self.declaration(input, output)?;
         }
         self.emit_exit(output);
         
@@ -122,13 +125,18 @@ impl<I: Tokenize> Parser<I> {
 
 
     // Shorthand
-    fn consume(&self, kind: TokenKind, errmsg: &str, input: &mut I, _output: &mut ParserOutput) {
-        if !input.advance_on(kind) {
-            // TODO: Proper error handling
-            panic!("{}, got\n{:#?}", errmsg, input.current());
+    fn consume(&self, kind: TokenKind, errmsg: &str, input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
+        if input.advance_on(kind) {
+            Ok(())
+        } else {
+            Err(CompileError::new_at(
+                format!("{}, got '{}'", errmsg, input.current().lexeme()),
+                input.current(),
+            ))
         }
     }
-    
+
+
     fn emit_return(&self, output: &mut ParserOutput) {
         if output.compiler.function().kind().return_self() {
             output.compiler.emit_op(&OpCode::GetLocal8);
@@ -166,7 +174,7 @@ impl<I: Tokenize> Parser<I> {
     // compiler.c:parsePrecedence() from Robert Nystrom's excellent book
     // http://craftinginterpreters.com
     // Please accept my apologies.
-    fn parse_precedence(&mut self, precedence: ParserPrec, input: &mut I, output: &mut ParserOutput) {
+    fn parse_precedence(&mut self, precedence: ParserPrec, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         //println!("Parser.parse_precedence()");
     
         input.advance();
@@ -175,7 +183,7 @@ impl<I: Tokenize> Parser<I> {
         match rule.prefix {
             Some(method) => {
                 let can_assign = precedence <= ParserPrec::Assignment;
-                method(self, can_assign, input, output); // Call the Compiler method pointer
+                method(self, can_assign, input, output)?; // Call the Compiler method pointer
                 
                 loop {
                     let rule = self.current_token_rule(input);
@@ -185,50 +193,50 @@ impl<I: Tokenize> Parser<I> {
 
                     match rule.infix {
                         Some(method) => {
-                            method(self, can_assign, input, output); // Call the Compiler method pointer
+                            method(self, can_assign, input, output)?; // Call the Compiler method pointer
                         }
                         None => {
-                            // TODO: Proper error handling
                             // Not sure if this is even reachable; clox does not test for this
-                            panic!("Expect expression.");
+                            return Err(CompileError::new_at(
+                                format!("Expected expression"),
+                                input.current(),
+                            ));
                         }
                     }
                 }
                 
                 if can_assign && input.matches(TokenKind::Equal) {
-                    // TODO: Proper error handling
-                    panic!("Invalid assignment target.");
+                    return Err(CompileError::new_at(
+                        format!("Invalid assignment target"),
+                        input.current(),
+                    ));
                 }
                 
             }
             None => {
-                // TODO: Proper error handling
-                panic!("Expect expression.");
+                return Err(CompileError::new_at(
+                    format!("Expected expression"),
+                    input.current(),
+                ));
             }
         }
+        Ok(())
     }
 
     // Note: called instead of parse() to handle functions/methods
-    fn parse_function(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), String> {
+    fn parse_function(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.begin_scope();
 
         // Parameter list        
-        self.consume(TokenKind::LeftParen, "Expect '(' after function name.", input, output);
-        let result = self.parse_function_params(input, output);
-        match result {
-            Ok(arity) => {
-                output.compiler.function().set_arity(arity);
-            }
-            Err(msg) => {        
-                // TODO: Proper error handling
-                panic!("{}", msg);
-            }
-        }
-        self.consume(TokenKind::RightParen, "Expect ')' after parameters.", input, output);
+        self.consume(TokenKind::LeftParen, "Expected '(' after function name", input, output)?;
+        let arity = self.parse_function_params(input, output)?;
+        output.compiler.function().set_arity(arity);
+
+        self.consume(TokenKind::RightParen, "Expected ')' after parameters.", input, output)?;
         
         // Body
-        self.consume(TokenKind::LeftCurly, "Expect '{' before function body.", input, output);
-        self.block(input, output); // Handles the closing curly
+        self.consume(TokenKind::LeftCurly, "Expected '{' before function body.", input, output)?;
+        self.block(input, output)?; // Handles the closing curly
         
         self.emit_return(output);
 
@@ -237,16 +245,18 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
     
-    fn parse_function_params(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<u8, String> {
+    fn parse_function_params(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<u8, CompileError> {
         let mut arity = 0;
         if !input.matches(TokenKind::RightParen) {
             loop {
                 if arity == 255 { 
-                    // TODO: Proper error handling
-                    panic!("Can't have more than 255 parameters.");
+                    return Err(CompileError::new_at(
+                        format!("Can not have more than 255 parameters"),
+                        input.current(),
+                    ));
                 }
                 arity = arity + 1;
-                let name_id = self.parse_variable("Expect parameter name", input, output);
+                let name_id = self.parse_variable("Expected parameter name", input, output)?;
                 self.define_variable(name_id, output);
                 // Keep going?
                 if !input.advance_on(TokenKind::Comma) { break; }
@@ -255,19 +265,21 @@ impl<I: Tokenize> Parser<I> {
         return Ok(arity);
     }
 
-    fn parse_variable(&mut self, errmsg: &str, input: &mut I, output: &mut ParserOutput) -> usize {
+    fn parse_variable(&mut self, errmsg: &str, input: &mut I, output: &mut ParserOutput) -> Result<usize, CompileError> {
         //println!("Parser.parse_variable()");
         
-        self.consume(TokenKind::Identifier, errmsg, input, output);
+        self.consume(TokenKind::Identifier, errmsg, input, output)?;
         
-        self.declare_variable(input, output);
-        if let Some(_) = self.scope() { return 0; }
+        self.declare_variable(input, output)?;
+        if let Some(_) = self.scope() { return Ok(0); }
         
         let name = input.previous().lexeme();
-        let res = output.globals.declare(name);
-        match res {
-            Ok(id) => return id,
-            Err(msg) => panic!("{}", msg),
+        match output.globals.declare(name) {
+            Err(mut compile_error) => {
+                compile_error.set_at(input.previous().get_at());
+                return Err(compile_error);
+            }
+            Ok(id) => return Ok(id),
         }
     }
     
@@ -278,12 +290,12 @@ impl<I: Tokenize> Parser<I> {
         return output.compiler.make_constant(name);
     }
  
-    fn declare_variable(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn declare_variable(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         //println!("Parser.declare_variable()");
         
         let scope = self.scope();
         match scope {
-            None => { return; } // Global
+            None => { return Ok(()); } // Global scope
             Some(_) => {
                 let scope_depth = self.scopes.len();
                 let name = input.previous().lexeme();
@@ -291,12 +303,15 @@ impl<I: Tokenize> Parser<I> {
                 // Verify variable is not already declared in this scope
                 if let Some(id) = output.locals.resolve_local(name) {
                     if output.locals.local_ref_by_id(id).depth() == scope_depth {
-                        // TODO: Proper error handling
-                        panic!("Variable named {:?} already declared: {:#?}", name, output.locals);
+                        return Err(CompileError::new_at(
+                            format!("Variable named '{}' already declared in this scope", name),
+                            input.previous(),
+                        ));
                     }
                 }
 
                 output.locals.declare_local(name, scope_depth); // Add local variable
+                Ok(())
             }
         }
     }
@@ -326,21 +341,20 @@ impl<I: Tokenize> Parser<I> {
         }
     }
     
-    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> (OpCodeSet, OpCodeSet, usize) {
+    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> Result<(OpCodeSet, OpCodeSet, usize), CompileError> {
         let mut result;
         
         result = output.locals.resolve_local(name_token.lexeme());
         match result {
             Some(id) => {
                 if !output.locals.local_ref_by_id(id).is_defined() {
-                    // TODO: Proper error handling
-                    panic!("Can't readl local variable in its own initializer.");
+                    return Err(CompileError::new(format!("Can not read local variable in its own initializer")));
                 }
-                return (
+                return Ok((
                     OpCodeSet::getlocal(),
                     OpCodeSet::setlocal(),
                     id
-                );
+                ));
             }
             None => {}
         }
@@ -348,11 +362,11 @@ impl<I: Tokenize> Parser<I> {
         result = output.locals.resolve_upvalue(name_token.lexeme());
         match result {
             Some(id) => {
-                return (
+                return Ok((
                     OpCodeSet::getupvalue(),
                     OpCodeSet::setupvalue(),
                     id
-                );
+                ));
             }
             None => {}
         }
@@ -361,29 +375,36 @@ impl<I: Tokenize> Parser<I> {
         result = self.resolve_global(name_token.lexeme(), output);
         match result {
             Some(id) => {
-                return (
+                return Ok((
                     OpCodeSet::getglobal(),
                     OpCodeSet::setglobal(),
                     id
-                );
+                ));
             }
             None => {
-                // TODO: Proper error handling
-                panic!("Undeclared variable \"{}\"", name_token.lexeme());
+                return Err(CompileError::new(format!("Undeclared variable '{}'", name_token.lexeme())));
             }
         }
     }
     
-    fn named_variable(&mut self, name_token: &Token, can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn named_variable(&mut self, name_token: &Token, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // Get opcodes for get/set and id of local, upvalue or global
-        let (get_ops, set_ops, id) = self.variable_opcodes(name_token, output);
-
-        // Pick set or get based on context
-        if can_assign && input.advance_on(TokenKind::Equal) {
-            self.expression(input, output);
-            output.compiler.emit_op_variant(&set_ops, id as u64);
-        } else {
-            output.compiler.emit_op_variant(&get_ops, id as u64);
+        //let (get_ops, set_ops, id) = self.variable_opcodes(name_token, output);
+        match self.variable_opcodes(name_token, output) {
+            Err(mut compile_error) => {
+                compile_error.set_at(input.previous().get_at());
+                Err(compile_error)
+            }  
+            Ok((get_ops, set_ops, id)) => {
+                // Pick set or get based on context
+                if can_assign && input.advance_on(TokenKind::Equal) {
+                    self.expression(input, output)?;
+                    output.compiler.emit_op_variant(&set_ops, id as u64);
+                } else {
+                    output.compiler.emit_op_variant(&get_ops, id as u64);
+                }
+                Ok(())
+            }
         }
     }
     
@@ -395,17 +416,17 @@ impl<I: Tokenize> Parser<I> {
     fn end_scope(&mut self, output: &mut ParserOutput) {
         self.scopes.pop();
         let scope_depth = self.scopes.len();
-        println!("Parser.end_scope() depth={}", scope_depth);
+        //println!("Parser.end_scope() depth={}", scope_depth);
         loop {
             if output.locals.local_count() == 0 { break; }
             if output.locals.last_local().unwrap().depth() <= scope_depth { break; }
-            println!("Parser.end_scope() destroy local variable '{}'", output.locals.last_local().unwrap().name());
+            //println!("Parser.end_scope() destroy local variable '{}'", output.locals.last_local().unwrap().name());
 
             if output.locals.last_local().unwrap().is_captured() {
-                println!(" with close upvalue");
+                //println!(" with close upvalue");
                 output.compiler.emit_op(&OpCode::CloseUpvalue);
             } else {
-                println!(" with pop");
+                //println!(" with pop");
                 output.compiler.emit_op(&OpCode::Pop);
             }
             output.locals.pop_local();
@@ -419,7 +440,7 @@ impl<I: Tokenize> Parser<I> {
     // Compiling a function means spinning up another Parser, 
     // handing it a new compilation unit (Compiler with a Function object)
     // and letting it borrow our other inputs and outputs.
-    fn function(&mut self, name: &str, kind: FunctionKind, input: &mut I, output: &mut ParserOutput) {
+    fn function(&mut self, name: &str, kind: FunctionKind, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         output.locals.begin_function(kind.has_receiver());
     
         // Create a new compilation unit
@@ -435,18 +456,14 @@ impl<I: Tokenize> Parser<I> {
         // Create a new Parser and call parse_function()
         let mut parser = Parser::new();
         parser.classes = self.classes.clone();
-        let result = parser.parse_function(input, &mut inner_output);
-        if let Err(msg) = result {
-            // TODO: Proper error handling
-            panic!("{}", msg);
-        }
+        parser.parse_function(input, &mut inner_output)?;
         
         // Wrap the compiled Function in a Closure and store as a constant
         function = inner_output.compiler.take_function();
         let upvalues = output.locals.upvalue_count();
         function.set_upvalue_count(upvalues);
         let value = Value::function(function);
-        println!("{:?}", value);
+        //println!("{:?}", value);
         let constant_id = output.compiler.make_constant(value);
         output.compiler.emit_op_variant(&OpCodeSet::capture(), constant_id as u64);
         for i in 0..upvalues {
@@ -467,35 +484,37 @@ impl<I: Tokenize> Parser<I> {
         
         
         output.locals.end_function();
+        Ok(())
     }
     
-    fn method(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn method(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         //println!("Parser.method()");
-        self.consume(TokenKind::Identifier, "Expect method name", input, output);
+        self.consume(TokenKind::Identifier, "Expected method name", input, output)?;
         let name_constant = self.identifier_constant(input.previous(), output);
         let name = input.previous().lexeme().to_string();
         //println!("Parser.method() begin compiling method {}", name);
         let kind = if name == KEYWORD_INIT { FunctionKind::Initializer } else { FunctionKind::Method };
-        self.function(&name, kind, input, output);
+        self.function(&name, kind, input, output)?;
         //println!("Parser.method() finished compiling method {}", name);
         //println!("prev={:?}", input.previous());
         //println!("curr={:?}", input.current());
         output.compiler.emit_op_variant(&OpCodeSet::method(), name_constant as u64);
+        Ok(())
     }
 
     // Parse arguments passed when calling a callee
-    fn argument_list(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<u8, String> {
+    fn argument_list(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<u8, CompileError> {
         let mut arg_count = 0;
         if !input.matches(TokenKind::RightParen) {
             loop {
-                self.expression(input, output);
+                self.expression(input, output)?;
                 arg_count = arg_count + 1;
                 // Keep going?
                 if !input.advance_on(TokenKind::Comma) { break; }
             }
         }
         
-        self.consume(TokenKind::RightParen, "Expect ')' after arguments", input, output);
+        self.consume(TokenKind::RightParen, "Expected ')' after arguments", input, output)?;
         return Ok(arg_count);
     }
 
@@ -503,127 +522,157 @@ impl<I: Tokenize> Parser<I> {
     // ======== Statements ========
 
 
-    fn statement(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         //println!("Parser.statement()");
         if input.advance_on(TokenKind::Break) {
-            self.break_statement(input, output);
+            self.break_statement(input, output)
         } else if input.advance_on(TokenKind::Continue) {
-            self.continue_statement(input, output);
+            self.continue_statement(input, output)
         } else if input.advance_on(TokenKind::Debug) {
-            self.debug_statement(input, output);
+            self.debug_statement(input, output)
         } else if input.advance_on(TokenKind::Exit) {
-            self.exit_statement(input, output);
+            self.exit_statement(input, output)
         } else if input.advance_on(TokenKind::If) {
-            self.if_statement(input, output);
+            self.if_statement(input, output)
         } else if input.advance_on(TokenKind::LeftCurly) {
             self.begin_scope();
-            self.block(input, output);
+            let result = self.block(input, output);
             self.end_scope(output);
+            result
         } else if input.advance_on(TokenKind::Print) {
-            self.print_statement(input, output);
+            self.print_statement(input, output)
         } else if input.advance_on(TokenKind::Return) {
-            self.return_statement(input, output);
+            self.return_statement(input, output)
         } else if input.advance_on(TokenKind::While) {
-            self.while_statement(input, output);
+            self.while_statement(input, output)
+        } else if input.advance_on(TokenKind::Else) {
+            self.bad_statement(input, output)
         } else {
-            self.expression_statement(input, output);
+            self.expression_statement(input, output)
         }
     }
 
-    fn block(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn block(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         loop {
             if input.eof() { break; }
             if input.matches(TokenKind::RightCurly) { break; }
-            self.declaration(input, output);
+            self.declaration(input, output)?;
         }
-        self.consume(TokenKind::RightCurly, "Expect '}' after block", input, output);
+        self.consume(TokenKind::RightCurly, "Expected '}' after block", input, output)?;
+        Ok(())
     }
     
-    fn break_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
-        self.break_loop(output);
-        self.consume(TokenKind::Semicolon, "Expect ';' after 'break'", input, output);
+    fn bad_statement(&mut self, input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
+        Err(CompileError::new_at(
+            format!("Keyword '{}' is misplaced", input.previous().lexeme()),
+            input.previous(),
+        ))
     }
 
-    fn continue_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
-        self.continue_loop(output);
-        self.consume(TokenKind::Semicolon, "Expect ';' after 'continue'", input, output);
+    fn break_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.break_loop(input, output)?;
+        self.consume(TokenKind::Semicolon, "Expected ';' after 'break'", input, output)?;
+        Ok(())
     }
 
-    fn debug_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
-        self.expression(input, output);
-        self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+    fn continue_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.continue_loop(input, output)?;
+        self.consume(TokenKind::Semicolon, "Expected ';' after 'continue'", input, output)?;
+        Ok(())
+    }
+
+    fn debug_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.expression(input, output)?;
+        self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
         output.compiler.emit_op(&OpCode::Debug); // Print result using std::fmt::Debug
+        Ok(())
     }
     
-    fn expression_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn expression_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         //println!("Parser.expression_statement()");
-        self.expression(input, output);
-        self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+        self.expression(input, output)?;
+        self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
         output.compiler.emit_op(&OpCode::Pop); // Discard result
+        Ok(())
     }
 
-    fn exit_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn exit_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         if input.advance_on(TokenKind::Semicolon) {
             // No expression after 'exit'
             output.compiler.emit_op(&OpCode::Null);
         } else {
-            self.expression(input, output);
-            self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+            self.expression(input, output)?;
+            self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
         }
         output.compiler.emit_op(&OpCode::Exit);
+        Ok(())
     }
 
-    fn if_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn if_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // if..
-        self.consume(TokenKind::LeftParen, "Expect '(' after 'if'", input, output);
-        self.expression(input, output);
-        self.consume(TokenKind::RightParen, "Expect ')' after condition", input, output);
+        self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", KEYWORD_IF).as_str(), input, output)?;
+        self.expression(input, output)?;
+        self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_IF).as_str(), input, output)?;
         
         let else_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
         // ..then
-        self.statement(input, output);
+        self.statement(input, output)?;
         let end_jmp = output.compiler.emit_jmp(&OpCode::Jmp);
         output.compiler.patch_jmp(else_jmp);
         if input.advance_on(TokenKind::Else) {
             // ..else
-            self.statement(input, output);
+            self.statement(input, output)?;
         }
         output.compiler.patch_jmp(end_jmp);
+        Ok(())
     }
     
-    fn print_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
-        self.expression(input, output);
-        self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+    fn print_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.expression(input, output)?;
+        self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
         output.compiler.emit_op(&OpCode::Print); // Print result using std::fmt::Display
+        Ok(())
     }
     
-    fn return_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn return_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let function_kind = output.compiler.function().kind();
-        if function_kind.is_toplevel() { panic!("Can't return from top level code."); }
+        if function_kind.is_toplevel() {
+            return Err(CompileError::new_at(
+                format!("Can not '{}' from top level code", KEYWORD_RETURN),
+                input.previous(),
+            ));
+        }
         if input.advance_on(TokenKind::Semicolon) {
             self.emit_return(output); // Pushes 'this' or null as needed
         } else {
-            if function_kind.return_self() { panic!("Can't return a value from initializer."); }
-            self.expression(input, output);
-            self.consume(TokenKind::Semicolon, "Expect ';' after expression", input, output);
+            if function_kind.return_self() { 
+                return Err(CompileError::new_at(
+                    format!("Can not '{}' a value from initializer", KEYWORD_RETURN),
+                    input.previous(), 
+                ));
+            }
+            self.expression(input, output)?;
+            self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
         }
         output.compiler.emit_op(&OpCode::Return);
+        Ok(())
     }
 
-    fn while_statement(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn while_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.begin_loop(output);
         
         // while..
-        self.consume(TokenKind::LeftParen, "Expect '(' after 'if'", input, output);
-        self.expression(input, output);
-        self.consume(TokenKind::RightParen, "Expect ')' after condition", input, output);
+        self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", KEYWORD_WHILE).as_str(), input, output)?;
+        self.expression(input, output)?;
+        self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_WHILE).as_str(), input, output)?;
         
         let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
         // ..do
-        self.statement(input, output);
+        self.statement(input, output)?;
 
         self.end_loop(output);
         output.compiler.patch_jmp(end_jmp);
+        Ok(())
     }
 
 
@@ -641,7 +690,7 @@ impl<I: Tokenize> Parser<I> {
         return self.codeloops.last_mut();
     }
     
-    fn continue_loop(&mut self, output: &mut ParserOutput) {
+    fn continue_loop(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let scope_depth = self.scopes.len();
         let inner_loop = self.inner_loop();
         match inner_loop {
@@ -653,17 +702,20 @@ impl<I: Tokenize> Parser<I> {
                 }
             }
             None => {
-                // TODO: Proper error handling
-                panic!("'continue' not allowed here");
+                return Err(CompileError::new_at(
+                    format!("Keyword '{}' is misplaced", KEYWORD_CONTINUE),
+                    input.previous(),
+                ));
             }
         }
         // At this point we know the inner_loop exists
         let codeloop = self.inner_loop().unwrap();
         output.compiler.emit_op(&OpCode::Jmp);
         output.compiler.emit_dword(codeloop.continue_addr());
+        Ok(())
     }
     
-    fn break_loop(&mut self, output: &mut ParserOutput) {
+    fn break_loop(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let scope_depth = self.scopes.len();
         let inner_loop = self.inner_loop();
         match inner_loop {
@@ -675,13 +727,16 @@ impl<I: Tokenize> Parser<I> {
                 }
             }
             None => {
-                // TODO: Proper error handling
-                panic!("'break' not allowed here");
+                return Err(CompileError::new_at(
+                    format!("Keyword '{}' is misplaced", KEYWORD_BREAK),
+                    input.previous(),
+                ));
             }
         }
         // At this point we know the inner_loop exists
         let codeloop = self.inner_loop().unwrap();
         codeloop.add_break(output.compiler.emit_jmp(&OpCode::Jmp));
+        Ok(())
     }
     
     fn end_loop(&mut self, output: &mut ParserOutput) -> u32 {
@@ -697,7 +752,7 @@ impl<I: Tokenize> Parser<I> {
                 }
             }
             None => {
-                panic!("Internal Error; end_loop() without a corresponding begin_loop()");
+                panic!("Internal Error: end_loop() without a corresponding begin_loop()");
             }
         }
         return output.compiler.current_ip();
@@ -707,42 +762,44 @@ impl<I: Tokenize> Parser<I> {
     // ======== Declarations ========
 
 
-    fn declaration(&mut self, input: &mut I, output: &mut ParserOutput) {
-        //println!("Parser.declaration() begin");
+    fn declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         match input.current().kind() {
             TokenKind::Class 	=> self.class_declaration(input, output),
-            TokenKind::Fun 	=> self.fun_declaration(input, output),
-            TokenKind::Var	=> self.var_declaration(input, output),
-            _			=> self.statement(input, output),
+            TokenKind::Fun 	    => self.fun_declaration(input, output),
+            TokenKind::Var	    => self.var_declaration(input, output),
+            _			        => self.statement(input, output),
         }
-        //println!("Parser.declaration() end");
     }
 
-    fn class_declaration(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn class_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
         input.advance(); // Consume Class token
-        let name_id = self.parse_variable("Expect class name", input, output);
+        let name_id = self.parse_variable("Expected class name", input, output)?;
         let name_token = input.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
         self.classes.push(name_token.lexeme(), Class::new(&name_token));
-        //self.declare_variable(input, output); // Already declared in parse_variable()!
         output.compiler.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
-        self.define_variable(name_id, output);
+        self.define_variable(name_id, output); // At this point, the VM will have defined the (empty) class
 
         // Check for superclass with syntax: class Name of Superclass {}
         if input.advance_on(TokenKind::Of) {
-            self.consume(TokenKind::Identifier, "Expected superclass name", input, output);
-            self.variable(false, input, output); // Look up superclass by name, load it on the stack
+            self.consume(TokenKind::Identifier, "Expected superclass name", input, output)?;
+            self.variable(false, input, output)?; // Look up superclass by name, load it on the stack
             let superclass_token = input.previous().clone();
-            if name_token.lexeme() == superclass_token.lexeme() { panic!("A class can not inherit from itself"); }
+            if name_token.lexeme() == superclass_token.lexeme() { 
+                return Err(CompileError::new_at(
+                    format!("Class '{}' can not inherit from itself", name_token.lexeme()),
+                    input.previous(),
+                ));
+            }
             self.begin_scope();
 
             // Copy superclass from globals to a local variable 'super'
             output.locals.declare_local(KEYWORD_SUPER, 0);
-            self.named_variable(&superclass_token, false, input, output);
+            self.named_variable(&superclass_token, false, input, output)?;
             self.define_variable(0, output);
 
             // Load current class onto the stack and copy methods from parent
-            self.named_variable(&name_token, false, input, output);
+            self.named_variable(&name_token, false, input, output)?;
             output.compiler.emit_op(&OpCode::Inherit);
 
             // Mark the current class as having a parent            
@@ -750,17 +807,17 @@ impl<I: Tokenize> Parser<I> {
         }
 
         // At runtime, load the class onto the stack so we can manipulate it
-        self.named_variable(&name_token, false, input, output);
-        self.consume(TokenKind::LeftCurly, "Expect '{' after class name", input, output);
+        self.named_variable(&name_token, false, input, output)?;
+        self.consume(TokenKind::LeftCurly, "Expected '{' after class name", input, output)?;
         //println!("Parser.class_declaration() begin parsing methods");
         loop {
             if input.matches(TokenKind::RightCurly) { break; }
             if input.eof() { break; }
             // We don't have field declarations, only methods
-            self.method(input, output);
+            self.method(input, output)?;
         }
         //println!("Parser.class_declaration() finished parsing methods");
-        self.consume(TokenKind::RightCurly, "Expect '}' after class body", input, output);
+        self.consume(TokenKind::RightCurly, "Expected '}' after class body", input, output)?;
         // We're done manipulating the class
         //println!("defined new class: {:?}", self.classes.current_path());
         output.compiler.emit_op(&OpCode::Pop);
@@ -768,83 +825,92 @@ impl<I: Tokenize> Parser<I> {
             self.end_scope(output); 
         }
         self.classes.pop();
+        Ok(())
     }
 
-    fn fun_declaration(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn fun_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         input.advance(); // Consume Fun token
-        let name_id = self.parse_variable("Expect function name", input, output);
+        let name_id = self.parse_variable("Expected function name", input, output)?;
         let name = input.previous().lexeme().to_string();
         //mark_initialized();
-        self.function(&name, FunctionKind::Function, input, output);
+        self.function(&name, FunctionKind::Function, input, output)?;
         self.define_variable(name_id, output);
+        Ok(())
     }
 
-    fn var_declaration(&mut self, input: &mut I, output: &mut ParserOutput) {
+    fn var_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         input.advance(); // Consume Var token
-        let name_id = self.parse_variable("Expect variable name", input, output);
+        let name_id = self.parse_variable("Expected variable name", input, output)?;
         
         if input.advance_on(TokenKind::Equal) {
-            self.expression(input, output);
+            self.expression(input, output)?;
         } else {
             output.compiler.emit_op(&OpCode::Null);
         }
-        self.consume(TokenKind::Semicolon, "Expect ';' after variable declaration", input, output);
+        self.consume(TokenKind::Semicolon, "Expected ';' after variable declaration", input, output)?;
         
         self.define_variable(name_id, output);
+        Ok(())
     } 
 
 
     // ======== Expressions ========
 
 
-    fn expression(&mut self, input: &mut I, output: &mut ParserOutput) {
-        self.parse_precedence(ParserPrec::Assignment, input, output);    
+    fn expression(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.parse_precedence(ParserPrec::Assignment, input, output)?;
+        Ok(())
     }
 
-    fn and(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn and(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseQ);
         output.compiler.emit_op(&OpCode::Pop);
-        self.parse_precedence(ParserPrec::And, input, output);
+        self.parse_precedence(ParserPrec::And, input, output)?;
         output.compiler.patch_jmp(end_jmp);
+        Ok(())
     }
 
-    fn array(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) {
+    fn array(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
         panic!("Not yet implemented.");
     }
 
-    fn base2number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn base2number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0b");
         let float = i64::from_str_radix(without_prefix, 2).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
+        Ok(())
     }
 
-    fn base8number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn base8number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let float = i64::from_str_radix(lexeme, 8).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
+        Ok(())
     }
 
-    fn base10number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn base10number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let float: f64 = lexeme.parse().unwrap();
         self.emit_constant(Value::number(float), output);
+        Ok(())
     }
 
-    fn base16number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn base16number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0x");
         let float = i64::from_str_radix(without_prefix, 16).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
+        Ok(())
     }
 
-    fn binary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn binary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
         //println!("Parser.binary()");
 
         let operator = input.previous().kind();
         let rule = self.rule(&operator);
 
-        self.parse_precedence(rule.precedence.next(), input, output);
+        self.parse_precedence(rule.precedence.next(), input, output)?;
         
         match operator {
             // Single symbol
@@ -862,110 +928,128 @@ impl<I: Tokenize> Parser<I> {
             TokenKind::GreaterEqual	=> output.compiler.emit_op(&OpCode::GreaterEqual),
             TokenKind::LessEqual	=> output.compiler.emit_op(&OpCode::LessEqual),
             _ => {
-                panic!("Unhandled binary operator {:?}", operator);
+                panic!("Internal Error: Unhandled binary operator {:?}", operator);
             }
         }
+        Ok(())
     }
 
-    fn call(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
-        let result = self.argument_list(input, output);
-        match result {
-            Ok(arg_count) => {
-                output.compiler.emit_op(&OpCode::Call);
-                output.compiler.emit_byte(arg_count);
-            }
-            Err(msg) => {
-                // TODO: Proper error handling
-                panic!("{}", msg);
-            }        
-        }
+    fn call(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        let arg_count = self.argument_list(input, output)?;
+        output.compiler.emit_op(&OpCode::Call);
+        output.compiler.emit_byte(arg_count);
+        Ok(())
     }
 
-    fn dot(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) {
-        self.consume(TokenKind::Identifier, "Expect property name after '.'", input, output);
+    fn dot(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.consume(TokenKind::Identifier, "Expected property name after '.'", input, output)?;
         let name_id = self.identifier_constant(input.previous(), output);
     
         if can_assign && input.advance_on(TokenKind::Equal) {
-            self.expression(input, output);
+            self.expression(input, output)?;
             output.compiler.emit_op_variant(&OpCodeSet::setproperty(), name_id as u64);
         } else {
             output.compiler.emit_op_variant(&OpCodeSet::getproperty(), name_id as u64);
         }
+        Ok(())
     }
 
-    fn grouping(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
-        self.expression(input, output);
-        self.consume(TokenKind::RightParen, "Expect ')' after expression", input, output);
+    fn grouping(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.expression(input, output)?;
+        self.consume(TokenKind::RightParen, "Expect ')' after expression", input, output)?;
+        Ok(())
     }
 
-    fn literal(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn literal(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let literal = input.previous().kind();
         match literal {
             TokenKind::False	=> output.compiler.emit_op(&OpCode::False),
             TokenKind::Null	=> output.compiler.emit_op(&OpCode::Null),
             TokenKind::True	=> output.compiler.emit_op(&OpCode::True),
             _ => {
-                panic!("Unhandled literal {:?}", literal);
+                panic!("Internal Error: Unhandled literal {:?}", literal);
             }
         }
+        Ok(())
     }
 
-    fn or(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn or(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let else_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseQ);
         let end_jmp = output.compiler.emit_jmp(&OpCode::Jmp);
         output.compiler.patch_jmp(else_jmp);
         output.compiler.emit_op(&OpCode::Pop);
-        self.parse_precedence(ParserPrec::Or, input, output);
+        self.parse_precedence(ParserPrec::Or, input, output)?;
         output.compiler.patch_jmp(end_jmp);
+        Ok(())
     }
 
-    fn string(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn string(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let value = Value::string(input.previous().lexeme());
         self.emit_constant(value, output);
+        Ok(())
     }
 
-    fn subscr(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) {
+    fn subscr(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
         panic!("Not yet implemented.");
     }
 
-    fn super_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
-        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class", KEYWORD_SUPER); }
-        if !self.classes.current().unwrap().has_parent() { panic!("Can not use '{}' in a class with no superclass", KEYWORD_SUPER); }
-        self.consume(TokenKind::Dot, format!("Expected '.' after '{}'", KEYWORD_SUPER).as_str(), input, output);
-        self.consume(TokenKind::Identifier, "Expected identifier superclass method name", input, output);
+    fn super_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        if self.classes.current_name().is_none() { 
+            return Err(CompileError::new_at(
+                format!("Can not use '{}' outside of a class", KEYWORD_SUPER),
+                input.previous(),
+            ));
+        }
+        if !self.classes.current().unwrap().has_parent() { 
+            return Err(CompileError::new_at(
+                format!("Can not use '{}' in a class with no superclass", KEYWORD_SUPER),
+                input.previous(),
+            ));
+        }
+        self.consume(TokenKind::Dot, format!("Expected '.' after '{}'", KEYWORD_SUPER).as_str(), input, output)?;
+        self.consume(TokenKind::Identifier, "Expected superclass method name", input, output)?;
         let name_token = input.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
 
-        self.named_variable(&name_token.synthetic(KEYWORD_THIS, TokenKind::This), false, input, output);
-        self.named_variable(&name_token.synthetic(KEYWORD_SUPER, TokenKind::Super), false, input, output);
-        println!("super_() emitting OpCode::Get_Super");
+        self.named_variable(&name_token.synthetic(KEYWORD_THIS, TokenKind::This), false, input, output)?;
+        self.named_variable(&name_token.synthetic(KEYWORD_SUPER, TokenKind::Super), false, input, output)?;
+        //println!("super_() emitting OpCode::Get_Super");
         output.compiler.emit_op_variant(&OpCodeSet::get_super(), name_constant as u64);
+        Ok(())
     }
 
-    fn ternary(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) {
+    fn ternary(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
         panic!("Not yet implemented.");
     }
 
-    fn this_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
-        if self.classes.current_name().is_none() { panic!("Can not use '{}' outside of a class.", KEYWORD_THIS); }
-        self.variable(false, input, output)
+    fn this_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        if self.classes.current_name().is_none() { 
+            return Err(CompileError::new_at(
+                format!("Can not use '{}' outside of a class", KEYWORD_THIS),
+                input.previous(),
+            ));
+        }
+        self.variable(false, input, output)?;
+        Ok(())
     }
 
-    fn unary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn unary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let operator = input.previous().kind();
-        self.parse_precedence(ParserPrec::Unary, input, output);
+        self.parse_precedence(ParserPrec::Unary, input, output)?;
         match operator {
             TokenKind::Bang 	=> output.compiler.emit_op(&OpCode::Not),
             TokenKind::Minus 	=> output.compiler.emit_op(&OpCode::Negate),
             _ => {
-                panic!("Unhandled unary operator {:?}", operator);
+                panic!("Internal Error: Unhandled unary operator {:?}", operator);
             }
         }
+        Ok(())
     }
 
-    fn variable(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) {
+    fn variable(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let token = input.previous().clone();
-        self.named_variable(&token, can_assign, input, output);
+        self.named_variable(&token, can_assign, input, output)?;
+        Ok(())
     }
 
 

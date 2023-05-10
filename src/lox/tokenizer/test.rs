@@ -114,5 +114,3 @@ fn tokenizer_add() {
     assert_eq!(tokenizer.current().lexeme(), "\0");
 }
 
-
-

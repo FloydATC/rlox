@@ -123,6 +123,12 @@ impl Token {
     pub fn lexeme(&self) -> &str {
         return &self.lexeme;
     } 
+
+
+    pub fn get_at(&self) -> Option<&At> {
+        return self.at.as_ref();
+    }
+
 }
 
 

@@ -29,8 +29,10 @@ impl<R: std::io::BufRead+std::io::Read> Builder<R> {
     }
 
     pub fn compile(&self, reader: R) -> Result<ByteCode, CompileError> {
+
         let scanner = Scanner::new(reader);
         let mut input = Tokenizer::new(scanner);
+
         let function = Function::new("__main__", FunctionKind::Script);    
         let mut compiler = Compiler::new(function);
 
@@ -42,7 +44,7 @@ impl<R: std::io::BufRead+std::io::Read> Builder<R> {
             globals: 	&mut globals,
             locals:	&mut Locals::new(false),
         };
-        
+
         let function = parser.parse(&mut input, &mut output)?;
         return Ok(ByteCode::new(function, globals));
 

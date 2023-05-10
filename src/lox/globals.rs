@@ -5,7 +5,7 @@ mod test;
 use std::collections::HashMap;
 
 
-//use super::value::Value;
+use crate::lox::CompileError;
 
 
 // The rlox compiler accesses variables by name =~ O(logN)
@@ -32,7 +32,7 @@ impl<T> Globals<T> {
     // Return Ok(id) if name is unique
     // Otherwise, return Err(String)
     // Note: Used at script compile time only
-    pub fn declare(&mut self, name: &str) -> Result<usize, String> {
+    pub fn declare(&mut self, name: &str) -> Result<usize, CompileError> {
         let id = self.index.get(name);
         match id {
             None => {
@@ -42,7 +42,7 @@ impl<T> Globals<T> {
                 return Ok(id);
             }
             Some(_) => {
-                return Err(format!("Global '{}' already declared", name));
+                return Err(CompileError::new(format!("Global '{}' already declared", name)));
             }
         }
     }

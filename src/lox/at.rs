@@ -3,9 +3,9 @@
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct At {
-    fileno: usize,
-    lineno: usize,
-    charno: usize, 
+    pub fileno: usize,
+    pub lineno: usize,
+    pub charno: usize, 
 }
 
 
