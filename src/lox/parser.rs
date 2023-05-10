@@ -260,6 +260,7 @@ impl<I: Tokenize> Parser<I> {
                 self.define_variable(name_id, output);
                 // Keep going?
                 if !input.advance_on(TokenKind::Comma) { break; }
+                if input.matches(TokenKind::RightParen) { break; } // That was a trailing comma
             }
         }
         return Ok(arity);
@@ -511,6 +512,7 @@ impl<I: Tokenize> Parser<I> {
                 arg_count = arg_count + 1;
                 // Keep going?
                 if !input.advance_on(TokenKind::Comma) { break; }
+                if input.matches(TokenKind::RightParen) { break; } // That was a trailing comma
             }
         }
         
