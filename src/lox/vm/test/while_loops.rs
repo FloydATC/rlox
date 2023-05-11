@@ -99,3 +99,19 @@ fn vm_while_nested_if_nested_continue() {
     assert_eq!(res.is_ok(), true);
     assert_eq!(res.unwrap(), 8);
 }
+
+#[test]
+fn vm_while_not_true() {
+    let code = "while not (true) { exit 0; } exit 1;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_while_not_false() {
+    let code = "while not (false) { exit 1; } exit 0;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}

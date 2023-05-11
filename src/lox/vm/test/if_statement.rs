@@ -98,3 +98,18 @@ fn vm_if_noscopes_4() {
     let _res = compile_and_execute(code);
 }
 
+#[test]
+fn vm_if_not_true() {
+    let code = "if not (true) exit 0; else exit 1;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_if_not_false() {
+    let code = "if not (false) exit 1; else exit 0;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}

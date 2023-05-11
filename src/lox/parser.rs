@@ -612,7 +612,8 @@ impl<I: Tokenize> Parser<I> {
 
     fn if_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // if..
-        self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", KEYWORD_IF).as_str(), input, output)?;
+        let negate = input.advance_on(TokenKind::Not);
+        self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", input.previous().lexeme()).as_str(), input, output)?;
         if input.current().matches(TokenKind::RightParen) {
             return Err(CompileError::new_at(
                 format!("Expected conditional expression, got '{}'", input.current().lexeme()),
@@ -621,6 +622,7 @@ impl<I: Tokenize> Parser<I> {
         }
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_IF).as_str(), input, output)?;
+        if negate { output.compiler.emit_op(&OpCode::Negate) }
         
         let else_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
         // ..then
@@ -670,7 +672,8 @@ impl<I: Tokenize> Parser<I> {
         self.begin_loop(output);
         
         // while..
-        self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", KEYWORD_WHILE).as_str(), input, output)?;
+        let negate = input.advance_on(TokenKind::Not);
+        self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", input.previous().lexeme()).as_str(), input, output)?;
         if input.current().matches(TokenKind::RightParen) {
             return Err(CompileError::new_at(
                 format!("Expected conditional expression, got '{}'", input.current().lexeme()),
@@ -679,6 +682,7 @@ impl<I: Tokenize> Parser<I> {
         }
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_WHILE).as_str(), input, output)?;
+        if negate { output.compiler.emit_op(&OpCode::Negate) }
         
         let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
         // ..do
