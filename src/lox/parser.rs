@@ -942,6 +942,9 @@ impl<I: Tokenize> Parser<I> {
             TokenKind::EqualEqual	=> output.compiler.emit_op(&OpCode::Equal),
             TokenKind::GreaterEqual	=> output.compiler.emit_op(&OpCode::GreaterEqual),
             TokenKind::LessEqual	=> output.compiler.emit_op(&OpCode::LessEqual),
+
+            // Keyword
+            TokenKind::Is	=> output.compiler.emit_op(&OpCode::Same),
             _ => {
                 panic!("Internal Error: Unhandled binary operator {:?}", operator);
             }
@@ -979,6 +982,8 @@ impl<I: Tokenize> Parser<I> {
         let literal = input.previous().kind();
         match literal {
             TokenKind::False	=> output.compiler.emit_op(&OpCode::False),
+            TokenKind::Inf	=> output.compiler.emit_op(&OpCode::Inf),
+            TokenKind::Nan	=> output.compiler.emit_op(&OpCode::NaN),
             TokenKind::Null	=> output.compiler.emit_op(&OpCode::Null),
             TokenKind::True	=> output.compiler.emit_op(&OpCode::True),
             _ => {
@@ -1212,6 +1217,16 @@ impl<I: Tokenize> Parser<I> {
                 infix: 		None, 
                 precedence: 	ParserPrec::None,
             },
+            TokenKind::Inf => return ParserRule {
+                prefix: 	Some(Parser::literal), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
+            TokenKind::Nan => return ParserRule {
+                prefix: 	Some(Parser::literal), 
+                infix: 		None, 
+                precedence: 	ParserPrec::None,
+            },
             TokenKind::Null => return ParserRule {
                 prefix: 	Some(Parser::literal), 
                 infix: 		None, 
@@ -1236,6 +1251,11 @@ impl<I: Tokenize> Parser<I> {
             TokenKind::Else => return ParserRule::null(),
             TokenKind::Exit => return ParserRule::null(),
             TokenKind::If => return ParserRule::null(),
+            TokenKind::Is => return ParserRule {
+                prefix: 	None, 
+                infix: 		Some(Parser::binary), 
+                precedence: 	ParserPrec::Equality,
+            },
             TokenKind::Of => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),

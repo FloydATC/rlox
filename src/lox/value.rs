@@ -140,13 +140,34 @@ impl Value {
 
     pub fn is_truthy(&self) -> bool {
         match self {
-            Value::Null 	=> false,
-            Value::Bool(b) 	=> *b,
-            Value::Number(n) 	=> *n != 0.0,
-            Value::String(s) 	=> s != "",
-            Value::Obj(obj) 	=> RefCell::borrow(obj).is_truthy(),
+            Value::Null => false,
+            Value::Bool(b) => *b,
+            Value::Number(n) => {
+                if n.is_nan() { return false }
+                *n != 0.0
+            }
+            Value::String(s) => s != "",
+            Value::Obj(obj) => RefCell::borrow(obj).is_truthy(),
         }
     }
+
+    pub fn is(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => {
+                // NAN != NAN, but NAN is NAN
+                if a.is_nan() && b.is_nan() { return true } 
+                // INF is INF, and -INF is -INF
+                if a.is_infinite() && b.is_infinite() { return a.is_sign_negative() == b.is_sign_negative() } 
+                a.eq(b)
+            }
+            (Value::String(a), Value::String(b)) => a.eq(b),
+            (Value::Obj(a), Value::Obj(b)) => a.eq(b),
+            _ => false,
+        }
+    }
+
 }
 
 #[allow(dead_code)]
@@ -334,6 +355,7 @@ impl Value {
         }
         return Err(format!("Can not divide operands {} and {}.", &self, &other));
     }
+
 }
 
 
@@ -342,11 +364,11 @@ impl Value {
 impl Clone for Value {
     fn clone(&self) -> Value {
         match self {
-            Value::Null => return Value::null(),
-            Value::Bool(b) => return Value::boolean(*b),
-            Value::Number(n) => return Value::number(*n),
-            Value::String(s) => return Value::string(s),
-            Value::Obj(o) => return Value::Obj(o.clone()),
+            Value::Null => Value::Null,
+            Value::Bool(b) => Value::boolean(*b),
+            Value::Number(n) => Value::number(*n),
+            Value::String(s) => Value::string(s),
+            Value::Obj(o) => Value::Obj(o.clone()),
         }
     }
 }
@@ -355,11 +377,12 @@ impl Clone for Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool { 
         match (self, other) {
-            (Value::Null, Value::Null) 			 => true,
-            (Value::Bool(a), Value::Bool(b)) 		 => a == b,
-            (Value::Number(a), Value::Number(b)) 	 => a == b,
-            (Value::String(a), Value::String(b)) 	 => a == b,
-            (Value::Obj(ra), Value::Obj(rb)) 	 	 => ra == rb,
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            // Note: NAN != NAN, INF != INF, -INF != -INF
+            (Value::Number(a), Value::Number(b)) => a.eq(b),
+            (Value::String(a), Value::String(b)) => a.eq(b),
+            (Value::Obj(ra), Value::Obj(rb)) => ra == rb,
             _ => false, // Value types mismatch
         }    
     }
@@ -371,7 +394,7 @@ impl std::cmp::PartialOrd for Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
             (Value::String(a), Value::String(b)) => a.partial_cmp(b),
-            (Value::Obj(a), Value::Obj(b)) 	 => a.partial_cmp(b),
+            (Value::Obj(a), Value::Obj(b)) => a.partial_cmp(b),
             _ => None, // Value types mismatch or can't be ordered
         }
     }
@@ -381,11 +404,14 @@ impl std::cmp::PartialOrd for Value {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Value::Null		=> write!(f, "Value::Null"),
-            Value::Bool(b)	=> write!(f, "Value::Bool({})", b),
-            Value::Number(n)	=> write!(f, "Value::Number({})", n),
-            Value::String(s)	=> write!(f, "Value::String({:?})", s),
-            Value::Obj(rc)	=> write!(f, "Value::{}", RefCell::borrow(rc)),
+            Value::Null		=> write!(f, "null"),
+            Value::Bool(b)	=> write!(f, "{}", b),
+            Value::Number(n)	=> {
+                if n.is_nan() { return write!(f, "nan") }
+                write!(f, "{}", n)
+            }
+            Value::String(s)	=> write!(f, "{}", s),
+            Value::Obj(rc)	=> write!(f, "{}", RefCell::borrow(rc)),
         }
     }
 }

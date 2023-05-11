@@ -120,3 +120,22 @@ fn tokenizer_add() {
     assert_eq!(tokenizer.current().lexeme(), "\0");
 }
 
+#[test]
+fn tokenizer_keyword_is() {
+    let code = "true is false";
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new(reader);
+    let mut tokenizer = Tokenizer::new(scanner);
+    assert_eq!(tokenizer.current().kind(), TokenKind::True);
+    assert_eq!(tokenizer.current().lexeme(), "true");
+    tokenizer.advance();
+    assert_eq!(tokenizer.current().kind(), TokenKind::Is);
+    assert_eq!(tokenizer.current().lexeme(), "is");
+    tokenizer.advance();
+    assert_eq!(tokenizer.current().kind(), TokenKind::False);
+    assert_eq!(tokenizer.current().lexeme(), "false");
+    tokenizer.advance();
+    assert_eq!(tokenizer.current().kind(), TokenKind::EOF);
+    assert_eq!(tokenizer.current().lexeme(), "\0");
+}
+

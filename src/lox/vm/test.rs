@@ -11,6 +11,7 @@ mod expressions;
 mod functions;
 mod globals;
 mod if_statement;
+mod literals;
 mod locals;
 mod math;
 mod numbers;

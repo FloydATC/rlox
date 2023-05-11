@@ -44,6 +44,7 @@ fn vm_modulo() {
     assert_eq!(res.unwrap(), 1);
 }
 
+
 // Simple operator precedence
 #[test]
 fn vm_add_mul() {

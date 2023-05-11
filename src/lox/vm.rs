@@ -37,57 +37,6 @@ impl VM {
 }
 
 
-/*
-impl VM {
-
-    pub fn compile(&mut self, code: &str) -> Result<(), String> {
-        println!("VM.compile() code={}", code);
-        
-        // -------------------------------------------------------
-        // This is really bad, I know.
-        // Much of the following code may belong within 
-        // the Compiler but I'm keeping things here until I 
-        // figure out exactly how the pieces need to fit together.
-        // -------------------------------------------------------
-        
-        let reader = std::io::Cursor::new(code);
-        let scanner = Scanner::new(reader);
-        let mut input = Tokenizer::new(scanner);
-        let mut function = Function::new("__main__", FunctionKind::Script);    
-        let mut compiler = Compiler::new(function);
-
-        let mut parser = Parser::new();        
-        //let mut parser = Parser::new(tokenizer, compiler);
-        //parser.give_constants(constants);
-        let mut output = ParserOutput {
-            compiler: 	&mut compiler,
-            //constants: 	&mut self.constants,
-            globals: 	&mut self.globals,
-            locals:	&mut Locals::new(false), // Discard after compile
-        };
-        let result = parser.parse(&mut input, &mut output);
-        
-        //self.constants = Some(parser.take_constants());
-        //compiler = parser.take_compiler();
-        function = compiler.take_function();
-        
-        println!("VM.compile() complete:");
-        println!(" function={:?}", function);
-        //println!(" constants={:?}", self.constants);
-        println!(" globals={:?}", self.globals);
-        
-        match result {
-            Ok(()) => {
-                return self.setup_initial_callframe(function);
-            }
-            Err(msg) => {
-                return Err(msg);
-            }
-        }
-    }
-}
-*/
-
 impl VM {
     pub fn execute(&mut self, bytecode: &ByteCode) -> Result<i32, RuntimeError> {
         println!("VM.execute()");
@@ -108,14 +57,19 @@ impl VM {
                     let return_value = self.pop();
                     //println!("OpCode::Exit, close_upvalues");
                     // Execute may be called again so be sure to close any open upvalues
-                    self.close_upvalues(self.callframe().stack_bottom());
+                    //self.close_upvalues(self.callframe().stack_bottom());
                     // Rather than wasting time unwinding the stacks,
                     // simply discard them because the script is terminating.
-                    // If execute gets called again, we need a clean slate.
                     self.stack = Stack::new();
                     self.callframes = vec![];
                     match return_value {
-                        Value::Number(n) => return Ok(n as i32),
+                        Value::Number(n) => {
+                            if n.is_nan() { return Ok(i32::MAX) }
+                            if n.is_infinite() && n.is_sign_positive() { return Ok(i32::MAX) }
+                            if n.is_infinite() && n.is_sign_negative() { return Ok(i32::MIN) }
+                            return Ok(n as i32)
+                        }
+                        Value::Bool(true) => return Ok(1),
                         _ => return Ok(0),
                     }
                 }
@@ -140,9 +94,11 @@ impl VM {
                 OpCode::GetConst8 	=> self.opcode_getconst8(),
                 OpCode::GetConst16 	=> self.opcode_getconst16(),
                 OpCode::GetConst32 	=> self.opcode_getconst32(),
-                OpCode::False 		=> self.opcode_false(),
-                OpCode::Null 		=> self.opcode_null(),
-                OpCode::True	 	=> self.opcode_true(),
+                OpCode::False 		=> self.opcode_literal(Value::Bool(false)),
+                OpCode::Null 		=> self.opcode_literal(Value::Null),
+                OpCode::True	 	=> self.opcode_literal(Value::Bool(true)),
+                OpCode::NaN	 	    => self.opcode_literal(Value::Number(f64::NAN)),
+                OpCode::Inf	 	    => self.opcode_literal(Value::Number(f64::INFINITY)),
 
                 OpCode::GetLocal8 	=> self.opcode_getlocal8(),
                 OpCode::GetLocal16 	=> self.opcode_getlocal16(),
@@ -202,6 +158,7 @@ impl VM {
                 OpCode::Greater		=> self.opcode_greater(),
                 OpCode::LessEqual	=> self.opcode_lessequal(),
                 OpCode::GreaterEqual	=> self.opcode_greaterequal(),
+                OpCode::Same		=> self.opcode_same(),
 
                 OpCode::Jmp 		=> self.opcode_jmp(),
                 OpCode::JmpFalseP	=> self.opcode_jmpfalsep(),
@@ -446,21 +403,11 @@ impl VM {
         return self.opcode_getsuper(id);
     }
     
-    fn opcode_false(&mut self) -> Result<(), RuntimeError> {
-        self.push(Value::boolean(false));
+    fn opcode_literal(&mut self, value: Value) -> Result<(), RuntimeError> {
+        self.push(value);
         Ok(())
     }
     
-    fn opcode_null(&mut self) -> Result<(), RuntimeError> {
-        self.push(Value::null());
-        Ok(())
-    }
-    
-    fn opcode_true(&mut self) -> Result<(), RuntimeError> {
-        self.push(Value::boolean(true));
-        Ok(())
-    }
-
     fn opcode_defglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
         let value = self.pop();
         //println!("opcode_defglobal() popped {} off stack, define as global 0x{:08x}", value, id);
@@ -716,13 +663,17 @@ impl VM {
 
     fn opcode_not(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
-        self.push(Value::boolean(!value.is_truthy()));
+        match value {
+            _ => self.push(Value::boolean(!value.is_truthy())),
+        }
         Ok(())
     }
     
     fn opcode_negate(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         match value {
+            //Value::Inf => self.push(Value::InfN),
+            //Value::InfN => self.push(Value::Inf),
             Value::Bool(b) => self.push(Value::boolean(!b)),
             Value::Number(n) => self.push(Value::number(-n)),
             _ => self.push(Value::Null),
@@ -768,8 +719,8 @@ impl VM {
         let a = self.pop();
         let res = a.divide(&b);
         match res {
-            Ok(value) => { self.push(value); }
-            Err(_) => { self.push(Value::number(f64::NAN)); }
+            Ok(value) => { self.push(value); } // Division by zero = f64::INFINITY
+            Err(_) => { self.push(Value::Number(f64::NAN)); } // Bad operands
         }
         Ok(())
     }
@@ -792,6 +743,13 @@ impl VM {
         Ok(())
     }
     
+    fn opcode_same(&mut self) -> Result<(), RuntimeError> {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(Value::boolean(a.is(&b)));
+        Ok(())
+    }
+
     fn opcode_notequal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();

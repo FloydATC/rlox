@@ -85,6 +85,8 @@ impl Chunk {
             OpCode::False 		    => self.opcode_immediate(ip),
             OpCode::Null 		    => self.opcode_immediate(ip),
             OpCode::True 		    => self.opcode_immediate(ip),
+            OpCode::NaN 		    => self.opcode_immediate(ip),
+            OpCode::Inf 		    => self.opcode_immediate(ip),
             OpCode::GetLocal8 		=> self.opcode_byte(ip),
             OpCode::GetLocal16 		=> self.opcode_word(ip),
             OpCode::GetLocal32 		=> self.opcode_dword(ip),
@@ -143,6 +145,7 @@ impl Chunk {
             OpCode::Greater		    => self.opcode_immediate(ip),
             OpCode::LessEqual		=> self.opcode_immediate(ip),
             OpCode::GreaterEqual	=> self.opcode_immediate(ip),
+            OpCode::Same		    => self.opcode_immediate(ip),
 
             OpCode::Jmp			    => self.opcode_dword(ip),
             OpCode::JmpFalseP		=> self.opcode_dword(ip),

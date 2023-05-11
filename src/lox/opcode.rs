@@ -26,7 +26,9 @@ pub enum OpCode {
     GetConst32 	    = 0x12,	// Followed by DWORD indexing table of constants
     False	        = 0x13,
     Null	        = 0x14,
-    True	        = 0x15,    
+    True	        = 0x15,
+    NaN             = 0x16,
+    Inf             = 0x17,    
 
     // Push variable value onto stack
     GetLocal8	    = 0x20,
@@ -95,6 +97,7 @@ pub enum OpCode {
     Greater,
     LessEqual,
     GreaterEqual,
+    Same,
 
     // Change instruction pointer
     Jmp,
@@ -128,6 +131,8 @@ impl OpCode {
             OpCode::False 		    => { "FALSE" }
             OpCode::Null 		    => { "NULL" }
             OpCode::True 		    => { "TRUE" }
+            OpCode::NaN             => { "NAN" }
+            OpCode::Inf             => { "INF" }
 
             OpCode::GetLocal8 		=> { "GETL" }
             OpCode::GetLocal16 		=> { "GETL" }
@@ -187,6 +192,7 @@ impl OpCode {
             OpCode::Greater 		=> { "GT" }
             OpCode::LessEqual 		=> { "LEQ" }
             OpCode::GreaterEqual 	=> { "GEQ" }
+            OpCode::Same 		    => { "SAME" }
         
             OpCode::Jmp 		    => { "JMP" }
             OpCode::JmpFalseP 		=> { "JFP" }
