@@ -132,7 +132,7 @@ fn vm_false_is_false() {
 }
 
 #[test]
-fn vm_true_is_not_false() {
+fn vm_true_is_notfalse() {
     let code = "exit true is !false;";
     let res = compile_and_execute(code);
     assert_eq!(res.is_ok(), true);
@@ -194,6 +194,96 @@ fn vm_one_is_one() {
     assert_eq!(res.is_ok(), true);
     assert_eq!(res.unwrap(), 1);
 }
+
+
+#[test]
+fn vm_true_is_not_false() {
+    let code = "exit true is not false;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_true_is_not_true() {
+    let code = "exit true is not true;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn vm_false_is_not_false() {
+    let code = "exit false is not false;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn vm_false_is_not_false_parens_ok() {
+    let code = "exit (false) is not false;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn vm_false_neginf_is_not_inf() {
+    let code = "exit (-inf) is not inf;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_inf_minus_one_is_inf() {
+    let code = "exit inf - 1 is inf;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_inf_minus_one_is_not_inf() {
+    let code = "exit inf - 1 is not inf;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn vm_neginf_minus_one_is_neginf() {
+    let code = "exit -inf - 1 is -inf;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_neginf_minus_one_is_not_neginf() {
+    let code = "exit -inf - 1 is not -inf;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn vm_false_neginf_is_not_neginf() {
+    let code = "exit (-inf) is not -inf;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn vm_neginf_plus_inf_is_nan() {
+    let code = "exit -inf + inf is nan;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
 
 // Practical application
 #[test]

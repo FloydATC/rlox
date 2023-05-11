@@ -57,6 +57,7 @@ pub enum TokenKind {
     Fun,
     If,
     Is,
+    Not,
     Of,
     Print,
     Return,

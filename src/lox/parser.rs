@@ -922,8 +922,11 @@ impl<I: Tokenize> Parser<I> {
     fn binary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
         //println!("Parser.binary()");
 
-        let operator = input.previous().kind();
+        let mut operator = input.previous().kind();
         let rule = self.rule(&operator);
+        if operator == TokenKind::Is && input.advance_on(TokenKind::Not) {
+            operator = input.previous().kind();
+        }
 
         self.parse_precedence(rule.precedence.next(), input, output)?;
         
@@ -945,6 +948,10 @@ impl<I: Tokenize> Parser<I> {
 
             // Keyword
             TokenKind::Is	=> output.compiler.emit_op(&OpCode::Same),
+            TokenKind::Not  => {
+                output.compiler.emit_op(&OpCode::Same);
+                output.compiler.emit_op(&OpCode::Negate);
+            }
             _ => {
                 panic!("Internal Error: Unhandled binary operator {:?}", operator);
             }
@@ -1256,6 +1263,7 @@ impl<I: Tokenize> Parser<I> {
                 infix: 		Some(Parser::binary), 
                 precedence: 	ParserPrec::Equality,
             },
+            TokenKind::Not => return ParserRule::null(),
             TokenKind::Of => return ParserRule::null(),
             TokenKind::Print => return ParserRule::null(),
             TokenKind::Return => return ParserRule::null(),

@@ -13,6 +13,7 @@ pub const KEYWORD_INF:      &str = "inf";
 pub const KEYWORD_IS:       &str = "is";
 pub const KEYWORD_INIT:     &str = "init";
 pub const KEYWORD_NAN:      &str = "nan";
+pub const KEYWORD_NOT:      &str = "not";
 pub const KEYWORD_NULL:     &str = "null";
 pub const KEYWORD_OF:       &str = "of";
 pub const KEYWORD_PRINT:    &str = "print";
