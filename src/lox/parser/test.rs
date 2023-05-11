@@ -16,6 +16,7 @@ use super::ParserOutput;
 
 mod if_statement;
 mod return_statement;
+mod trailing_comma;
 
 
 fn test(code: &str) -> Result<ByteCode, CompileError> {
