@@ -613,6 +613,12 @@ impl<I: Tokenize> Parser<I> {
     fn if_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // if..
         self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", KEYWORD_IF).as_str(), input, output)?;
+        if input.current().matches(TokenKind::RightParen) {
+            return Err(CompileError::new_at(
+                format!("Expected conditional expression, got '{}'", input.current().lexeme()),
+                input.current(),
+            ));
+        }
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_IF).as_str(), input, output)?;
         
@@ -665,6 +671,12 @@ impl<I: Tokenize> Parser<I> {
         
         // while..
         self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", KEYWORD_WHILE).as_str(), input, output)?;
+        if input.current().matches(TokenKind::RightParen) {
+            return Err(CompileError::new_at(
+                format!("Expected conditional expression, got '{}'", input.current().lexeme()),
+                input.current(),
+            ));
+        }
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_WHILE).as_str(), input, output)?;
         

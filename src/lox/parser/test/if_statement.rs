@@ -69,6 +69,32 @@ fn parser_if_statement_missing_paren_2() {
 }
 
 #[test]
+fn parser_if_statement_missing_expression() {
+    let code = "if () {}";
+    let res = test(code);
+    assert_eq!(res.is_err(), true);
+    let error = res.unwrap_err();
+    assert_eq!(error.get_message(), "Expected conditional expression, got ')'");
+    assert_eq!(error.get_at().is_some(), true);
+    let at = error.get_at().unwrap();
+    assert_eq!(at.lineno, 1);
+    assert_eq!(at.charno, 5);
+}
+
+#[test]
+fn parser_if_statement_naked_expression() {
+    let code = "if true {}";
+    let res = test(code);
+    assert_eq!(res.is_err(), true);
+    let error = res.unwrap_err();
+    assert_eq!(error.get_message(), "Expected '(' after 'if', got 'true'");
+    assert_eq!(error.get_at().is_some(), true);
+    let at = error.get_at().unwrap();
+    assert_eq!(at.lineno, 1);
+    assert_eq!(at.charno, 4);
+}
+
+#[test]
 fn parser_if_statement_missing_then() {
     let code = "if (true)";
     let res = test(code);

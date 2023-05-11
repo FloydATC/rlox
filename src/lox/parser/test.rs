@@ -21,6 +21,12 @@ mod base16numbers;
 mod if_statement;
 mod return_statement;
 mod trailing_comma;
+mod while_loops;
+mod literals;
+mod strings;
+
+#[allow(dead_code)]
+mod for_loops;
 
 
 fn test(code: &str) -> Result<ByteCode, CompileError> {
