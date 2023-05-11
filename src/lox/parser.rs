@@ -7,7 +7,7 @@ use super::codeloop::CodeLoop;
 use super::compiler::Compiler;
 use super::compile_error::CompileError;
 use super::class::Class;
-use super::token::{Token, TokenKind};
+use crate::lox::{Token, TokenKind};
 use super::function::Function;
 use super::function_kind::FunctionKind;
 use super::hierarchy::Hierarchy;
@@ -886,7 +886,8 @@ impl<I: Tokenize> Parser<I> {
 
     fn base8number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
-        let float = i64::from_str_radix(lexeme, 8).unwrap() as f64;
+        let without_prefix = lexeme.trim_start_matches("0o");
+        let float = i64::from_str_radix(without_prefix, 8).unwrap() as f64;
         self.emit_constant(Value::number(float), output);
         Ok(())
     }

@@ -14,6 +14,10 @@ use super::Parser;
 use super::ParserOutput;
 
 
+mod base2numbers;
+mod base8numbers;
+mod base10numbers;
+mod base16numbers;
 mod if_statement;
 mod return_statement;
 mod trailing_comma;

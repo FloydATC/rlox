@@ -5,6 +5,8 @@ use crate::lox::Builder;
 use super::VM;
 
 
+mod numbers;
+
 fn compile_and_execute(code: &str) -> Result<i32, RuntimeError> {
     let builder = Builder::new();
     let reader = std::io::Cursor::new(code);

@@ -3,7 +3,7 @@
 mod test;
 
 
-use super::token::{Token, TokenKind};
+use crate::lox::{Token, TokenKind};
 use super::scanner::Scan;
 use super::keyword::*;
 
@@ -153,18 +153,77 @@ impl<S: Scan> Tokenizer<S> {
         }
     }
     
+
     // First character is 0-9
     fn number_token(&mut self) -> Token {
-        let at = self.scanner().at();
+        let current_is_zero = self.scanner().current() == '0';
+        match (current_is_zero, self.scanner().peek()) {
+            (true, 'b') => self.number_base2(),
+            (true, 'o') => self.number_base8(),
+            (true, 'x') => self.number_base16(),
+            _           => self.number_base10(),
+        }
+    }
+
+    fn number_prefix(&mut self, want: &str) -> String {
         let mut lexeme = String::new();
-        while is_base10digit(self.scanner().current()) {
+        for _ in want.chars() {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
-        match lexeme.as_str() {
-            _ => return Token::new_at(TokenKind::Base10Number, &lexeme, at),
-        }
+        assert_eq!(lexeme.as_str(), want);
+        return lexeme;
     }
+
+    fn number_base2(&mut self) -> Token {
+        let at = self.scanner().at();
+        let mut lexeme = self.number_prefix("0b");
+        while is_base2digit(self.scanner().current()) {
+            lexeme.push(self.scanner().current());
+            self.scanner().advance();    
+        }
+        return Token::new_at(TokenKind::Base2Number, &lexeme, at);
+    }
+
+
+    fn number_base8(&mut self) -> Token {
+        let at = self.scanner().at();
+        let mut lexeme = self.number_prefix("0o");
+        while is_base8digit(self.scanner().current()) {
+            lexeme.push(self.scanner().current());
+            self.scanner().advance();    
+        }
+        return Token::new_at(TokenKind::Base8Number, &lexeme, at);
+    }
+
+
+    fn number_base10(&mut self) -> Token {
+        let at = self.scanner().at();
+        let mut lexeme = String::new();
+        let mut dots = 0;
+        // Allow decimal point if immediately followed by another digit...
+        while is_base10digit(self.scanner().current()) || (is_dot(self.scanner().current()) && is_base10digit(self.scanner().peek())) {
+            if is_dot(self.scanner().current()) {
+                dots = dots + 1;
+                if dots > 1 { break; } // ...but only one
+            }
+            lexeme.push(self.scanner().current());
+            self.scanner().advance();    
+        }
+        return Token::new_at(TokenKind::Base10Number, &lexeme, at);
+    }
+
+
+    fn number_base16(&mut self) -> Token {
+        let at = self.scanner().at();
+        let mut lexeme = self.number_prefix("0x");
+        while is_base16digit(self.scanner().current()) {
+            lexeme.push(self.scanner().current());
+            self.scanner().advance();    
+        }
+        return Token::new_at(TokenKind::Base16Number, &lexeme, at);
+    }
+
 
     fn escape_sequence(&mut self) -> Result<String, String> {
         let c = self.scanner().current();
@@ -362,6 +421,11 @@ pub fn is_base8digit(c: char) -> bool {
 // Return true if c is 0..9
 pub fn is_base10digit(c: char) -> bool {
     return c >= '0' && c <= '9';
+}
+
+// Return true if c is 0..9
+pub fn is_dot(c: char) -> bool {
+    return c == '.';
 }
 
 // Return true if c is 0..9 or a..f or A..F

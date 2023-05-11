@@ -1,8 +1,14 @@
 
 
 use crate::lox::scanner::Scanner;
-use crate::lox::token::TokenKind;
+use crate::lox::TokenKind;
 use super::{Tokenizer, Tokenize};
+
+
+mod base2numbers;
+mod base8numbers;
+mod base10numbers;
+mod base16numbers;
 
 
 #[test]

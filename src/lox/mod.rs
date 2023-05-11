@@ -26,6 +26,7 @@ mod scanner;
 mod scope;
 mod stack;
 mod token;
+mod token_kind;
 mod tokenizer;
 mod value;
 mod vm;
@@ -42,7 +43,8 @@ pub use locals::Locals;
 pub use runtime_error::RuntimeError;
 pub use scanner::Scanner;
 pub use token::Token;
-pub use tokenizer::Tokenizer;
+pub use tokenizer::{Tokenizer, Tokenize};
+pub use token_kind::TokenKind;
 pub use value::Value;
 pub use vm::VM;
 
