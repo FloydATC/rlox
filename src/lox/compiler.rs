@@ -46,16 +46,22 @@ impl Compiler {
     pub fn emit_op_variant(&mut self, ops: &OpCodeSet, arg: u64) {
         match arg {
             0..=0xff => {
+                //println!("emitting opcode={} len={} arg={}", ops.byte.mnemonic(), ops.byte.len(), arg);
+                assert_eq!(ops.byte.len(), 1);
                 self.emit_op(&ops.byte);
-                self.emit_byte(arg as u8);
+                self.emit_bytes(arg as u32, ops.byte.len());
             }
             0x100..=0xffff => {
+                //println!("emitting opcode={} len={} arg={}", ops.word.mnemonic(), ops.word.len(), arg);
+                assert_eq!(ops.byte.len(), 2);
                 self.emit_op(&ops.word);
-                self.emit_word(arg as u16);
+                self.emit_bytes(arg as u32, ops.byte.len());
             }
             0x10000..=0xffffffff => {
+                //println!("emitting opcode={} len={} arg={}", ops.dword.mnemonic(), ops.dword.len(), arg);
+                assert_eq!(ops.byte.len(), 4);
                 self.emit_op(&ops.dword);
-                self.emit_dword(arg as u32);
+                self.emit_bytes(arg as u32, ops.byte.len());
             }
             _ => {
                 panic!("Argument greater than 32 bits.");
@@ -64,39 +70,23 @@ impl Compiler {
     }
 
     pub fn emit_op(&mut self, opcode: &OpCode) {
-        self.emit_byte(opcode.as_byte());
+        self.emit_bytes(opcode.as_byte() as u32, 1);
     }
 
 
-    pub fn emit_byte(&mut self, byte: u8) {
+    pub fn emit_bytes(&mut self, byte: u32, len: usize) {
         self.function
             .as_mut()
             .expect("Internal error: self.function is None")
             .chunk()
-            .append_byte(byte);
+            .append_bytes(byte, len);
     }
 
-
-    pub fn emit_word(&mut self, word: u16) {
-        self.function
-            .as_mut()
-            .expect("Internal error: self.function is None")
-            .chunk()
-            .append_word(word);
-    }
-
-    pub fn emit_dword(&mut self, dword: u32) {
-        self.function
-            .as_mut()
-            .expect("Internal error: self.function is None")
-            .chunk()
-            .append_dword(dword);
-    }
     
     pub fn emit_jmp(&mut self, opcode: &OpCode) -> u32 {
         self.emit_op(opcode);
         let current_ip = self.current_ip();
-        self.emit_dword(0xffffffff);
+        self.emit_bytes(0xffffffff, opcode.len());
         return current_ip;
     }
     
@@ -106,7 +96,7 @@ impl Compiler {
             .as_mut()
             .expect("Internal error: self.function is None")
             .chunk()
-            .write_dword(current_ip, ip);
+            .write_bytes(current_ip, ip, OpCode::Jmp.len());
     }
     
     pub fn function(&mut self) -> &mut Function {

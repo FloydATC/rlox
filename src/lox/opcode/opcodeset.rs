@@ -1,6 +1,8 @@
 
 use super::OpCode;
 
+// Note: compiler emit_op_variant() now verifies the .len() of each OpCode
+// so testing this module seems like a lot of extra work with little benefit
 
 pub struct OpCodeSet {
     pub byte:	OpCode,

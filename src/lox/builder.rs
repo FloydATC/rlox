@@ -46,6 +46,7 @@ impl<R: std::io::BufRead+std::io::Read> Builder<R> {
         };
 
         let function = parser.parse(&mut input, &mut output)?;
+        println!("{:#?}", function);
         return Ok(ByteCode::new(function, globals));
 
     }

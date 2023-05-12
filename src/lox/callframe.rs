@@ -38,31 +38,39 @@ impl CallFrame {
     }
 
 
+    // Shorthand functions for reading the bytecode
     pub fn read_op(&mut self) -> OpCode {
-        let byte = self.read_byte();
+        let byte = self.closure_ref().function_ref().read_chunk().read_bytes(self.ip, 1) as u8;
+        self.ip = self.ip + 1;
         return byte.into();
     }
     
-    
-    // Shorthand functions for reading the bytecode
-    pub fn read_byte(&mut self) -> u8 {
+
+    pub fn read_bytes(&mut self, len: usize) -> u32 {
+        let result = self.closure_ref().function_ref().read_chunk().read_bytes(self.ip, len);
+        self.ip = self.ip + len as u32;
+        return result;
+    }
+
+/*    
+    pub fn read_byte__(&mut self) -> u8 {
         let byte = self.closure_ref().function_ref().read_chunk().read_byte(self.ip);
         self.ip = self.ip + 1;
         return byte;        
     }
 
-    pub fn read_word(&mut self) -> u16 {
+    pub fn read_word__(&mut self) -> u16 {
         let word = self.closure_ref().function_ref().read_chunk().read_word(self.ip);
         self.ip = self.ip + 2;
         return word;        
     }
 
-    pub fn read_dword(&mut self) -> u32 {
+    pub fn read_dword__(&mut self) -> u32 {
         let dword = self.closure_ref().function_ref().read_chunk().read_dword(self.ip);
         self.ip = self.ip + 4;
         return dword;        
     }
-
+*/
 
     // State of the callframe itself
     pub fn ip(&self) -> u32 {

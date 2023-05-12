@@ -137,7 +137,7 @@ impl<I: Tokenize> Parser<I> {
     fn emit_return(&self, output: &mut ParserOutput) {
         if output.compiler.function().kind().return_self() {
             output.compiler.emit_op(&OpCode::GetLocal8);
-            output.compiler.emit_byte(0);
+            output.compiler.emit_bytes(0, 1);
         } else {
             output.compiler.emit_op(&OpCode::Null);
         }
@@ -452,13 +452,8 @@ impl<I: Tokenize> Parser<I> {
             let mut id_len = 1;
             if id > 255 { id_len = 2; }
             if id > 65535 { id_len = 4; }
-            output.compiler.emit_byte(local_bit + id_len);
-            match id_len {
-                1 => output.compiler.emit_byte(id as u8),
-                2 => output.compiler.emit_word(id as u16),
-                4 => output.compiler.emit_dword(id as u32),
-                _ => {}, // Impossible
-            }
+            output.compiler.emit_bytes(local_bit + id_len, 1);
+            output.compiler.emit_bytes(id as u32, id_len as usize);
         }
         
         
@@ -689,7 +684,7 @@ impl<I: Tokenize> Parser<I> {
         // At this point we know the inner_loop exists
         let codeloop = self.inner_loop().unwrap();
         output.compiler.emit_op(&OpCode::Jmp);
-        output.compiler.emit_dword(codeloop.continue_addr());
+        output.compiler.emit_bytes(codeloop.continue_addr(), OpCode::Jmp.len());
         Ok(())
     }
     
@@ -717,7 +712,7 @@ impl<I: Tokenize> Parser<I> {
             Some(codeloop) => {
                 // Jump back to the beginning of the loop
                 output.compiler.emit_op(&OpCode::Jmp);
-                output.compiler.emit_dword(codeloop.continue_addr());
+                output.compiler.emit_bytes(codeloop.continue_addr(), OpCode::Jmp.len());
                 
                 // Then patch any 'break' statements to jump here
                 for address in codeloop.breaks() {
@@ -918,7 +913,7 @@ impl<I: Tokenize> Parser<I> {
     fn call(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let arg_count = self.argument_list(input, output)?;
         output.compiler.emit_op(&OpCode::Call);
-        output.compiler.emit_byte(arg_count);
+        output.compiler.emit_bytes(arg_count as u32, OpCode::Call.len());
         Ok(())
     }
 

@@ -120,91 +120,156 @@ impl OpCode {
 
     pub fn mnemonic(&self) -> &str {
         match self {        
-            OpCode::Debug           => { "DEBUG" }
-            OpCode::Exit            => { "EXIT" }
-            OpCode::Print           => { "PRINT" }
-            OpCode::Return          => { "RET" }
+            OpCode::Debug           => "DEBUG",
+            OpCode::Exit            => "EXIT",
+            OpCode::Print           => "PRINT",
+            OpCode::Return          => "RET",
 
-            OpCode::GetConst8       => { "GETC" }
-            OpCode::GetConst16      => { "GETC" }
-            OpCode::GetConst32 		=> { "GETC" }
-            OpCode::False 		    => { "FALSE" }
-            OpCode::Null 		    => { "NULL" }
-            OpCode::True 		    => { "TRUE" }
-            OpCode::NaN             => { "NAN" }
-            OpCode::Inf             => { "INF" }
+            OpCode::GetConst8       => "GETC",
+            OpCode::GetConst16      => "GETC",
+            OpCode::GetConst32 		=> "GETC",
+            OpCode::False 		    => "FALSE",
+            OpCode::Null 		    => "NULL",
+            OpCode::True 		    => "TRUE",
+            OpCode::NaN             => "NAN",
+            OpCode::Inf             => "INF",
 
-            OpCode::GetLocal8 		=> { "GETL" }
-            OpCode::GetLocal16 		=> { "GETL" }
-            OpCode::GetLocal32 		=> { "GETL" }
-            OpCode::GetUpvalue8 	=> { "GETU" }
-            OpCode::GetUpvalue16 	=> { "GETU" }
-            OpCode::GetUpvalue32 	=> { "GETU" }
-            OpCode::GetGlobal8 		=> { "GETG" }
-            OpCode::GetGlobal16 	=> { "GETG" }
-            OpCode::GetGlobal32 	=> { "GETG" }
-            OpCode::GetProperty8 	=> { "GETP" }
-            OpCode::GetProperty16 	=> { "GETP" }
-            OpCode::GetProperty32 	=> { "GETP" }
-            OpCode::GetSuper8 	    => { "GETS" }
-            OpCode::GetSuper16 	    => { "GETS" }
-            OpCode::GetSuper32 	    => { "GETS" }
+            OpCode::GetLocal8 		=> "GETL",
+            OpCode::GetLocal16 		=> "GETL",
+            OpCode::GetLocal32 		=> "GETL",
+            OpCode::GetUpvalue8 	=> "GETU",
+            OpCode::GetUpvalue16 	=> "GETU",
+            OpCode::GetUpvalue32 	=> "GETU",
+            OpCode::GetGlobal8 		=> "GETG",
+            OpCode::GetGlobal16 	=> "GETG",
+            OpCode::GetGlobal32 	=> "GETG",
+            OpCode::GetProperty8 	=> "GETP",
+            OpCode::GetProperty16 	=> "GETP",
+            OpCode::GetProperty32 	=> "GETP",
+            OpCode::GetSuper8 	    => "GETS",
+            OpCode::GetSuper16 	    => "GETS",
+            OpCode::GetSuper32 	    => "GETS",
         
-            OpCode::DefGlobal8 		=> { "DEFG" }
-            OpCode::DefGlobal16 	=> { "DEFG" }
-            OpCode::DefGlobal32 	=> { "DEFG" }
+            OpCode::DefGlobal8 		=> "DEFG",
+            OpCode::DefGlobal16 	=> "DEFG",
+            OpCode::DefGlobal32 	=> "DEFG",
 
-            OpCode::SetLocal8 		=> { "SETL" }
-            OpCode::SetLocal16 		=> { "SETL" }
-            OpCode::SetLocal32 		=> { "SETL" }
-            OpCode::SetUpvalue8 	=> { "SETU" }
-            OpCode::SetUpvalue16 	=> { "SETU" }
-            OpCode::SetUpvalue32 	=> { "SETU" }
-            OpCode::SetGlobal8 		=> { "SETG" }
-            OpCode::SetGlobal16 	=> { "SETG" }
-            OpCode::SetGlobal32 	=> { "SETG" }
-            OpCode::SetProperty8	=> { "SETP" }
-            OpCode::SetProperty16 	=> { "SETP" }
-            OpCode::SetProperty32 	=> { "SETP" }
+            OpCode::SetLocal8 		=> "SETL",
+            OpCode::SetLocal16 		=> "SETL",
+            OpCode::SetLocal32 		=> "SETL",
+            OpCode::SetUpvalue8 	=> "SETU",
+            OpCode::SetUpvalue16 	=> "SETU",
+            OpCode::SetUpvalue32 	=> "SETU",
+            OpCode::SetGlobal8 		=> "SETG",
+            OpCode::SetGlobal16 	=> "SETG",
+            OpCode::SetGlobal32 	=> "SETG",
+            OpCode::SetProperty8	=> "SETP",
+            OpCode::SetProperty16 	=> "SETP",
+            OpCode::SetProperty32 	=> "SETP",
 
-            OpCode::Capture8	 	=> { "CAP" }
-            OpCode::Capture16		=> { "CAP" }
-            OpCode::Capture32		=> { "CAP" }
+            OpCode::Capture8	 	=> "CAP",
+            OpCode::Capture16		=> "CAP",
+            OpCode::Capture32		=> "CAP",
 
-            OpCode::Class8	 	    => { "CLASS" }
-            OpCode::Class16		    => { "CLASS" }
-            OpCode::Class32		    => { "CLASS" }
-            OpCode::Method8	 	    => { "MTHD" }
-            OpCode::Method16		=> { "MTHD" }
-            OpCode::Method32		=> { "MTHD" }
+            OpCode::Class8	 	    => "CLASS",
+            OpCode::Class16		    => "CLASS",
+            OpCode::Class32		    => "CLASS",
+            OpCode::Method8	 	    => "MTHD",
+            OpCode::Method16		=> "MTHD",
+            OpCode::Method32		=> "MTHD",
 
-            OpCode::Not			    => { "NOT" }
-            OpCode::Negate		    => { "NEG" }
+            OpCode::Not			    => "NOT",
+            OpCode::Negate		    => "NEG",
 
-            OpCode::Add 		    => { "ADD" }
-            OpCode::Sub 		    => { "SUB" }
-            OpCode::Mul 		    => { "MUL" }
-            OpCode::Div 		    => { "DIV" }
-            OpCode::Mod 		    => { "MOD" }
-            OpCode::Equal 		    => { "EQ" }
-            OpCode::NotEqual 		=> { "NEQ" }
-            OpCode::Less 		    => { "LT" }
-            OpCode::Greater 		=> { "GT" }
-            OpCode::LessEqual 		=> { "LEQ" }
-            OpCode::GreaterEqual 	=> { "GEQ" }
-            OpCode::Same 		    => { "SAME" }
+            OpCode::Add 		    => "ADD",
+            OpCode::Sub 		    => "SUB",
+            OpCode::Mul 		    => "MUL",
+            OpCode::Div 		    => "DIV",
+            OpCode::Mod 		    => "MOD",
+            OpCode::Equal 		    => "EQ",
+            OpCode::NotEqual 		=> "NEQ",
+            OpCode::Less 		    => "LT",
+            OpCode::Greater 		=> "GT",
+            OpCode::LessEqual 		=> "LEQ",
+            OpCode::GreaterEqual 	=> "GEQ",
+            OpCode::Same 		    => "SAME",
         
-            OpCode::Jmp 		    => { "JMP" }
-            OpCode::JmpFalseP 		=> { "JFP" }
-            OpCode::JmpFalseQ 		=> { "JFQ" }
-            OpCode::Call 		    => { "CALL" }
+            OpCode::Jmp 		    => "JMP",
+            OpCode::JmpFalseP 		=> "JFP",
+            OpCode::JmpFalseQ 		=> "JFQ",
+            OpCode::Call 		    => "CALL",
 
-            OpCode::Pop 		    => { "POP" }
-            OpCode::PopN 		    => { "POP" }
-            OpCode::CloseUpvalue	=> { "CLOSE" }
-            OpCode::Inherit         => { "INHRT" }
+            OpCode::Pop 		    => "POP",
+            OpCode::PopN 		    => "POP",
+            OpCode::CloseUpvalue	=> "CLOSE",
+            OpCode::Inherit         => "INHRT",
             
-            OpCode::BAD 		    => { "???" }
+            OpCode::BAD 		    => "???",
+        }
+    }
+
+
+    // The "length" of an opcode is how many subsequent bytes should be read from the bytecode chunk
+    // Only relevant for opcodes that have 8, 16 or 32 bit variants; others return 0
+    // The purpose is to make compiler, chunk disassembly and VM code simpler and less error-prone
+    pub fn len(&self) -> usize {
+        match self {
+            OpCode::GetConst8       => 1,
+            OpCode::GetConst16      => 2,
+            OpCode::GetConst32 		=> 4,
+
+            OpCode::GetLocal8 		=> 1,
+            OpCode::GetLocal16 		=> 2,
+            OpCode::GetLocal32 		=> 4,
+            OpCode::GetUpvalue8 	=> 1,
+            OpCode::GetUpvalue16 	=> 2,
+            OpCode::GetUpvalue32 	=> 4,
+            OpCode::GetGlobal8 		=> 1,
+            OpCode::GetGlobal16 	=> 2,
+            OpCode::GetGlobal32 	=> 4,
+            OpCode::GetProperty8 	=> 1,
+            OpCode::GetProperty16 	=> 2,
+            OpCode::GetProperty32 	=> 4,
+            OpCode::GetSuper8 	    => 1,
+            OpCode::GetSuper16 	    => 2,
+            OpCode::GetSuper32 	    => 4,
+        
+            OpCode::DefGlobal8 		=> 1,
+            OpCode::DefGlobal16 	=> 2,
+            OpCode::DefGlobal32 	=> 4,
+
+            OpCode::SetLocal8 		=> 1,
+            OpCode::SetLocal16 		=> 2,
+            OpCode::SetLocal32 		=> 4,
+            OpCode::SetUpvalue8 	=> 1,
+            OpCode::SetUpvalue16 	=> 2,
+            OpCode::SetUpvalue32 	=> 4,
+            OpCode::SetGlobal8 		=> 1,
+            OpCode::SetGlobal16 	=> 2,
+            OpCode::SetGlobal32 	=> 4,
+            OpCode::SetProperty8	=> 1,
+            OpCode::SetProperty16 	=> 2,
+            OpCode::SetProperty32 	=> 4,
+
+            OpCode::Capture8	 	=> 1,
+            OpCode::Capture16		=> 2,
+            OpCode::Capture32		=> 4,
+
+            OpCode::Class8	 	    => 1,
+            OpCode::Class16		    => 2,
+            OpCode::Class32		    => 4,
+            OpCode::Method8	 	    => 1,
+            OpCode::Method16		=> 2,
+            OpCode::Method32		=> 4,
+
+            OpCode::Jmp 		    => 4,
+            OpCode::JmpFalseP 		=> 4,
+            OpCode::JmpFalseQ 		=> 4,
+            OpCode::Call 		    => 1, // Number of arguments on the stack
+
+            OpCode::PopN 		    => 1, // Number of values to pop
+
+            _ => 0,
         }
     }
 

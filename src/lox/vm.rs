@@ -85,89 +85,89 @@ impl VM {
                     self.push(return_value);
                     Ok(())
                 }
-                OpCode::Debug		=> self.opcode_debug(),
-                OpCode::Print		=> self.opcode_print(),
+                OpCode::Debug		    => self.opcode_debug(),
+                OpCode::Print		    => self.opcode_print(),
 
-                OpCode::GetConst8 	=> self.opcode_getconst8(),
-                OpCode::GetConst16 	=> self.opcode_getconst16(),
-                OpCode::GetConst32 	=> self.opcode_getconst32(),
-                OpCode::False 		=> self.opcode_literal(Value::Bool(false)),
-                OpCode::Null 		=> self.opcode_literal(Value::Null),
-                OpCode::True	 	=> self.opcode_literal(Value::Bool(true)),
-                OpCode::NaN	 	    => self.opcode_literal(Value::Number(f64::NAN)),
-                OpCode::Inf	 	    => self.opcode_literal(Value::Number(f64::INFINITY)),
+                OpCode::GetConst8 	    |
+                OpCode::GetConst16 	    |
+                OpCode::GetConst32 	    => self.opcode_getconst(opcode.len()),
+                OpCode::False 		    => self.opcode_literal(Value::Bool(false)),
+                OpCode::Null 		    => self.opcode_literal(Value::Null),
+                OpCode::True	 	    => self.opcode_literal(Value::Bool(true)),
+                OpCode::NaN	 	        => self.opcode_literal(Value::Number(f64::NAN)),
+                OpCode::Inf	 	        => self.opcode_literal(Value::Number(f64::INFINITY)),
 
-                OpCode::GetLocal8 	=> self.opcode_getlocal8(),
-                OpCode::GetLocal16 	=> self.opcode_getlocal16(),
-                OpCode::GetLocal32 	=> self.opcode_getlocal32(),
-                OpCode::GetUpvalue8 	=> self.opcode_getupvalue8(),
-                OpCode::GetUpvalue16 	=> self.opcode_getupvalue16(),
-                OpCode::GetUpvalue32 	=> self.opcode_getupvalue32(),
-                OpCode::GetGlobal8 	=> self.opcode_getglobal8(),
-                OpCode::GetGlobal16 	=> self.opcode_getglobal16(),
-                OpCode::GetGlobal32 	=> self.opcode_getglobal32(),
-                OpCode::GetProperty8 	=> self.opcode_getproperty8(),
-                OpCode::GetProperty16 	=> self.opcode_getproperty16(),
-                OpCode::GetProperty32 	=> self.opcode_getproperty32(),
-                OpCode::GetSuper8 	=> self.opcode_getsuper8(),
-                OpCode::GetSuper16 	=> self.opcode_getsuper16(),
-                OpCode::GetSuper32 	=> self.opcode_getsuper32(),
+                OpCode::GetLocal8 	    |
+                OpCode::GetLocal16 	    |
+                OpCode::GetLocal32 	    => self.opcode_getlocal(opcode.len()),
+                OpCode::GetUpvalue8 	|
+                OpCode::GetUpvalue16 	|
+                OpCode::GetUpvalue32 	=> self.opcode_getupvalue(opcode.len()),
+                OpCode::GetGlobal8 	    |
+                OpCode::GetGlobal16 	|
+                OpCode::GetGlobal32 	=> self.opcode_getglobal(opcode.len()),
+                OpCode::GetProperty8 	|
+                OpCode::GetProperty16 	|
+                OpCode::GetProperty32 	=> self.opcode_getproperty(opcode.len()),
+                OpCode::GetSuper8 	    |
+                OpCode::GetSuper16 	    |
+                OpCode::GetSuper32 	    => self.opcode_getsuper(opcode.len()),
 
-                OpCode::DefGlobal8	=> self.opcode_defglobal8(),
-                OpCode::DefGlobal16 	=> self.opcode_defglobal16(),
-                OpCode::DefGlobal32 	=> self.opcode_defglobal32(),
+                OpCode::DefGlobal8	    |
+                OpCode::DefGlobal16 	|
+                OpCode::DefGlobal32 	=> self.opcode_defglobal(opcode.len()),
 
-                OpCode::SetLocal8 	=> self.opcode_setlocal8(),
-                OpCode::SetLocal16 	=> self.opcode_setlocal16(),
-                OpCode::SetLocal32 	=> self.opcode_setlocal32(),
-                OpCode::SetUpvalue8 	=> self.opcode_setupvalue8(),
-                OpCode::SetUpvalue16 	=> self.opcode_setupvalue16(),
-                OpCode::SetUpvalue32 	=> self.opcode_setupvalue32(),
-                OpCode::SetGlobal8 	=> self.opcode_setglobal8(),
-                OpCode::SetGlobal16 	=> self.opcode_setglobal16(),
-                OpCode::SetGlobal32 	=> self.opcode_setglobal32(),
-                OpCode::SetProperty8 	=> self.opcode_setproperty8(),
-                OpCode::SetProperty16 	=> self.opcode_setproperty16(),
-                OpCode::SetProperty32 	=> self.opcode_setproperty32(),
+                OpCode::SetLocal8 	    |
+                OpCode::SetLocal16 	    |
+                OpCode::SetLocal32 	    => self.opcode_setlocal(opcode.len()),
+                OpCode::SetUpvalue8 	|
+                OpCode::SetUpvalue16 	|
+                OpCode::SetUpvalue32 	=> self.opcode_setupvalue(opcode.len()),
+                OpCode::SetGlobal8 	    |
+                OpCode::SetGlobal16 	|
+                OpCode::SetGlobal32 	=> self.opcode_setglobal(opcode.len()),
+                OpCode::SetProperty8 	|
+                OpCode::SetProperty16 	|
+                OpCode::SetProperty32 	=> self.opcode_setproperty(opcode.len()),
 
-                OpCode::Capture8 	=> self.opcode_capture8(),
-                OpCode::Capture16 	=> self.opcode_capture16(),
-                OpCode::Capture32 	=> self.opcode_capture32(),
+                OpCode::Capture8 	    |
+                OpCode::Capture16 	    |
+                OpCode::Capture32 	    => self.opcode_capture(opcode.len()),
 
-                OpCode::Class8 		=> self.opcode_class8(),
-                OpCode::Class16 	=> self.opcode_class16(),
-                OpCode::Class32 	=> self.opcode_class32(),
-                OpCode::Method8 	=> self.opcode_method8(),
-                OpCode::Method16 	=> self.opcode_method16(),
-                OpCode::Method32 	=> self.opcode_method32(),
+                OpCode::Class8 		    |
+                OpCode::Class16 	    |
+                OpCode::Class32 	    => self.opcode_class(opcode.len()),
+                OpCode::Method8 	    |
+                OpCode::Method16 	    |
+                OpCode::Method32 	    => self.opcode_method(opcode.len()),
 
-                OpCode::Not 		=> self.opcode_not(),
-                OpCode::Negate 		=> self.opcode_negate(),
+                OpCode::Not 		    => self.opcode_not(),
+                OpCode::Negate 		    => self.opcode_negate(),
 
-                OpCode::Add 		=> self.opcode_add(),
-                OpCode::Sub 		=> self.opcode_sub(),
-                OpCode::Mul 		=> self.opcode_mul(),
-                OpCode::Div 		=> self.opcode_div(),
-                OpCode::Mod 		=> self.opcode_mod(),
-                OpCode::Equal		=> self.opcode_equal(),
-                OpCode::NotEqual	=> self.opcode_notequal(),
-                OpCode::Less		=> self.opcode_less(),
-                OpCode::Greater		=> self.opcode_greater(),
-                OpCode::LessEqual	=> self.opcode_lessequal(),
+                OpCode::Add 		    => self.opcode_add(),
+                OpCode::Sub 		    => self.opcode_sub(),
+                OpCode::Mul 		    => self.opcode_mul(),
+                OpCode::Div 		    => self.opcode_div(),
+                OpCode::Mod 		    => self.opcode_mod(),
+                OpCode::Equal		    => self.opcode_equal(),
+                OpCode::NotEqual	    => self.opcode_notequal(),
+                OpCode::Less		    => self.opcode_less(),
+                OpCode::Greater		    => self.opcode_greater(),
+                OpCode::LessEqual	    => self.opcode_lessequal(),
                 OpCode::GreaterEqual	=> self.opcode_greaterequal(),
-                OpCode::Same		=> self.opcode_same(),
+                OpCode::Same		    => self.opcode_same(),
 
-                OpCode::Jmp 		=> self.opcode_jmp(),
-                OpCode::JmpFalseP	=> self.opcode_jmpfalsep(),
-                OpCode::JmpFalseQ	=> self.opcode_jmpfalseq(),
-                OpCode::Call 		=> self.opcode_call(),
+                OpCode::Jmp 		    => self.opcode_jmp(opcode.len()),
+                OpCode::JmpFalseP	    => self.opcode_jmpfalsep(opcode.len()),
+                OpCode::JmpFalseQ	    => self.opcode_jmpfalseq(opcode.len()),
+                OpCode::Call 		    => self.opcode_call(opcode.len()),
 
-                OpCode::Pop 		=> self.opcode_pop(),
-                OpCode::PopN 		=> self.opcode_popn(),
+                OpCode::Pop 		    => self.opcode_pop(),
+                OpCode::PopN 		    => self.opcode_popn(),
                 OpCode::CloseUpvalue	=> self.opcode_closeupvalue(),
-                OpCode::Inherit	=> self.opcode_inherit(),
+                OpCode::Inherit	        => self.opcode_inherit(),
 
-                OpCode::BAD 		=> self.opcode_bad(),
+                OpCode::BAD 		    => self.opcode_bad(),
             };
             
             // On error, dump message and return
@@ -192,10 +192,10 @@ impl VM {
         return self.callframes.last().unwrap();
     }
 
-    fn opcode_call(&mut self) -> Result<(), RuntimeError> {
-        let arg_count = self.callframe_mut().read_byte();
+    fn opcode_call(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let arg_count = self.callframe_mut().read_bytes(len);
         let callee = self.peek(arg_count as usize).clone();
-        return self.call_value(callee, arg_count);        
+        return self.call_value(callee, arg_count as u8);        
     }
 
     fn opcode_debug(&mut self) -> Result<(), RuntimeError> {
@@ -210,52 +210,27 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_getconst(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_getconst(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         //let value = self.constants.value_by_id(id).clone();
         let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         //println!("opcode_getconst() loaded constant id=0x{:08x} onto stack: {}", id, value);
         self.push(value);
         Ok(())
     }
-    
-    fn opcode_getconst8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_getconst(id);
-    }
-    
-    fn opcode_getconst16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_getconst(id);
-    }
-    
-    fn opcode_getconst32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_getconst(id);
-    }
 
-    fn opcode_getlocal(&mut self, id: usize) -> Result<(), RuntimeError> {
+
+    fn opcode_getlocal(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         let depth = self.slot_depth(id); // Stack index from bottom
         self.push(self.peek(depth).clone());
         //println!("opcode_getlocal() fetched local variable id 0x{:08x} onto stack: {}", id, self.peek(0));
         Ok(())
     }
 
-    fn opcode_getlocal8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_getlocal(id);
-    }
-    
-    fn opcode_getlocal16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_getlocal(id);
-    }
-    
-    fn opcode_getlocal32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_getlocal(id);
-    }
 
-    fn opcode_getupvalue(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_getupvalue(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         //print!("opcode_getupvalue() id 0x{:08x}:", id);
         let stack_addr;
         let inner;
@@ -287,44 +262,18 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_getupvalue8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_getupvalue(id);
-    }
-    
-    fn opcode_getupvalue16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_getupvalue(id);
-    }
-    
-    fn opcode_getupvalue32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_getupvalue(id);
-    }
 
-    fn opcode_getglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_getglobal(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         // Compiler guarantees the variable is defined
         self.push(self.globals.value_by_id(id).unwrap().clone());
         //println!("opcode_getglobal() loaded global 0x{:08x} onto stack: {}", id, self.globals.value_by_id(id).unwrap());
         Ok(())
     }
 
-    fn opcode_getglobal8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_getglobal(id);
-    }
-    
-    fn opcode_getglobal16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_getglobal(id);
-    }
-    
-    fn opcode_getglobal32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_getglobal(id);
-    }
-    
-    fn opcode_getproperty(&mut self, id: usize) -> Result<(), RuntimeError> {
+
+    fn opcode_getproperty(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let name = constant.as_string();
@@ -335,7 +284,6 @@ impl VM {
             if let Some(value) = instance.as_instance().get(&name) {
                 self.pop();
                 self.push(value.clone());
-//            if self.get_instance_field(&instance, &name) {
                 // Name is a field of this instance
                 //println!("opcode_getproperty() Field '{}' of {} pushed onto stack", name, instance);
                 return Ok(())
@@ -348,22 +296,9 @@ impl VM {
         }
     }
 
-    fn opcode_getproperty8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_getproperty(id);
-    }
-    
-    fn opcode_getproperty16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_getproperty(id);
-    }
-    
-    fn opcode_getproperty32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_getproperty(id);
-    }
-    
-    fn opcode_getsuper(&mut self, id: usize) -> Result<(), RuntimeError> {
+
+    fn opcode_getsuper(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         //println!("opcode_getsuper() invoked");
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
@@ -379,71 +314,32 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_getsuper8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_getsuper(id);
-    }
-    
-    fn opcode_getsuper16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_getsuper(id);
-    }
-    
-    fn opcode_getsuper32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_getsuper(id);
-    }
-    
+
     fn opcode_literal(&mut self, value: Value) -> Result<(), RuntimeError> {
         self.push(value);
         Ok(())
     }
     
-    fn opcode_defglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_defglobal(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         let value = self.pop();
         //println!("opcode_defglobal() popped {} off stack, define as global 0x{:08x}", value, id);
         self.globals.define_by_id(id, value);
         Ok(())
     }
-    
-    fn opcode_defglobal8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_defglobal(id);        
-    }
-    
-    fn opcode_defglobal16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_defglobal(id);        
-    }
-    
-    fn opcode_defglobal32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_defglobal(id);        
-    }
-    
-    fn opcode_setlocal(&mut self, id: usize) -> Result<(), RuntimeError> {
+
+
+    fn opcode_setlocal(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         let depth = self.slot_depth(id); // Stack index from bottom
         self.poke(self.peek(0).clone(), depth);
         //println!("opcode_setlocal() stored top of stack in local variable id 0x{:08x}: {}", id, self.peek(0));
         Ok(())
     }
-    
-    fn opcode_setlocal8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_setlocal(id);
-    }
-    
-    fn opcode_setlocal16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_setlocal(id);
-    }
-    
-    fn opcode_setlocal32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_setlocal(id);
-    }
 
-    fn opcode_setupvalue(&mut self, id: usize) -> Result<(), RuntimeError> {
+
+    fn opcode_setupvalue(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         //println!("setupvalue id={} of closure upvalues", id);
         let value = self.peek(0).clone();
         let stack_addr;
@@ -474,44 +370,18 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_setupvalue8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_setupvalue(id);
-    }
-    
-    fn opcode_setupvalue16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_setupvalue(id);
-    }
-    
-    fn opcode_setupvalue32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_setupvalue(id);
-    }
 
-    fn opcode_setglobal(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_setglobal(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         let value = self.peek(0).clone();
         //println!("opcode_setglobal() set id 0x{:08x} as {}", id, value);
         self.globals.define_by_id(id, value);
         Ok(())
     }
 
-    fn opcode_setglobal8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_setglobal(id);
-    }
-    
-    fn opcode_setglobal16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_setglobal(id);
-    }
-    
-    fn opcode_setglobal32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_setglobal(id);
-    }
 
-    fn opcode_setproperty(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_setproperty(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let field = constant.as_string();
@@ -530,24 +400,11 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_setproperty8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_setproperty(id);
-    }
-    
-    fn opcode_setproperty16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_setproperty(id);
-    }
-    
-    fn opcode_setproperty32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_setproperty(id);
-    }
-    
-    fn opcode_capture(&mut self, id: usize) -> Result<(), RuntimeError> {
+
+    fn opcode_capture(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let constant = self.callframe_mut().read_bytes(len) as usize;
         // Get the function from constants table
-        let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(constant).clone();
         let upvalue_count = value.as_function().upvalue_count();
         // Wrap it in a closure
         let mut closure = Closure::new(value);
@@ -560,16 +417,10 @@ impl VM {
             // Because we allow more than 255 upvalues and local variables,
             // we have to encode the length if each id. This means the code 
             // to decode each entry is a bit more complicated than in clox.
-            let byte = self.callframe_mut().read_byte();
+            let byte = self.callframe_mut().read_bytes(1) as u8;
             let is_local = if (byte & 128) == 128 { true } else { false };
             let id_len = byte & 127; // 1=byte, 2=word, 4=dword
-            let mut id: usize = 0;
-            match id_len {
-                1 => id = self.callframe_mut().read_byte() as usize,
-                2 => id = self.callframe_mut().read_word() as usize,
-                4 => id = self.callframe_mut().read_dword() as usize,
-                _ => {}
-            }
+            let id: usize = self.callframe_mut().read_bytes(id_len as usize) as usize;
             // Capture upvalue and insert into closure
             //println!("  id={} is_local={}", id, is_local);
             if is_local {
@@ -584,23 +435,9 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_capture8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_capture(id);
-    }
-    
-    fn opcode_capture16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_capture(id);
-    }
-    
-    fn opcode_capture32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_capture(id);
-    }
 
-    fn opcode_class(&mut self, id: usize) -> Result<(), RuntimeError> {
-        //println!("opcode_class({}) lookup constant", id);
+    fn opcode_class(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         let name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         //println!("create class");
         let class = Class::new(name.as_string());
@@ -610,22 +447,9 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_class8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_class(id);
-    }
-    
-    fn opcode_class16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_class(id);
-    }
-    
-    fn opcode_class32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_class(id);
-    }
 
-    fn opcode_method(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn opcode_method(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let id = self.callframe_mut().read_bytes(len) as usize;
         let method_name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).as_string().clone();
         let method_value = self.pop();
         let mut class_value = self.peek(0).clone();
@@ -634,20 +458,6 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_method8(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_byte() as usize;
-        return self.opcode_method(id);
-    }
-    
-    fn opcode_method16(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_word() as usize;
-        return self.opcode_method(id);
-    }
-    
-    fn opcode_method32(&mut self) -> Result<(), RuntimeError> {
-        let id = self.callframe_mut().read_dword() as usize;
-        return self.opcode_method(id);
-    }
 
     fn opcode_not(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
@@ -773,20 +583,20 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_jmp(&mut self) -> Result<(), RuntimeError> {
-        let ip = self.callframe_mut().read_dword();
+    fn opcode_jmp(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let ip = self.callframe_mut().read_bytes(len);
         self.callframe_mut().jmp(ip);
         Ok(())
     }
     
-    fn opcode_jmpfalsep(&mut self) -> Result<(), RuntimeError> {
-        let ip = self.callframe_mut().read_dword();
+    fn opcode_jmpfalsep(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let ip = self.callframe_mut().read_bytes(len);
         if !self.pop().is_truthy() { self.callframe_mut().jmp(ip); }
         Ok(())
     }
 
-    fn opcode_jmpfalseq(&mut self) -> Result<(), RuntimeError> {
-        let ip = self.callframe_mut().read_dword();
+    fn opcode_jmpfalseq(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let ip = self.callframe_mut().read_bytes(len);
         if !self.peek(0).is_truthy() { self.callframe_mut().jmp(ip); }
         Ok(())
     }
@@ -798,7 +608,7 @@ impl VM {
     }
     
     fn opcode_popn(&mut self) -> Result<(), RuntimeError> {
-        let count = self.callframe_mut().read_byte();
+        let count = self.callframe_mut().read_bytes(1);
         for _ in 0..count {
             let _value = self.pop();
             //println!("POP = {}", value);
