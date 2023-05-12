@@ -5,6 +5,7 @@ use crate::lox::Builder;
 use super::VM;
 
 
+mod arrays;
 mod classes;
 mod closures;
 mod expressions;

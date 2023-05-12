@@ -184,7 +184,10 @@ impl Obj {
 impl PartialEq for Obj {
     fn eq(&self, other: &Obj) -> bool { 
         match (self, other) {
-            (Obj::Array(a), Obj::Array(b)) => a.eq(b),
+            (Obj::Array(a), Obj::Array(b)) => {
+                println!("comparing Obj::Arrays");
+                a.eq(b)
+            }
             // Obj types must be same object
             (Obj::Function(a), Obj::Function(b)) => std::ptr::eq(a, b),
             (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),

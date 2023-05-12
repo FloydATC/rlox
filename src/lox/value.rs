@@ -178,7 +178,7 @@ impl Value {
                 a.eq(b)
             }
             (Value::String(a), Value::String(b)) => a.eq(b),
-            (Value::Obj(a), Value::Obj(b)) => std::ptr::eq(a, b),
+            (Value::Obj(a), Value::Obj(b)) => Rc::ptr_eq(a, b), // Same RefCell?
             _ => false,
         }
     }
@@ -419,7 +419,7 @@ impl PartialEq for Value {
             // Note: NAN != NAN, INF != INF, -INF != -INF
             (Value::Number(a), Value::Number(b)) => a.eq(b),
             (Value::String(a), Value::String(b)) => a.eq(b),
-            (Value::Obj(ra), Value::Obj(rb)) => ra == rb,
+            (Value::Obj(ra), Value::Obj(rb)) => ra.borrow().eq(&rb.borrow()),
             _ => false, // Value types mismatch
         }    
     }

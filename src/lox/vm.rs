@@ -560,7 +560,8 @@ impl VM {
     fn opcode_equal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
-        self.push(Value::boolean(a == b));
+        println!("Comparing {} and {}", a, b);
+        self.push(Value::boolean(a.eq(&b)));
         Ok(())
     }
     
