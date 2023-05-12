@@ -4,6 +4,22 @@ use super::at::At;
 use crate::lox::Token;
 
 
+#[macro_export]
+macro_rules! c_error {
+    ( $msg:expr ) => {
+        {
+            return Err(CompileError::new($msg));
+        }
+    };
+    ( $msg:expr, $token:expr ) => {
+        {
+            return Err(CompileError::new_at($msg, $token));
+        }
+    };
+}
+pub use c_error;
+
+
 #[derive(Debug)]
 pub struct CompileError {
     message: String,

@@ -5,7 +5,7 @@ mod test;
 use std::collections::HashMap;
 
 
-use crate::lox::CompileError;
+use crate::lox::{CompileError, c_error};
 
 
 // The rlox compiler accesses variables by name =~ O(logN)
@@ -42,7 +42,7 @@ impl<T> Globals<T> {
                 return Ok(id);
             }
             Some(_) => {
-                return Err(CompileError::new(format!("Global '{}' already declared", name)));
+                c_error!(format!("Global '{}' already declared", name))
             }
         }
     }

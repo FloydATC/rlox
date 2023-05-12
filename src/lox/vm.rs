@@ -13,7 +13,7 @@ use super::stack::Stack;
 use super::value::Value;
 use super::globals::Globals;
 use super::closure::Closure;
-use super::runtime_error::RuntimeError;
+use crate::lox::{RuntimeError, r_error};
 use super::opcode::OpCode;
 
 
@@ -79,10 +79,7 @@ impl VM {
                     self.close_upvalues(self.callframe().stack_bottom());
                     self.callframes.pop();
                     if self.callframes.len() == 0 { 
-                        return Err(RuntimeError::new(
-                            format!("Can not 'return' from top-level code, use 'exit' instead."), 
-                            None
-                        )); 
+                        r_error!(format!("Can not 'return' from top-level code, use 'exit' instead."))
                     }
                     
                     self.push(return_value);
@@ -347,10 +344,7 @@ impl VM {
                 return self.bind_method(&instance.as_instance().class(), &name);
             }
         } else {
-            return Err(RuntimeError::new(
-                format!("{} does not have properties to get", instance), 
-                None
-            ));
+            r_error!(format!("{} does not have properties to get", instance))
         }
     }
 
@@ -379,10 +373,7 @@ impl VM {
         //println!("opcode_getsuper() binding method '{}' to superclass {}", method_name, superclass);
 
         if self.bind_method(&superclass, method_name).is_err() {
-            return Err(RuntimeError::new(
-                format!("Could not bind method '{}' to superclass {}", method_name, superclass), 
-                None
-            ));
+            r_error!(format!("Could not bind method '{}' to superclass {}", method_name, superclass))
         }
         //println!("opcode_getsuper() finished");
         Ok(())
@@ -534,10 +525,7 @@ impl VM {
             //println!("opcode_setproperty() set field '{}' of {} to {}", field, instance, value);
             self.push(value);
         } else {
-            return Err(RuntimeError::new(
-                format!("{} does not have properties to set", instance),
-                None
-            ));
+            r_error!(format!("{} does not have properties to set", instance))
         }
         Ok(())
     }
@@ -827,10 +815,7 @@ impl VM {
         let mut class = self.pop();
         let superclass = self.pop();
         if !superclass.is_class() {
-            return Err(RuntimeError::new(
-                format!("Can not inherit from {} because it is not a class", superclass), 
-                None
-            ));
+            r_error!(format!("Can not inherit from {} because it is not a class", superclass))
         }
         // Copy parent methods
         // Compiler emits INHRT before any MTHD so we know the method table is empty
@@ -840,10 +825,7 @@ impl VM {
     }
     
     fn opcode_bad(&mut self) -> Result<(), RuntimeError> {
-        Err(RuntimeError::new(
-            "Bad OpCode! INTERNAL ERROR in VM and/or bytecode compiler!".to_string(), 
-            None
-        ))
+        r_error!(format!("Bad OpCode! INTERNAL ERROR in VM and/or bytecode compiler!"))
     }
 }
 
@@ -887,11 +869,8 @@ impl VM {
 
     fn call(&mut self, callee: Value, argc: u8) -> Result<(), RuntimeError> {
         let want_argc = callee.as_closure().function_ref().arity();
-        if argc != want_argc { 
-            return Err(RuntimeError::new(
-                format!("Expected {} argument(s) but got {}", want_argc, argc),
-                None
-            ));
+        if argc != want_argc {
+            r_error!(format!("Expected {} argument(s) but got {}", want_argc, argc)) 
         }
 
         let stack_bottom = self.stack.size() - (argc as usize) - 1;
@@ -921,16 +900,10 @@ impl VM {
             if let Some(function) = initializer {
                 self.call(function, argc)?;
             } else if argc != 0 {
-                return Err(RuntimeError::new(
-                    format!("Expected 0 arguments but got {}", argc),
-                    None
-                ));
+                r_error!(format!("Expected 0 arguments but got {}", argc))
             }
         } else {
-            return Err(RuntimeError::new(
-                format!("VM.call_value({}, {}) not implemented.", value, argc),
-                None
-            ));
+            r_error!(format!("VM.call_value({}, {}) not implemented.", value, argc))
         }
         Ok(())
     }
@@ -940,16 +913,10 @@ impl VM {
         let receiver = self.stack.peek(0).clone();
         //println!("bind_method() invoked, class={} method={} receiver={}", class, method_name, receiver);
         if !class.is_class() {
-            return Err(RuntimeError::new(
-                format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class),
-                None
-            ));            
+            r_error!(format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class))
         }
         if !receiver.is_instance() {
-            return Err(RuntimeError::new(
-                format!("Can not bind '{}' to {} because it is not an instance", method_name, receiver),
-                None
-            ));            
+            r_error!(format!("Can not bind '{}' to {} because it is not an instance", method_name, receiver))
         }
         // clox looks up the class by name, 
         // but the receiver already has a reference to its class.
@@ -965,10 +932,7 @@ impl VM {
                 return Ok(());
             }
             None => {
-                return Err(RuntimeError::new(
-                    format!("Class {} does not have a method named '{}'", class, method_name),
-                    None
-                ));
+                r_error!(format!("Class {} does not have a method named '{}'", class, method_name))
             }
         }
     }

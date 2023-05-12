@@ -5,7 +5,7 @@ mod test;
 
 use super::codeloop::CodeLoop;
 use super::compiler::Compiler;
-use super::compile_error::CompileError;
+use crate::lox::{CompileError, c_error};
 use super::class::Class;
 use crate::lox::{Token, TokenKind};
 use super::function::Function;
@@ -129,10 +129,7 @@ impl<I: Tokenize> Parser<I> {
         if input.advance_on(kind) {
             Ok(())
         } else {
-            Err(CompileError::new_at(
-                format!("{}, got '{}'", errmsg, input.current().lexeme()),
-                input.current(),
-            ))
+            c_error!(format!("{}, got '{}'", errmsg, input.current().lexeme()), input.current())
         }
     }
 
@@ -197,28 +194,17 @@ impl<I: Tokenize> Parser<I> {
                         }
                         None => {
                             // Not sure if this is even reachable; clox does not test for this
-                            return Err(CompileError::new_at(
-                                format!("Expected expression"),
-                                input.current(),
-                            ));
+                            c_error!(format!("Expected expression"), input.current())
                         }
                     }
                 }
                 
                 if can_assign && input.matches(TokenKind::Equal) {
-                    return Err(CompileError::new_at(
-                        format!("Invalid assignment target"),
-                        input.current(),
-                    ));
+                    c_error!(format!("Invalid assignment target"), input.current())
                 }
                 
             }
-            None => {
-                return Err(CompileError::new_at(
-                    format!("Expected expression"),
-                    input.current(),
-                ));
-            }
+            None => c_error!(format!("Expected expression"), input.current()),
         }
         Ok(())
     }
@@ -249,12 +235,7 @@ impl<I: Tokenize> Parser<I> {
         let mut arity = 0;
         if !input.matches(TokenKind::RightParen) {
             loop {
-                if arity == 255 { 
-                    return Err(CompileError::new_at(
-                        format!("Can not have more than 255 parameters"),
-                        input.current(),
-                    ));
-                }
+                if arity == 255 { c_error!(format!("Can not have more than 255 parameters"), input.current()) }
                 arity = arity + 1;
                 let name_id = self.parse_variable("Expected parameter name", input, output)?;
                 self.define_variable(name_id, output);
@@ -304,10 +285,7 @@ impl<I: Tokenize> Parser<I> {
                 // Verify variable is not already declared in this scope
                 if let Some(id) = output.locals.resolve_local(name) {
                     if output.locals.local_ref_by_id(id).depth() == scope_depth {
-                        return Err(CompileError::new_at(
-                            format!("Variable named '{}' already declared in this scope", name),
-                            input.previous(),
-                        ));
+                        c_error!(format!("Variable named '{}' already declared in this scope", name), input.previous())
                     }
                 }
 
@@ -349,7 +327,7 @@ impl<I: Tokenize> Parser<I> {
         match result {
             Some(id) => {
                 if !output.locals.local_ref_by_id(id).is_defined() {
-                    return Err(CompileError::new(format!("Can not read local variable in its own initializer")));
+                    c_error!(format!("Can not read local variable in its own initializer"))
                 }
                 return Ok((
                     OpCodeSet::getlocal(),
@@ -383,7 +361,7 @@ impl<I: Tokenize> Parser<I> {
                 ));
             }
             None => {
-                return Err(CompileError::new(format!("Undeclared variable '{}'", name_token.lexeme())));
+                c_error!(format!("Undeclared variable '{}'", name_token.lexeme()))
             }
         }
     }
@@ -565,10 +543,7 @@ impl<I: Tokenize> Parser<I> {
     }
     
     fn bad_statement(&mut self, input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
-        Err(CompileError::new_at(
-            format!("Keyword '{}' is misplaced", input.previous().lexeme()),
-            input.previous(),
-        ))
+        c_error!(format!("Keyword '{}' is misplaced", input.previous().lexeme()), input.previous())
     }
 
     fn break_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
@@ -615,10 +590,7 @@ impl<I: Tokenize> Parser<I> {
         let negate = input.advance_on(TokenKind::Not);
         self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", input.previous().lexeme()).as_str(), input, output)?;
         if input.current().matches(TokenKind::RightParen) {
-            return Err(CompileError::new_at(
-                format!("Expected conditional expression, got '{}'", input.current().lexeme()),
-                input.current(),
-            ));
+            c_error!(format!("Expected conditional expression, got '{}'", input.current().lexeme()), input.current())
         }
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_IF).as_str(), input, output)?;
@@ -647,19 +619,13 @@ impl<I: Tokenize> Parser<I> {
     fn return_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let function_kind = output.compiler.function().kind();
         if function_kind.is_toplevel() {
-            return Err(CompileError::new_at(
-                format!("Can not '{}' from top level code", KEYWORD_RETURN),
-                input.previous(),
-            ));
+            c_error!(format!("Can not '{}' from top level code", KEYWORD_RETURN), input.previous())
         }
         if input.advance_on(TokenKind::Semicolon) {
             self.emit_return(output); // Pushes 'this' or null as needed
         } else {
             if function_kind.return_self() { 
-                return Err(CompileError::new_at(
-                    format!("Can not '{}' a value from initializer", KEYWORD_RETURN),
-                    input.previous(), 
-                ));
+                c_error!(format!("Can not '{}' a value from initializer", KEYWORD_RETURN), input.previous())
             }
             self.expression(input, output)?;
             self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
@@ -675,10 +641,7 @@ impl<I: Tokenize> Parser<I> {
         let negate = input.advance_on(TokenKind::Not);
         self.consume(TokenKind::LeftParen, format!("Expected '(' after '{}'", input.previous().lexeme()).as_str(), input, output)?;
         if input.current().matches(TokenKind::RightParen) {
-            return Err(CompileError::new_at(
-                format!("Expected conditional expression, got '{}'", input.current().lexeme()),
-                input.current(),
-            ));
+            c_error!(format!("Expected conditional expression, got '{}'", input.current().lexeme()), input.current())
         }
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_WHILE).as_str(), input, output)?;
@@ -720,10 +683,7 @@ impl<I: Tokenize> Parser<I> {
                 }
             }
             None => {
-                return Err(CompileError::new_at(
-                    format!("Keyword '{}' is misplaced", KEYWORD_CONTINUE),
-                    input.previous(),
-                ));
+                c_error!(format!("Keyword '{}' is misplaced", KEYWORD_CONTINUE), input.previous())
             }
         }
         // At this point we know the inner_loop exists
@@ -744,12 +704,7 @@ impl<I: Tokenize> Parser<I> {
                     self.end_scope(output);
                 }
             }
-            None => {
-                return Err(CompileError::new_at(
-                    format!("Keyword '{}' is misplaced", KEYWORD_BREAK),
-                    input.previous(),
-                ));
-            }
+            None => c_error!(format!("Keyword '{}' is misplaced", KEYWORD_BREAK), input.previous()),
         }
         // At this point we know the inner_loop exists
         let codeloop = self.inner_loop().unwrap();
@@ -804,10 +759,7 @@ impl<I: Tokenize> Parser<I> {
             self.variable(false, input, output)?; // Look up superclass by name, load it on the stack
             let superclass_token = input.previous().clone();
             if name_token.lexeme() == superclass_token.lexeme() { 
-                return Err(CompileError::new_at(
-                    format!("Class '{}' can not inherit from itself", name_token.lexeme()),
-                    input.previous(),
-                ));
+                c_error!(format!("Class '{}' can not inherit from itself", name_token.lexeme()), input.previous())
             }
             self.begin_scope();
 
@@ -1026,16 +978,10 @@ impl<I: Tokenize> Parser<I> {
 
     fn super_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         if self.classes.current_name().is_none() { 
-            return Err(CompileError::new_at(
-                format!("Can not use '{}' outside of a class", KEYWORD_SUPER),
-                input.previous(),
-            ));
+            c_error!(format!("Can not use '{}' outside of a class", KEYWORD_SUPER), input.previous())
         }
         if !self.classes.current().unwrap().has_parent() { 
-            return Err(CompileError::new_at(
-                format!("Can not use '{}' in a class with no superclass", KEYWORD_SUPER),
-                input.previous(),
-            ));
+            c_error!(format!("Can not use '{}' in a class with no superclass", KEYWORD_SUPER), input.previous())
         }
         self.consume(TokenKind::Dot, format!("Expected '.' after '{}'", KEYWORD_SUPER).as_str(), input, output)?;
         self.consume(TokenKind::Identifier, "Expected superclass method name", input, output)?;
@@ -1055,10 +1001,7 @@ impl<I: Tokenize> Parser<I> {
 
     fn this_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         if self.classes.current_name().is_none() { 
-            return Err(CompileError::new_at(
-                format!("Can not use '{}' outside of a class", KEYWORD_THIS),
-                input.previous(),
-            ));
+            c_error!(format!("Can not use '{}' outside of a class", KEYWORD_THIS), input.previous())
         }
         self.variable(false, input, output)?;
         Ok(())

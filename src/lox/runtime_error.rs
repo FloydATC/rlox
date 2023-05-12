@@ -3,6 +3,22 @@
 use super::at::At;
 
 
+#[macro_export]
+macro_rules! r_error {
+    ( $msg:expr ) => {
+        {
+            return Err(RuntimeError::new($msg));
+        }
+    };
+    ( $msg:expr, $token:expr ) => {
+        {
+            return Err(RuntimeError::new_at($msg, $token));
+        }
+    };
+}
+pub use r_error;
+
+
 #[derive(Debug)]
 pub struct RuntimeError {
     message: String,
@@ -14,10 +30,19 @@ pub struct RuntimeError {
 #[allow(dead_code)]
 impl RuntimeError {
 
-    pub fn new(message: String, at: Option<At>) -> Self {
+    pub fn new(message: String) -> Self {
         RuntimeError { 
             message,
-            at,
+            at: None,
+            stack_trace: vec![],
+        }
+    }
+
+
+    pub fn new_at(message: String, at: &At) -> Self {
+        RuntimeError { 
+            message,
+            at: Some(at.clone()),
             stack_trace: vec![],
         }
     }
