@@ -150,3 +150,34 @@ fn stack_debug() {
     assert_eq!(result, expect);
 }
 
+
+#[test]
+fn stack_as_slice() {
+    let mut stack = Stack::<Value>::new();
+    let value1 = Value::string("foo");
+    let value2 = Value::string("bar");
+    stack.push(value1);
+    stack.push(value2);
+    assert_eq!(stack.as_slice(), &[Value::string("foo"), Value::string("bar")]);
+}
+
+#[test]
+fn stack_len() {
+    let mut stack = Stack::<Value>::new();
+    let value1 = Value::string("foo");
+    let value2 = Value::string("bar");
+    stack.push(value1);
+    stack.push(value2);
+    assert_eq!(stack.len(), 2);
+}
+
+#[test]
+fn stack_truncate() {
+    let mut stack = Stack::<Value>::new();
+    for i in 1..=10 { stack.push(Value::Number(i as f64)); }
+    assert_eq!(stack.len(), 10);
+    stack.truncate(4);
+    let result = format!("{:?}", stack);
+    assert_eq!(result.as_str(), "\n  0x0000 1\n  0x0001 2\n  0x0002 3\n  0x0003 4\n");
+}
+

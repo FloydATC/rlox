@@ -126,6 +126,9 @@ impl Chunk {
             OpCode::DefGlobal8 		|
             OpCode::DefGlobal16 	|
             OpCode::DefGlobal32 	=> self.opcode_variant(ip),
+            OpCode::DefArray8 		|
+            OpCode::DefArray16 	    |
+            OpCode::DefArray32 	    => self.opcode_variant(ip),
 
             OpCode::SetLocal8 		|
             OpCode::SetLocal16 		|

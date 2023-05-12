@@ -2,6 +2,7 @@
 #[cfg(test)]
 mod test;
 
+
 use std::rc::Rc;
 use std::cell::{RefCell, Ref, RefMut};
 
@@ -10,6 +11,9 @@ use super::function::Function;
 use super::vm::{Class, Method, Instance};
 use super::closure::Closure;
 
+mod array;
+
+pub use array::Array;
 
 #[derive(Debug)]
 pub enum Value {
@@ -39,6 +43,10 @@ impl Value {
 
     pub fn string(s: &str) -> Value {
         Value::String(s.to_string())
+    }
+
+    pub fn array(a: Array) -> Value {
+        Value::Obj(Rc::new(RefCell::new(Obj::array(a))))
     }
 
     pub fn function(f: Function) -> Value {
@@ -92,6 +100,13 @@ impl Value {
     pub fn is_string(&self) -> bool {
         match self {
             Value::String(_) 	=> true,
+            _ 			=> false
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_array(),
             _ 			=> false
         }
     }
@@ -163,7 +178,7 @@ impl Value {
                 a.eq(b)
             }
             (Value::String(a), Value::String(b)) => a.eq(b),
-            (Value::Obj(a), Value::Obj(b)) => a.eq(b),
+            (Value::Obj(a), Value::Obj(b)) => std::ptr::eq(a, b),
             _ => false,
         }
     }
@@ -193,6 +208,28 @@ impl Value {
             Value::String(s) 	=> return &s,
             _ 			=> {
                 panic!("{} is not a string", self)
+            }
+        }
+    }
+    
+    pub fn as_array(&self) -> Ref<'_, Array> {
+        match self {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_array())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_array_mut(&self) -> RefMut<'_, Array> {
+        match self {
+            Value::Obj(obj)	=> {
+                RefMut::map(obj.borrow_mut(), |o| o.as_array_mut())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
             }
         }
     }

@@ -1,0 +1,62 @@
+
+
+#[cfg(test)]
+mod test;
+
+
+use super::Value;
+
+
+#[derive(Debug)]
+pub struct Array {
+    values: Vec<Value>,
+}
+
+
+#[allow(dead_code)]
+impl Array {
+
+    pub fn new() -> Self {
+        Array {
+            values: vec![],
+        }
+    }
+
+
+    pub fn len(&self) -> usize {
+        return self.values.len();
+    }
+
+
+    pub fn push(&mut self, value: Value) {
+        self.values.push(value);
+    }
+
+    pub fn pop(&mut self) -> Option<Value> {
+        return self.values.pop();
+    }
+}
+
+
+// Traits
+
+impl std::fmt::Display for Array {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "[{}]", self.values.iter().map(|value| format!("{}", value)).collect::<Vec<String>>().join(", "))
+    }
+}
+
+
+impl PartialEq for Array {
+    fn eq(&self, other: &Array) -> bool {
+        self.values.eq(&other.values)
+    }
+}
+
+impl From<&[Value]> for Array {
+    fn from(slice: &[Value]) -> Self {
+        Array { 
+            values: Vec::from(slice),
+        }
+    }
+}

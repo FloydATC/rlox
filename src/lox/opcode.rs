@@ -51,6 +51,10 @@ pub enum OpCode {
     DefGlobal8	    = 0x30,	// Followed by BYTE indexing table of globals
     DefGlobal16     = 0x31,	// Followed by WORD indexing table of globals
     DefGlobal32     = 0x32,	// Followed by DWORD indexing table of globals
+    // Pop value and put in new variable
+    DefArray8,              // Followed by BYTE with element count
+    DefArray16,             // Followed by WORD with element count
+    DefArray32,	        // Followed by DWORD with element count
 
     // Pop value and put in existing variable
     SetLocal8	    = 0x40,
@@ -153,6 +157,9 @@ impl OpCode {
             OpCode::DefGlobal8 		=> "DEFG",
             OpCode::DefGlobal16 	=> "DEFG",
             OpCode::DefGlobal32 	=> "DEFG",
+            OpCode::DefArray8 		=> "DEFA",
+            OpCode::DefArray16 	    => "DEFA",
+            OpCode::DefArray32 	    => "DEFA",
 
             OpCode::SetLocal8 		=> "SETL",
             OpCode::SetLocal16 		=> "SETL",
@@ -237,6 +244,9 @@ impl OpCode {
             OpCode::DefGlobal8 		=> 1,
             OpCode::DefGlobal16 	=> 2,
             OpCode::DefGlobal32 	=> 4,
+            OpCode::DefArray8 		=> 1,
+            OpCode::DefArray16 	    => 2,
+            OpCode::DefArray32 	    => 4,
 
             OpCode::SetLocal8 		=> 1,
             OpCode::SetLocal16 		=> 2,

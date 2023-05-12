@@ -14,6 +14,7 @@ use super::Parser;
 use super::ParserOutput;
 
 
+mod arrays;
 mod base2numbers;
 mod base8numbers;
 mod base10numbers;
@@ -44,8 +45,17 @@ fn test(code: &str) -> Result<ByteCode, CompileError> {
         locals:	&mut Locals::new(false),
     };
 
-    let function = Parser::new().parse(&mut input, &mut output)?;
-    return Ok(ByteCode::new(function, globals));
+    // Be verbose to make debugging a little easier
+    match Parser::new().parse(&mut input, &mut output) {
+        Ok(function) => {
+            println!("parse() returned Ok({:?})", function);
+            return Ok(ByteCode::new(function, globals));
+        }
+        Err(compile_error) => {
+            println!("parse() returned Err({:?})", compile_error);
+            return Err(compile_error);
+        }
+    }
 }
 
 #[test]

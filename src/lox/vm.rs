@@ -6,6 +6,7 @@ mod runtime;
 pub use runtime::{Class, Instance, Method, Upvalue};
 
 
+use super::Array;
 use super::keyword::*;
 use super::ByteCode;
 use super::callframe::CallFrame;
@@ -53,38 +54,8 @@ impl VM {
             println!(" stack={:?}", self.stack);
             
             let result = match opcode {
-                OpCode::Exit		=> {
-                    let return_value = self.pop();
-                    //println!("OpCode::Exit, close_upvalues");
-                    // Execute may be called again so be sure to close any open upvalues
-                    //self.close_upvalues(self.callframe().stack_bottom());
-                    // Rather than wasting time unwinding the stacks,
-                    // simply discard them because the script is terminating.
-                    self.stack = Stack::new();
-                    self.callframes = vec![];
-                    match return_value {
-                        Value::Number(n) => {
-                            if n.is_nan() { return Ok(i32::MAX) }
-                            if n.is_infinite() && n.is_sign_positive() { return Ok(i32::MAX) }
-                            if n.is_infinite() && n.is_sign_negative() { return Ok(i32::MIN) }
-                            return Ok(n as i32)
-                        }
-                        Value::Bool(true) => return Ok(1),
-                        _ => return Ok(0),
-                    }
-                }
-                OpCode::Return 		=> {
-                    let return_value = self.pop();
-                    //println!("OpCode::Return, close_upvalues");
-                    self.close_upvalues(self.callframe().stack_bottom());
-                    self.callframes.pop();
-                    if self.callframes.len() == 0 { 
-                        r_error!(format!("Can not 'return' from top-level code, use 'exit' instead."))
-                    }
-                    
-                    self.push(return_value);
-                    Ok(())
-                }
+                OpCode::Exit		    => return self.opcode_exit(),
+                OpCode::Return 		    => self.opcode_return(),
                 OpCode::Debug		    => self.opcode_debug(),
                 OpCode::Print		    => self.opcode_print(),
 
@@ -116,6 +87,9 @@ impl VM {
                 OpCode::DefGlobal8	    |
                 OpCode::DefGlobal16 	|
                 OpCode::DefGlobal32 	=> self.opcode_defglobal(opcode.len()),
+                OpCode::DefArray8	    |
+                OpCode::DefArray16 	    |
+                OpCode::DefArray32 	    => self.opcode_defarray(opcode.len()),
 
                 OpCode::SetLocal8 	    |
                 OpCode::SetLocal16 	    |
@@ -178,11 +152,23 @@ impl VM {
                     ip, 
                     self.callframe().closure_ref().function_ref()
                 );
-                runtime_error.set_stack_trace(vec!["-- stacktrace goes here --".to_string()]);
+                runtime_error.set_stack_trace(self.stack_trace());
                 return Err(runtime_error);
             }
         }
     }
+
+
+    fn stack_trace(&self) -> Vec<String> {
+        //let mut result = vec![];
+        //for callframe in self.callframes.iter() {
+        //    result.push(format!("{:?}", callframe));
+        //}
+        //return result;
+
+        self.callframes.iter().map(|callframe| format!("{:?}", callframe)).collect()
+    }
+
     
     pub fn callframe_mut(&mut self) -> &mut CallFrame {
         return self.callframes.last_mut().unwrap();
@@ -191,6 +177,36 @@ impl VM {
     pub fn callframe(&self) -> &CallFrame {
         return self.callframes.last().unwrap();
     }
+
+
+    fn opcode_exit(&mut self) -> Result<i32, RuntimeError> {
+        match self.pop() {
+            Value::Number(n) => {
+                if n.is_nan() { return Ok(i32::MAX) }
+                if n.is_infinite() && n.is_sign_positive() { return Ok(i32::MAX) }
+                if n.is_infinite() && n.is_sign_negative() { return Ok(i32::MIN) }
+                return Ok(n as i32)
+            }
+            Value::Bool(true) => return Ok(1),
+            _ => return Ok(0),
+        }
+    }
+
+
+    fn opcode_return(&mut self) -> Result<(), RuntimeError> {
+        let return_value = self.pop();
+        //println!("OpCode::Return, close_upvalues");
+        self.close_upvalues(self.callframe().stack_bottom());
+        self.callframes.pop();
+        if self.callframes.len() == 0 { 
+            // Note: The compiler should make this impossible but we're checking just in case
+            r_error!(format!("Can not 'return' from top-level code, use 'exit' instead."))
+        }
+        
+        self.push(return_value);
+        Ok(())
+    }
+
 
     fn opcode_call(&mut self, len: usize) -> Result<(), RuntimeError> {
         let arg_count = self.callframe_mut().read_bytes(len);
@@ -325,6 +341,15 @@ impl VM {
         let value = self.pop();
         //println!("opcode_defglobal() popped {} off stack, define as global 0x{:08x}", value, id);
         self.globals.define_by_id(id, value);
+        Ok(())
+    }
+
+
+    fn opcode_defarray(&mut self, len: usize) -> Result<(), RuntimeError> {
+        let elements = self.callframe_mut().read_bytes(len) as usize;
+        let array = Array::from(&self.stack.as_slice()[self.stack.len()-elements..]);
+        self.stack.truncate(self.stack.len() - elements); // Drop elements from stack
+        self.push(Value::array(array));
         Ok(())
     }
 
@@ -470,8 +495,6 @@ impl VM {
     fn opcode_negate(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         match value {
-            //Value::Inf => self.push(Value::InfN),
-            //Value::InfN => self.push(Value::Inf),
             Value::Bool(b) => self.push(Value::boolean(!b)),
             Value::Number(n) => self.push(Value::number(-n)),
             _ => self.push(Value::Null),

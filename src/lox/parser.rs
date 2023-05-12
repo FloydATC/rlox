@@ -835,8 +835,24 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn array(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
-        panic!("Not yet implemented.");
+    fn array(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        let mut elements = 0;
+        println!("array() parsing elements");
+        if !input.matches(TokenKind::RightBracket) {
+            loop {
+                elements = elements + 1;
+                self.expression(input, output)?;
+                println!("elements={}", elements);
+                // Keep going?
+                if !input.advance_on(TokenKind::Comma) { break; }
+                if input.matches(TokenKind::RightBracket) { break; } // That was a trailing comma
+            }
+        }
+        self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
+        println!("array() emit op");
+        output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
+        println!("array() done");
+        Ok(())
     }
 
     fn base2number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {

@@ -16,6 +16,7 @@ mod locals;
 mod math;
 mod numbers;
 mod return_statement;
+mod stack_trace;
 mod while_loops;
 
 

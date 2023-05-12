@@ -45,6 +45,6 @@ pub use scanner::Scanner;
 pub use token::Token;
 pub use tokenizer::{Tokenizer, Tokenize};
 pub use token_kind::TokenKind;
-pub use value::Value;
+pub use value::{Array, Value};
 pub use vm::VM;
 

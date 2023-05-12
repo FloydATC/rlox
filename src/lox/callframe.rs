@@ -52,25 +52,6 @@ impl CallFrame {
         return result;
     }
 
-/*    
-    pub fn read_byte__(&mut self) -> u8 {
-        let byte = self.closure_ref().function_ref().read_chunk().read_byte(self.ip);
-        self.ip = self.ip + 1;
-        return byte;        
-    }
-
-    pub fn read_word__(&mut self) -> u16 {
-        let word = self.closure_ref().function_ref().read_chunk().read_word(self.ip);
-        self.ip = self.ip + 2;
-        return word;        
-    }
-
-    pub fn read_dword__(&mut self) -> u32 {
-        let dword = self.closure_ref().function_ref().read_chunk().read_dword(self.ip);
-        self.ip = self.ip + 4;
-        return dword;        
-    }
-*/
 
     // State of the callframe itself
     pub fn ip(&self) -> u32 {
@@ -83,5 +64,14 @@ impl CallFrame {
     
     pub fn stack_bottom(&self) -> usize {
         return self.stack_bottom;
+    }
+
+}
+
+
+// Used by the VM when generating a stack trace after a RuntimeError
+impl std::fmt::Debug for CallFrame {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:0x{:08x}", self.closure_ref().name(), self.ip())
     }
 }

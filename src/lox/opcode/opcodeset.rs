@@ -22,6 +22,15 @@ impl OpCodeSet {
     }
 
 
+    pub fn defarray() -> OpCodeSet {
+        OpCodeSet {
+            byte: 	OpCode::DefArray8,
+            word:	OpCode::DefArray16,
+            dword:	OpCode::DefArray32,
+        }
+    }
+
+
     pub fn capture() -> OpCodeSet {
         OpCodeSet {
             byte: 	OpCode::Capture8,

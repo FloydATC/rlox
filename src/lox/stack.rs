@@ -67,6 +67,19 @@ impl<T> Stack<T> {
         self.elements.clear();
     }
 
+
+    pub fn as_slice(&self) -> &[T] {
+        self.elements.as_slice()
+    }
+
+    pub fn len(&self) -> usize {
+        self.elements.len()
+    }
+
+    pub fn truncate(&mut self, keep: usize) {
+        self.elements.truncate(keep);
+    }
+
 }
 
 

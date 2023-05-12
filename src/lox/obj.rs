@@ -1,5 +1,6 @@
 
 
+use super::value::Array;
 use super::function::Function;
 use super::vm::{Class, Instance, Method};
 use super::closure::Closure;
@@ -8,6 +9,7 @@ use super::closure::Closure;
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum Obj {
+    Array(Array),
     Function(Function),
     Class(Class),
     Closure(Closure),
@@ -20,6 +22,9 @@ pub enum Obj {
 impl Obj {
     // ======== Constructors ========
 
+    pub fn array(a: Array) -> Obj {
+        Obj::Array(a)
+    }
     pub fn function(f: Function) -> Obj {
         Obj::Function(f)
     }
@@ -40,6 +45,13 @@ impl Obj {
 #[allow(dead_code)]
 impl Obj {
     // ======== Variant checks ========
+
+    pub fn is_array(&self) -> bool {
+        match self {
+            Obj::Array(_) 	=> true,
+            _			=> false,
+        }
+    }
 
     pub fn is_function(&self) -> bool {
         match self {
@@ -86,6 +98,7 @@ impl Obj {
             _			=> true,	// All objects are truthy (for now)
         }
     }
+
 }
 
 
@@ -93,16 +106,30 @@ impl Obj {
 impl Obj {
     // ======== Getters ========
 
+    pub fn as_array(&self) -> &Array {
+        match self {
+            Obj::Array(a) => return a,
+            _ => panic!("{:?} is not an Array Object", self),
+        }
+    }
+
+    pub fn as_array_mut(&mut self) -> &mut Array {
+        match self {
+            Obj::Array(a) => return a,
+            _ => panic!("{:?} is not an Array Object", self),
+        }
+    }
+
     pub fn as_function(&self) -> &Function {
         match self {
-            Obj::Function(f) => return &f,
+            Obj::Function(f) => return f,
             _ => panic!("{:?} is not a Function Object", self),
         }
     }
 
     pub fn as_class(&self) -> &Class {
         match self {
-            Obj::Class(c) => return &c,
+            Obj::Class(c) => return c,
             _ => panic!("{:?} is not a Class Object", self),
         }
     }
@@ -116,7 +143,7 @@ impl Obj {
 
     pub fn as_closure(&self) -> &Closure {
         match self {
-            Obj::Closure(c) => return &c,
+            Obj::Closure(c) => return c,
             _ => panic!("{:?} is not a Closure Object", self),
         }
     }
@@ -130,7 +157,7 @@ impl Obj {
 
     pub fn as_instance(&self) -> &Instance {
         match self {
-            Obj::Instance(i) => return &i,
+            Obj::Instance(i) => return i,
             _ => panic!("{:?} is not an Instance Object", self),
         }
     }
@@ -144,7 +171,7 @@ impl Obj {
 
     pub fn as_method(&self) -> &Method {
         match self {
-            Obj::Method(i) => return &i,
+            Obj::Method(m) => return m,
             _ => panic!("{:?} is not a Method Object", self),
         }
     }
@@ -157,6 +184,7 @@ impl Obj {
 impl PartialEq for Obj {
     fn eq(&self, other: &Obj) -> bool { 
         match (self, other) {
+            (Obj::Array(a), Obj::Array(b)) => a.eq(b),
             // Obj types must be same object
             (Obj::Function(a), Obj::Function(b)) => std::ptr::eq(a, b),
             (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),
@@ -181,6 +209,9 @@ impl std::cmp::PartialOrd for Obj {
 impl std::fmt::Display for Obj {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            Obj::Array(ar) => {
+                write!(f, "Obj::Array({})", ar)
+            }
             Obj::Function(fu) => {
                 write!(f, "Obj::Function({})", fu.name())
             }
