@@ -478,19 +478,10 @@ impl<I: Tokenize> Parser<I> {
 
     // Parse arguments passed when calling a callee
     fn argument_list(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<u8, CompileError> {
-        let mut arg_count = 0;
-        if !input.matches(TokenKind::RightParen) {
-            loop {
-                self.expression(input, output)?;
-                arg_count = arg_count + 1;
-                // Keep going?
-                if !input.advance_on(TokenKind::Comma) { break; }
-                if input.matches(TokenKind::RightParen) { break; } // That was a trailing comma
-            }
-        }
-        
+        let arg_count = self.expressions_until(TokenKind::RightParen, input, output)?;
+        if arg_count > 255 { c_error!(format!("Can not have more than 255 arguments")) }
         self.consume(TokenKind::RightParen, "Expected ')' after arguments", input, output)?;
-        return Ok(arg_count);
+        return Ok(arg_count as u8);
     }
 
 
@@ -821,6 +812,20 @@ impl<I: Tokenize> Parser<I> {
 
     // ======== Expressions ========
 
+    fn expressions_until(&mut self, kind: TokenKind, input: &mut I, output: &mut ParserOutput) -> Result<u64, CompileError> {
+        let mut counter = 0;
+        if !input.matches(kind) {
+            loop {
+                counter = counter + 1;
+                self.expression(input, output)?;
+                // Keep going?
+                if !input.advance_on(TokenKind::Comma) { break; }
+                if input.matches(kind) { break; } // That was a trailing comma
+            }
+        }
+        return Ok(counter);
+    }    
+
 
     fn expression(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.parse_precedence(ParserPrec::Assignment, input, output)?;
@@ -836,18 +841,7 @@ impl<I: Tokenize> Parser<I> {
     }
 
     fn array(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        let mut elements = 0;
-        println!("array() parsing elements");
-        if !input.matches(TokenKind::RightBracket) {
-            loop {
-                elements = elements + 1;
-                self.expression(input, output)?;
-                println!("elements={}", elements);
-                // Keep going?
-                if !input.advance_on(TokenKind::Comma) { break; }
-                if input.matches(TokenKind::RightBracket) { break; } // That was a trailing comma
-            }
-        }
+        let elements = self.expressions_until(TokenKind::RightBracket, input, output)?;
         self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
         println!("array() emit op");
         output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
@@ -986,18 +980,7 @@ impl<I: Tokenize> Parser<I> {
     fn subscr(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // At this point, there should be a subscriptable value on the top of the stack
         // Build an array value, each element being an index into the first element
-        let mut elements = 0;
-        println!("subscr() get subscript elements");
-        if !input.matches(TokenKind::RightBracket) {
-            loop {
-                elements = elements + 1;
-                self.expression(input, output)?;
-                println!("elements={}", elements);
-                // Keep going?
-                if !input.advance_on(TokenKind::Comma) { break; }
-                if input.matches(TokenKind::RightBracket) { break; } // That was a trailing comma
-            }
-        }
+        let elements = self.expressions_until(TokenKind::RightBracket, input, output)?;
         self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
         println!("subscr() emit defarray op");
         output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
