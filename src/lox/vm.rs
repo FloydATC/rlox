@@ -140,6 +140,7 @@ impl VM {
                 OpCode::PopN 		    => self.opcode_popn(),
                 OpCode::CloseUpvalue	=> self.opcode_closeupvalue(),
                 OpCode::Inherit	        => self.opcode_inherit(),
+                OpCode::Subscript       => self.opcode_subscript(),
 
                 OpCode::BAD 		    => self.opcode_bad(),
             };
@@ -350,6 +351,30 @@ impl VM {
         let array = Array::from(&self.stack.as_slice()[self.stack.len()-elements..]);
         self.stack.truncate(self.stack.len() - elements); // Drop elements from stack
         self.push(Value::array(array));
+        Ok(())
+    }
+
+    fn opcode_subscript(&mut self) -> Result<(), RuntimeError> {
+        let keys = self.pop();
+        let value = self.pop();
+        if !value.can_get() { r_error!(format!("Can't subscript into value '{}'", value)) }
+        let mut array = Array::new();
+        for key in keys.as_array().as_slice().iter() {
+            match value.get(key) {
+                Some(element) => array.push(element.clone()),
+                None => r_error!(format!("Bad subscript '{}' into value '{}'", key, value)),
+            }
+        }
+        if array.len() == 0 {
+            if !value.is_array() { r_error!(format!("Can not copy '{}' as array", value)) }
+            self.push(Value::from(&value));
+        } else if array.len() == 1 {
+            // element = array[0]
+            self.push(array.pop().unwrap());
+        } else {
+            // partial = array[0,1,2]
+            self.push(Value::array(array));
+        }
         Ok(())
     }
 

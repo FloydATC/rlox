@@ -51,10 +51,10 @@ pub enum OpCode {
     DefGlobal8	    = 0x30,	// Followed by BYTE indexing table of globals
     DefGlobal16     = 0x31,	// Followed by WORD indexing table of globals
     DefGlobal32     = 0x32,	// Followed by DWORD indexing table of globals
-    // Pop value and put in new variable
+    // Pop values and put in new variable
     DefArray8,              // Followed by BYTE with element count
     DefArray16,             // Followed by WORD with element count
-    DefArray32,	        // Followed by DWORD with element count
+    DefArray32,	            // Followed by DWORD with element count
 
     // Pop value and put in existing variable
     SetLocal8	    = 0x40,
@@ -114,6 +114,7 @@ pub enum OpCode {
     PopN,		// Followed by BYTE indicating number of values
     CloseUpvalue,
     Inherit,
+    Subscript,
     
     #[default]
     BAD 	        = 0xff,	// Unknown/bad opcodes resolve to this
@@ -210,6 +211,7 @@ impl OpCode {
             OpCode::PopN 		    => "POP",
             OpCode::CloseUpvalue	=> "CLOSE",
             OpCode::Inherit         => "INHRT",
+            OpCode::Subscript       => "SUB",
             
             OpCode::BAD 		    => "???",
         }

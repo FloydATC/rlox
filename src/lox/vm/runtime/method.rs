@@ -8,6 +8,8 @@ use crate::lox::Value;
 // wrapped in a Closure object right up to the point where the 
 // method is fetched from the object instance at runtime.
 
+
+#[derive(Clone)]
 pub struct Method {
     receiver: Value, // Must contain a Value::Obj::Instance
     method:	Value, // Must contain a Value::Obj::Closure

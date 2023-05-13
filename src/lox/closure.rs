@@ -8,7 +8,7 @@ use super::vm::Upvalue; // Runtime representation
 
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Closure {
     // Functions are first class objects so they're stored in Value
     function_value: 	Value,

@@ -7,7 +7,7 @@ mod test;
 use super::Value;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Array {
     values: Vec<Value>,
 }
@@ -32,9 +32,21 @@ impl Array {
         self.values.push(value);
     }
 
+
     pub fn pop(&mut self) -> Option<Value> {
         return self.values.pop();
     }
+
+
+    pub fn as_slice(&self) -> &[Value] {
+        return &self.values.as_slice();
+    }
+
+
+    pub fn get(&self, index: usize) -> Option<&Value> {
+        return self.values.get(index);
+    }
+
 }
 
 

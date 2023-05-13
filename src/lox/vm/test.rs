@@ -25,7 +25,19 @@ fn compile_and_execute(code: &str) -> Result<i32, RuntimeError> {
     let builder = Builder::new();
     let reader = std::io::Cursor::new(code);
     match builder.compile(reader) {
-        Ok(bytecode) => return VM::new().execute(&bytecode),
+        Ok(bytecode) => {
+            match VM::new().execute(&bytecode) {
+                Ok(rc) => {
+                    println!("Execute returned rc={}", rc);
+                    return Ok(rc);
+                }
+                Err(error) => {
+                    println!("Execute failed: {}", error.get_message());
+                    for line in error.get_stack_trace() { println!("  {}", line); }
+                    return Err(error);
+                }
+            }
+        }
         Err(error) => panic!("Compile failed: {}", error),
     }
 }

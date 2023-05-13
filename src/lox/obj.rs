@@ -1,6 +1,6 @@
 
 
-use super::value::Array;
+use super::value::{Array, Value};
 use super::function::Function;
 use super::vm::{Class, Instance, Method};
 use super::closure::Closure;
@@ -40,6 +40,7 @@ impl Obj {
     pub fn method(m: Method) -> Obj {
         Obj::Method(m)
     }
+
 }
 
 #[allow(dead_code)]
@@ -87,6 +88,37 @@ impl Obj {
             _			=> false,
         }
     }
+}
+
+
+// Subscript
+
+impl Obj {
+
+    pub fn can_get(&self) -> bool {
+        match self {
+            Obj::Array(_) => true,
+            Obj::Class(_) => true,
+            Obj::Instance(_) => true,
+            _ => false,
+        }
+    }
+
+
+    pub fn get(&self, key: &Value) -> Option<&Value> {
+        match self {
+            Obj::Array(a) => {
+                if !key.is_number() { return None }
+                let index = key.as_number().floor();
+                if index < 0.0 || index >= a.len() as f64 { return None }
+                return a.get(index as usize);
+            }
+            Obj::Class(c) => if key.is_string() { c.get(key.as_string()) } else { None },
+            Obj::Instance(i) => if key.is_string() { i.get(key.as_string()) } else { None },
+            _ => None,
+        }
+    }
+
 }
 
 //#[allow(dead_code)]
@@ -235,3 +267,27 @@ impl std::fmt::Display for Obj {
 }
 
 
+impl From<&Obj> for Obj {
+    fn from(other: &Obj) -> Obj {
+        match other {
+            Obj::Array(a) => Obj::Array(a.clone()),
+            Obj::Function(f) => Obj::Function(f.clone()),
+            Obj::Class(c) => Obj::Class(c.clone()),
+            Obj::Closure(c) => Obj::Closure(c.clone()),
+            Obj::Instance(i) => Obj::Instance(i.clone()),
+            Obj::Method(m) => Obj::Method(m.clone()),
+        }
+    }
+}
+
+
+impl Clone for Obj {
+    fn clone_from(&mut self, source: &Self)
+    {
+        *self = source.clone()
+    }
+
+    fn clone(&self) -> Self {
+        Obj::from(self)
+    }
+}

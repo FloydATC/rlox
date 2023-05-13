@@ -983,8 +983,29 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn subscr(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
-        panic!("Not yet implemented.");
+    fn subscr(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        // At this point, there should be a subscriptable value on the top of the stack
+        // Build an array value, each element being an index into the first element
+        let mut elements = 0;
+        println!("subscr() get subscript elements");
+        if !input.matches(TokenKind::RightBracket) {
+            loop {
+                elements = elements + 1;
+                self.expression(input, output)?;
+                println!("elements={}", elements);
+                // Keep going?
+                if !input.advance_on(TokenKind::Comma) { break; }
+                if input.matches(TokenKind::RightBracket) { break; } // That was a trailing comma
+            }
+        }
+        self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
+        println!("subscr() emit defarray op");
+        output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
+        // Now there are two values on the stack; the subscriptable value and 
+        // either a single value or an array of index values
+        println!("subscr() emit subscript op");
+        output.compiler.emit_op(&OpCode::Subscript);
+        Ok(())
     }
 
     fn super_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {

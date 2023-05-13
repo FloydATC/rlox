@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use crate::lox::Value;
 
 
+#[derive(Clone)]
 pub struct Instance {
     class_value:	Value,
     fields:		HashMap<String, Value>,

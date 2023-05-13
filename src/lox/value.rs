@@ -149,6 +149,36 @@ impl Value {
 }
 
 
+impl Value {
+    // ======== Subscripting ========
+
+    pub fn can_get(&self) -> bool {
+        match self {
+            Value::String(_) => true,
+            Value::Obj(obj) => obj.borrow().can_get(),
+            _ => false,
+        }
+    }
+
+    pub fn get(&self, key: &Value) -> Option<Value> {
+        match self {
+            Value::String(s) => {
+                if !key.is_number() { return None }
+                let index = key.as_number().floor();
+                if index < 0.0 || index >= s.len() as f64 { return None }
+                match s.chars().nth(index as usize) {
+                    Some(char) => return Some(Value::String(char.into())),
+                    None => return None,
+                }
+            }
+            Value::Obj(obj) => obj.borrow().get(key).cloned(),
+            _ => None,
+        }
+    }
+
+}
+
+
 #[allow(dead_code)]
 impl Value {
     // ======== Property checks ========
@@ -449,6 +479,23 @@ impl std::fmt::Display for Value {
             }
             Value::String(s)	=> write!(f, "{}", s),
             Value::Obj(rc)	=> write!(f, "{}", RefCell::borrow(rc)),
+        }
+    }
+}
+
+
+impl From<&Value> for Value {
+    fn from(value: &Value) -> Self {
+        match value {
+            Value::Null => Value::Null,
+            Value::Bool(b) => Value::Bool(*b),
+            Value::Number(n) => Value::Number(*n),
+            Value::String(s) => Value::String(s.clone()),
+            // Clone the inner Obj, not the Rc<RefCell<Obj>>
+            Value::Obj(obj) => {
+                let copy = Obj::from(obj.borrow().clone());
+                Value::Obj(Rc::new(RefCell::new(copy)))
+            }
         }
     }
 }

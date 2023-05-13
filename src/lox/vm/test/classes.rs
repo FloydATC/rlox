@@ -346,3 +346,19 @@ fn vm_class_super() {
     assert_eq!(res.unwrap(), 123);
 }
 
+#[test]
+fn vm_class_subscript() {
+    let code = "class c1 { m1() { return 123; } } exit c1['m1']();"; // Weird, but we allow it
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 123);
+}
+
+#[test]
+fn vm_class_instance_subscript() {
+    let code = "class c1 {} var i1=c1(); i1.f1=123; exit i1['f1'];"; // Also OK
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 123);
+}
+

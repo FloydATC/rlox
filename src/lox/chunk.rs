@@ -179,6 +179,7 @@ impl Chunk {
             OpCode::PopN 		    => self.opcode_variant(ip),
             OpCode::CloseUpvalue	=> self.opcode_immediate(ip),
             OpCode::Inherit	        => self.opcode_immediate(ip),
+            OpCode::Subscript       => self.opcode_immediate(ip),
 
             OpCode::BAD 		    => self.opcode_immediate(ip),
         };
