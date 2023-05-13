@@ -2,6 +2,7 @@
 #[cfg(test)]
 mod test;
 
+use log::{debug};
 
 use super::codeloop::CodeLoop;
 use super::compiler::Compiler;
@@ -38,7 +39,6 @@ pub struct Parser<I> {
 #[allow(dead_code)]
 impl<I: Tokenize> Parser<I> {
     pub fn new() -> Parser<I> {
-        //println!("Parser::new()");
         Parser {
             scopes: 	vec![],
             classes:    Hierarchy::new(),
@@ -51,7 +51,7 @@ impl<I: Tokenize> Parser<I> {
     pub fn parse(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<Function, CompileError> {
         
         loop {
-            //println!("Parser::parse() loop begins");
+            debug!("loop begins");
             if input.eof() { break; }
             self.declaration(input, output)?;
         }
@@ -109,8 +109,8 @@ impl<I: Tokenize> Parser<I> {
     // http://craftinginterpreters.com
     // Please accept my apologies.
     fn parse_precedence(&mut self, precedence: ParserPrec, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        //println!("Parser.parse_precedence()");
-    
+
+        debug!("advance");
         input.advance();
         let rule = self.previous_token_rule(input);
         
@@ -185,9 +185,9 @@ impl<I: Tokenize> Parser<I> {
     }
 
     fn parse_variable(&mut self, errmsg: &str, input: &mut I, output: &mut ParserOutput) -> Result<usize, CompileError> {
-        //println!("Parser.parse_variable()");
         
         self.consume(TokenKind::Identifier, errmsg, input, output)?;
+        debug!("identifier={}", input.previous().lexeme());
         
         self.declare_variable(input, output)?;
         if let Some(_) = self.scope() { return Ok(0); }
@@ -204,13 +204,12 @@ impl<I: Tokenize> Parser<I> {
     
     // Make a constant containing the variable name as a Value::String
     fn identifier_constant(&mut self, token: &Token, output: &mut ParserOutput) -> usize {
-        //println!("Parser.identifier_constant()");
         let name = Value::string(token.lexeme());  
+        debug!("make constant={}", name);
         return output.compiler.make_constant(name);
     }
  
     fn declare_variable(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        //println!("Parser.declare_variable()");
         
         let scope = self.scope();
         match scope {
@@ -218,6 +217,7 @@ impl<I: Tokenize> Parser<I> {
             Some(_) => {
                 let scope_depth = self.scopes.len();
                 let name = input.previous().lexeme();
+                debug!("add local identifier={}", name);
 
                 // Verify variable is not already declared in this scope
                 if let Some(id) = output.locals.resolve_local(name) {
@@ -233,14 +233,14 @@ impl<I: Tokenize> Parser<I> {
     }
     
     fn define_variable(&mut self, id: usize, output: &mut ParserOutput) {
-        //println!("Parser.define_variable()");
         
         if let Some(_) = self.scope() {
-            // self.mark_initialized();	// TODO: This needs solving.
+            debug!("define as local");
             output.locals.last_local().unwrap().define();
             return;
         }
         
+        debug!("define as global");
         self.define_global(id, output);
         
     }
@@ -332,17 +332,17 @@ impl<I: Tokenize> Parser<I> {
     fn end_scope(&mut self, output: &mut ParserOutput) {
         self.scopes.pop();
         let scope_depth = self.scopes.len();
-        //println!("Parser.end_scope() depth={}", scope_depth);
+        debug!("scope depth={}", scope_depth);
         loop {
             if output.locals.local_count() == 0 { break; }
             if output.locals.last_local().unwrap().depth() <= scope_depth { break; }
-            //println!("Parser.end_scope() destroy local variable '{}'", output.locals.last_local().unwrap().name());
+            debug!("destroy local={}", output.locals.last_local().unwrap().name());
 
             if output.locals.last_local().unwrap().is_captured() {
-                //println!(" with close upvalue");
+                debug!(" with CloseUpvalue");
                 output.compiler.emit_op(&OpCode::CloseUpvalue);
             } else {
-                //println!(" with pop");
+                debug!(" with pop");
                 output.compiler.emit_op(&OpCode::Pop);
             }
             output.locals.pop_local();
@@ -379,7 +379,7 @@ impl<I: Tokenize> Parser<I> {
         let upvalues = output.locals.upvalue_count();
         function.set_upvalue_count(upvalues);
         let value = Value::function(function);
-        //println!("{:?}", value);
+        debug!("{:?}", value);
         let constant_id = output.compiler.make_constant(value);
         output.compiler.emit_op_variant(&OpCodeSet::capture(), constant_id as u64);
         for i in 0..upvalues {
@@ -399,16 +399,12 @@ impl<I: Tokenize> Parser<I> {
     }
     
     fn method(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        //println!("Parser.method()");
         self.consume(TokenKind::Identifier, "Expected method name", input, output)?;
         let name_constant = self.identifier_constant(input.previous(), output);
         let name = input.previous().lexeme().to_string();
-        //println!("Parser.method() begin compiling method {}", name);
+        debug!("begin compiling method={}", name);
         let kind = if name == KEYWORD_INIT { FunctionKind::Initializer } else { FunctionKind::Method };
         self.function(&name, kind, input, output)?;
-        //println!("Parser.method() finished compiling method {}", name);
-        //println!("prev={:?}", input.previous());
-        //println!("curr={:?}", input.current());
         output.compiler.emit_op_variant(&OpCodeSet::method(), name_constant as u64);
         Ok(())
     }
@@ -426,7 +422,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        //println!("Parser.statement()");
+        debug!("begin");
         if input.advance_on(TokenKind::Break) {
             self.break_statement(input, output)
         } else if input.advance_on(TokenKind::Continue) {
@@ -489,7 +485,6 @@ impl<I: Tokenize> Parser<I> {
     }
     
     fn expression_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        //println!("Parser.expression_statement()");
         self.expression(input, output)?;
         self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
         output.compiler.emit_op(&OpCode::Pop); // Discard result
@@ -659,6 +654,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        debug!("begin");
         match input.current().kind() {
             TokenKind::Class 	=> self.class_declaration(input, output),
             TokenKind::Fun 	    => self.fun_declaration(input, output),
@@ -702,17 +698,17 @@ impl<I: Tokenize> Parser<I> {
         // At runtime, load the class onto the stack so we can manipulate it
         self.named_variable(&name_token, false, input, output)?;
         self.consume(TokenKind::LeftCurly, "Expected '{' after class name", input, output)?;
-        //println!("Parser.class_declaration() begin parsing methods");
+        debug!("begin parsing methods");
         loop {
             if input.matches(TokenKind::RightCurly) { break; }
             if input.eof() { break; }
             // We don't have field declarations, only methods
             self.method(input, output)?;
         }
-        //println!("Parser.class_declaration() finished parsing methods");
+        debug!("finished parsing methods");
         self.consume(TokenKind::RightCurly, "Expected '}' after class body", input, output)?;
         // We're done manipulating the class
-        //println!("defined new class: {:?}", self.classes.current_path());
+        debug!("defined new class: {:?}", self.classes.current_path());
         output.compiler.emit_op(&OpCode::Pop);
         if self.classes.current().unwrap().has_parent() { 
             self.end_scope(output); 
@@ -725,7 +721,6 @@ impl<I: Tokenize> Parser<I> {
         input.advance(); // Consume Fun token
         let name_id = self.parse_variable("Expected function name", input, output)?;
         let name = input.previous().lexeme().to_string();
-        //mark_initialized();
         self.function(&name, FunctionKind::Function, input, output)?;
         self.define_variable(name_id, output);
         Ok(())
@@ -765,6 +760,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn expression(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        debug!("begin");
         self.parse_precedence(ParserPrec::Assignment, input, output)?;
         Ok(())
     }
@@ -780,9 +776,7 @@ impl<I: Tokenize> Parser<I> {
     fn array(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let elements = self.expressions_until(TokenKind::RightBracket, input, output)?;
         self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
-        println!("array() emit op");
         output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
-        println!("array() done");
         Ok(())
     }
 
@@ -818,7 +812,6 @@ impl<I: Tokenize> Parser<I> {
     }
 
     fn binary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
-        //println!("Parser.binary()");
 
         let mut operator = input.previous().kind();
         let rule = ParserRule::<I>::for_token(&operator);
@@ -919,11 +912,8 @@ impl<I: Tokenize> Parser<I> {
         // Build an array value, each element being an index into the first element
         let elements = self.expressions_until(TokenKind::RightBracket, input, output)?;
         self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
-        println!("subscr() emit defarray op");
         output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
-        // Now there are two values on the stack; the subscriptable value and 
-        // either a single value or an array of index values
-        println!("subscr() emit subscript op");
+        // Now there are two values on the stack; the subscriptable value and an array of index values
         output.compiler.emit_op(&OpCode::Subscript);
         Ok(())
     }
@@ -942,7 +932,6 @@ impl<I: Tokenize> Parser<I> {
 
         self.named_variable(&name_token.synthetic(KEYWORD_THIS, TokenKind::This), false, input, output)?;
         self.named_variable(&name_token.synthetic(KEYWORD_SUPER, TokenKind::Super), false, input, output)?;
-        //println!("super_() emitting OpCode::Get_Super");
         output.compiler.emit_op_variant(&OpCodeSet::get_super(), name_constant as u64);
         Ok(())
     }
