@@ -19,74 +19,11 @@ use super::opcode::{OpCode, OpCodeSet};
 use super::value::Value;
 
 
-#[allow(dead_code)]
-#[repr(u8)]
-#[derive(PartialOrd,PartialEq)]
-enum ParserPrec {
-    None,		// Lowest = do last
-    Assignment,		// =
-    Conditional,	// ?:
-    Or,			// or
-    And,		// and
-    BinOr,		// |
-    BinXor,		// ^
-    BinAnd,		// &
-    Equality,		// == !=
-    Comparison,		// < > <= >=
-    Shift,		// << >>
-    Term,		// + -
-    Factor,		// * / %
-    Unary,		// ! - ~
-    Subscript,		// []
-    Call,		// . ()
-    Primary,		// Highest = do first
-}
+mod parser_prec;
+mod parser_rule;
 
-
-impl ParserPrec {
-    fn next(&self) -> ParserPrec {
-        match self {
-            ParserPrec::None		=> ParserPrec::Assignment,
-            ParserPrec::Assignment	=> ParserPrec::Conditional,
-            ParserPrec::Conditional	=> ParserPrec::Or,
-            ParserPrec::Or		=> ParserPrec::And,
-            ParserPrec::And		=> ParserPrec::BinOr,
-            ParserPrec::BinOr		=> ParserPrec::BinAnd,
-            ParserPrec::BinAnd		=> ParserPrec::BinXor,
-            ParserPrec::BinXor		=> ParserPrec::Equality,
-            ParserPrec::Equality	=> ParserPrec::Comparison,
-            ParserPrec::Comparison	=> ParserPrec::Shift,
-            ParserPrec::Shift		=> ParserPrec::Term,
-            ParserPrec::Term		=> ParserPrec::Factor,
-            ParserPrec::Factor		=> ParserPrec::Unary,
-            ParserPrec::Unary		=> ParserPrec::Subscript,
-            ParserPrec::Subscript	=> ParserPrec::Call,
-            ParserPrec::Call		=> ParserPrec::Primary,
-            ParserPrec::Primary		=> ParserPrec::Primary,
-        }
-    }
-}
-
-type ParserFn<I> = fn(&mut Parser<I>, bool, &mut I, &mut ParserOutput) -> Result<(), CompileError>;
-
-
-#[allow(dead_code)]
-struct ParserRule<I: Tokenize> {
-    prefix: 	Option<ParserFn<I>>,
-    infix: 	Option<ParserFn<I>>,
-    precedence: ParserPrec,
-}
-
-
-impl<I: Tokenize> ParserRule<I> {
-    fn null() -> ParserRule<I> {
-        ParserRule {
-            prefix:	None,
-            infix:	None,
-            precedence:	ParserPrec::None,
-        }
-    }
-}
+use parser_prec::ParserPrec;
+use parser_rule::ParserRule;
 
 
 #[allow(dead_code)]
@@ -158,12 +95,12 @@ impl<I: Tokenize> Parser<I> {
     
     fn current_token_rule(&self, input: &mut I) -> ParserRule<I> {
         let kind = input.current().kind();
-        return self.rule(&kind);
+        return ParserRule::<I>::for_token(&kind);
     }
     
     fn previous_token_rule(&self, input: &mut I) -> ParserRule<I> {
         let kind = input.previous().kind();
-        return self.rule(&kind);
+        return ParserRule::<I>::for_token(&kind);
     }
     
     // This is the core of the expression parser
@@ -884,7 +821,7 @@ impl<I: Tokenize> Parser<I> {
         //println!("Parser.binary()");
 
         let mut operator = input.previous().kind();
-        let rule = self.rule(&operator);
+        let rule = ParserRule::<I>::for_token(&operator);
         if operator == TokenKind::Is && input.advance_on(TokenKind::Not) {
             operator = input.previous().kind();
         }
@@ -1041,218 +978,4 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-
-    // ParserRule dispatcher
-
-
-    fn rule(&self, kind: &TokenKind) -> ParserRule<I> {
-        //println!("Parser.rule() kind={:?}", kind);
-        match kind {
-
-            // Single character symbols
-            TokenKind::Amp => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::BinAnd,
-            },
-            TokenKind::Bang => return ParserRule {
-                prefix: 	Some(Parser::unary), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Comma => return ParserRule::null(),
-            TokenKind::Dot => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::dot), 
-                precedence: 	ParserPrec::Call,
-            },
-            TokenKind::Equal => return ParserRule::null(),
-            TokenKind::Greater => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Comparison,
-            },
-            TokenKind::LeftBracket => return ParserRule {
-                prefix:		Some(Parser::array), 
-                infix: 		Some(Parser::subscr), 
-                precedence: 	ParserPrec::Subscript,
-            },
-            TokenKind::LeftCurly => return ParserRule::null(),
-            TokenKind::LeftParen => return ParserRule {
-                prefix: 	Some(Parser::grouping), 
-                infix: 		Some(Parser::call), 
-                precedence: 	ParserPrec::Call,
-            },            
-            TokenKind::Less => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Comparison,
-            },
-            TokenKind::Minus => return ParserRule {
-                prefix: 	Some(Parser::unary), 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Term,
-            },
-            TokenKind::Percent => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Factor,
-            },
-            TokenKind::Pipe => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::BinOr,
-            },
-            TokenKind::Plus => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Term,
-            },
-            TokenKind::RightBracket => return ParserRule::null(),
-            TokenKind::RightCurly => return ParserRule::null(),
-            TokenKind::RightParen => return ParserRule::null(),
-            TokenKind::Slash => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Factor,
-            },
-            TokenKind::Star => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Factor,
-            },
-            TokenKind::Semicolon => return ParserRule::null(),
-            
-            // Double character symbols
-            TokenKind::AmpAmp => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::and), 
-                precedence: 	ParserPrec::And,
-            },
-            TokenKind::BangEqual => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Equality,
-            },
-            TokenKind::EqualEqual => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Equality,
-            },
-            TokenKind::GreaterEqual => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Comparison,
-            },
-            TokenKind::LessEqual => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Comparison,
-            },
-            TokenKind::PipePipe => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::or), 
-                precedence: 	ParserPrec::Or,
-            },
-
-            // Literals
-            TokenKind::Base2Number => return ParserRule {
-                prefix: 	Some(Parser::base2number), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Base8Number => return ParserRule {
-                prefix: 	Some(Parser::base8number), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Base10Number => return ParserRule {
-                prefix: 	Some(Parser::base10number), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Base16Number => return ParserRule {
-                prefix: 	Some(Parser::base16number), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::False => return ParserRule {
-                prefix: 	Some(Parser::literal), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Identifier => return ParserRule {
-                prefix: 	Some(Parser::variable), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Inf => return ParserRule {
-                prefix: 	Some(Parser::literal), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Nan => return ParserRule {
-                prefix: 	Some(Parser::literal), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Null => return ParserRule {
-                prefix: 	Some(Parser::literal), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::String => return ParserRule {
-                prefix: 	Some(Parser::string), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::True => return ParserRule {
-                prefix: 	Some(Parser::literal), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-
-            // Keywords
-            TokenKind::Break => return ParserRule::null(),
-            TokenKind::Class => return ParserRule::null(),
-            TokenKind::Continue => return ParserRule::null(),
-            TokenKind::Debug => return ParserRule::null(),
-            TokenKind::Else => return ParserRule::null(),
-            TokenKind::Exit => return ParserRule::null(),
-            TokenKind::If => return ParserRule::null(),
-            TokenKind::Is => return ParserRule {
-                prefix: 	None, 
-                infix: 		Some(Parser::binary), 
-                precedence: 	ParserPrec::Equality,
-            },
-            TokenKind::Not => return ParserRule::null(),
-            TokenKind::Of => return ParserRule::null(),
-            TokenKind::Print => return ParserRule::null(),
-            TokenKind::Return => return ParserRule::null(),
-            TokenKind::Super => return ParserRule {
-                prefix: 	Some(Parser::super_), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            }, 
-            TokenKind::This => return ParserRule {
-                prefix: 	Some(Parser::this_), 
-                infix: 		None, 
-                precedence: 	ParserPrec::None,
-            },
-            TokenKind::Var => return ParserRule::null(),
-            TokenKind::Fun => return ParserRule::null(),
-            TokenKind::While => return ParserRule::null(),
-            
-            // Internal
-            TokenKind::Error => return ParserRule::null(),
-            TokenKind::EOF => return ParserRule::null(),
-        }
-    }
-}
-
-
-impl<I> Drop for Parser<I> {
-    fn drop(&mut self) {
-        //println!("Parser.drop()");
-    }
 }

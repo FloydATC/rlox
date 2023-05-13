@@ -40,6 +40,7 @@ pub use function::Function;
 pub use function_kind::FunctionKind;
 pub use globals::Globals;
 pub use locals::Locals;
+pub use parser_output::ParserOutput;
 pub use runtime_error::{RuntimeError, r_error};
 pub use scanner::Scanner;
 pub use token::Token;
