@@ -304,8 +304,9 @@ fn vm_neg_division_by_zero() {
 
 #[test]
 fn vm_division_by_null() {
-    let code = "exit (10 / null) is nan;";
+    let code = "exit (10 / null);";
     let res = compile_and_execute(code);
-    assert_eq!(res.is_ok(), true);
-    assert_eq!(res.unwrap(), 1);
+    assert_eq!(res.is_err(), true);
+    let error = res.unwrap_err();
+    assert_eq!(error.get_message(), "Can not divide operands 10 and null");
 }

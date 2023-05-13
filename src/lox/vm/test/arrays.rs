@@ -193,3 +193,117 @@ fn subscript_copy_is_not_same() {
     assert_eq!(res.unwrap(), 1);
 }
 
+
+// Array manipulation with arithmetics
+
+#[test]
+fn add_array_is_concatenate() {
+    let code = "var a=[1,2,3]; var b=[4,5,6]; var v=a+b; exit v == [1,2,3,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_array_is_concatenate_a_unchanged() {
+    let code = "var a=[1,2,3]; var b=[4,5,6]; var v=a+b; exit a == [1,2,3];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_array_is_concatenate_b_unchanged() {
+    let code = "var a=[1,2,3]; var b=[4,5,6]; var v=a+b; exit b == [4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_number_to_array_works_as_push() {
+    let code = "var a=[1,2,3]; var b=a+4; b=b+5; b=b+6; exit b == [1,2,3,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_numbers_to_array_works() {
+    let code = "var a=[1,2,3]; var b=a+4+5+6; exit b == [1,2,3,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_grouped_numbers_to_array_works() {
+    let code = "var a=[1,2,3]; var b=a+(4+5+6); exit b == [1,2,3,15];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_numbers_to_array_original_is_unchanged() {
+    let code = "var a=[1,2,3]; var b=a+4+5+6; exit a == [1,2,3];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_array_to_single_number_works_as_unshift() {
+    let code = "var a=[4,5,6]; var b=1+a; exit b == [1,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_array_to_multiple_numbers_not_recommended() {
+    let code = "var a=[4,5,6]; var b=1+2+3+a; exit b == [6,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn add_array_to_multiple_numbers_original_is_unchanged() {
+    let code = "var a=[4,5,6]; var b=1+2+3+a; exit a == [4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn subtract_number_from_array_works_as_pop() {
+    let code = "var a=[1,2,3,4,5,6]; var b=a-2; exit b == [1,2,3,4];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn subtract_number_from_array_original_is_unchanged() {
+    let code = "var a=[1,2,3,4,5,6]; var b=a-2; exit a == [1,2,3,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn subtract_array_from_number_works_as_shift() {
+    let code = "var a=[1,2,3,4,5,6]; var b=2-a; exit b == [3,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn subtract_array_from_number_original_is_unchanged() {
+    let code = "var a=[1,2,3,4,5,6]; var b=2-a; exit a == [1,2,3,4,5,6];";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}

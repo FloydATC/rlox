@@ -47,6 +47,17 @@ impl Array {
         return self.values.get(index);
     }
 
+
+    pub fn extend_from_slice(&mut self, slice: &[Value]) 
+    {
+        self.values.extend_from_slice(slice);
+    }
+
+
+    pub fn truncate(&mut self, len: usize) {
+        self.values.truncate(len);
+    }
+
 }
 
 

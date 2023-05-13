@@ -210,6 +210,106 @@ impl Obj {
 
 }
 
+// Arithmetics
+
+impl Obj {
+
+    pub fn append_value(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (_, Value::Obj(_)) => {
+                return self.append(other.as_obj());
+            }
+            (Obj::Array(a), _) => {
+                // Add simple value
+                let mut copy = a.clone();
+                copy.push(other.clone());
+                return Ok(Value::array(copy));
+            }
+            _ => {}
+        }
+        return Err(format!("Can not add operands {} and {}", &self, &other));
+    }
+
+    pub fn append(&self, other: std::cell::Ref<'_, Obj>) -> Result<Value, String> {
+        match self {
+            Obj::Array(a) => {
+                if other.is_array() {
+                    let mut copy = a.clone();
+                    copy.extend_from_slice(other.as_array().as_slice());
+                    return Ok(Value::array(copy));
+                }
+            }
+            _ => {}
+        }
+        return Err(format!("Can not add operands {} and {}", &self, &other));
+    }
+
+    pub fn prepend_value(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (_, Value::Obj(_)) => {
+                return self.prepend(other.as_obj());
+            }
+            (Obj::Array(a), _) => {
+                // Add simple value
+                let mut copy = Array::new();
+                copy.push(other.clone());
+                copy.extend_from_slice(a.as_slice());
+                return Ok(Value::array(copy));
+            }
+            _ => {}
+        }
+        return Err(format!("Can not append value {} to {}", &other, &self));
+    }
+
+    pub fn prepend(&self, other: std::cell::Ref<'_, Obj>) -> Result<Value, String> {
+        match self {
+            Obj::Array(a) => {
+                if other.is_array() {
+                    let mut copy = other.as_array().clone();
+                    copy.extend_from_slice(a.as_slice());
+                    return Ok(Value::array(copy));
+                }
+            }
+            _ => {}
+        }
+        return Err(format!("Can not prepend value {} to {}", &other, &self));
+    }
+
+    pub fn subtract_value(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Obj::Array(a), _) => {
+                // Subtract number value from array = pop
+                if other.is_number() {
+                    let count = other.as_number().floor();
+                    if count < 0.0 { return Err(format!("Can not subtract negative number {} from array", other)) }
+                    if count > a.len() as f64 { return Err(format!("Can not subtract {} from array of length {}", other, a.len())) }
+                    let copy = Array::from(&a.as_slice()[..a.len()-count as usize]);
+                    return Ok(Value::array(copy));
+                }
+            }
+            _ => {}
+        }
+        return Err(format!("Can not subtract value {} from {}", &other, &self));
+    }
+
+    pub fn subtract_from_value(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Obj::Array(a), _) => {
+                // Subtract array from number value = shift
+                if other.is_number() {
+                    let count = other.as_number().floor();
+                    if count < 0.0 { return Err(format!("Can not subtract negative number {} from array", other)) }
+                    if count > a.len() as f64 { return Err(format!("Can not subtract {} from array of length {}", other, a.len())) }
+                    let copy = Array::from(&a.as_slice()[count as usize..]);
+                    return Ok(Value::array(copy));
+                }
+            }
+            _ => {}
+        }
+        return Err(format!("Can not subtract {} from value {}", &self, &other));
+    }
+
+}
 
 // ======== Traits ========
 

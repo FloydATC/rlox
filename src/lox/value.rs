@@ -104,6 +104,13 @@ impl Value {
         }
     }
 
+    pub fn is_obj(&self) -> bool {
+        match self {
+            Value::Obj(_) 	=> true,
+            _ 			=> false
+        }
+    }
+
     pub fn is_array(&self) -> bool {
         match self {
             Value::Obj(obj) 	=> RefCell::borrow(obj).is_array(),
@@ -242,6 +249,15 @@ impl Value {
         }
     }
     
+    pub fn as_obj(&self) -> Ref<'_, Obj> {
+        match self {
+            Value::Obj(obj) 	=> return obj.borrow(),
+            _ 			=> {
+                panic!("{} is not an Obj", self)
+            }
+        }
+    }
+
     pub fn as_array(&self) -> Ref<'_, Array> {
         match self {
             Value::Obj(obj)	=> {
@@ -370,9 +386,16 @@ impl Value {
                 let string = format!("{}{}", a, b);
                 return Ok(Value::string(&string));
             }
-            _ => {}
+            (Value::Obj(obj), _) => {
+                return obj.borrow().append_value(&other);
+            }
+            (_, Value::Obj(obj)) => {
+                return obj.borrow().prepend_value(&self);
+            }
+            _ => {
+                return Err(format!("Can not add operands {} and {}", &self, &other));
+            }
         }
-        return Err(format!("Can not add operands {} and {}.", &self, &other));
     }
 
     pub fn subtract(self: &Value, other: &Value) -> Result<Value, String> {
@@ -380,9 +403,15 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a - b));
             }
+            (Value::Obj(obj), _) => {
+                return obj.borrow().subtract_value(&other);
+            }
+            (_, Value::Obj(obj)) => {
+                return obj.borrow().subtract_from_value(&self);
+            }
             _ => {}
         }
-        return Err(format!("Can not subtract operands {} and {}.", &self, &other));
+        return Err(format!("Can not subtract operands {} and {}", &self, &other));
     }
 
     pub fn multiply(self: &Value, other: &Value) -> Result<Value, String> {
@@ -400,7 +429,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not multiply operands {} and {}.", &self, &other));
+        return Err(format!("Can not multiply operands {} and {}", &self, &other));
     }
 
     pub fn divide(self: &Value, other: &Value) -> Result<Value, String> {
@@ -410,7 +439,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not divide operands {} and {}.", &self, &other));
+        return Err(format!("Can not divide operands {} and {}", &self, &other));
     }
 
     pub fn modulo(self: &Value, other: &Value) -> Result<Value, String> {
@@ -420,7 +449,7 @@ impl Value {
             }
             _ => {}
         }
-        return Err(format!("Can not divide operands {} and {}.", &self, &other));
+        return Err(format!("Can not divide operands {} and {}", &self, &other));
     }
 
 }

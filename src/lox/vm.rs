@@ -533,7 +533,7 @@ impl VM {
         let res = a.add(&b);
         match res {
             Ok(value) => { self.push(value); }
-            Err(_) => { self.push(Value::number(f64::NAN)); }
+            Err(msg) => { r_error!(msg) }
         }
         Ok(())
     }
@@ -544,7 +544,7 @@ impl VM {
         let res = a.subtract(&b);
         match res {
             Ok(value) => { self.push(value); }
-            Err(_) => { self.push(Value::number(f64::NAN)); }
+            Err(msg) => { r_error!(msg) }
         }
         Ok(())
     }
@@ -555,7 +555,7 @@ impl VM {
         let res = a.multiply(&b);
         match res {
             Ok(value) => { self.push(value); }
-            Err(_) => { self.push(Value::number(f64::NAN)); }
+            Err(msg) => { r_error!(msg) }
         }
         Ok(())
     }
@@ -566,7 +566,7 @@ impl VM {
         let res = a.divide(&b);
         match res {
             Ok(value) => { self.push(value); } // Division by zero = f64::INFINITY
-            Err(_) => { self.push(Value::Number(f64::NAN)); } // Bad operands
+            Err(msg) => { r_error!(msg) }
         }
         Ok(())
     }
@@ -577,7 +577,7 @@ impl VM {
         let res = a.modulo(&b);
         match res {
             Ok(value) => { self.push(value); }
-            Err(_) => { self.push(Value::number(f64::NAN)); }
+            Err(msg) => { r_error!(msg) }
         }
         Ok(())
     }

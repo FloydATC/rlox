@@ -200,4 +200,98 @@ fn from_slice() {
     assert_eq!(string.as_str(), "[123, 456, 789]");
 }
 
+#[test]
+fn extend() {
+    let vec_a = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+    ];
+    let vec_b = vec![
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let mut array: Array = Array::from(vec_a.as_slice());
+    array.extend_from_slice(vec_b.as_slice());
+    let len: usize = array.len();
+    assert_eq!(len, 6);
+    let string = format!("{}", array);
+    assert_eq!(string.as_str(), "[1, 2, 3, 4, 5, 6]");
+
+}
+
+#[test]
+fn truncate_zero() {
+    let v = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let mut array: Array = Array::from(v.as_slice());
+    array.truncate(0);
+    let len: usize = array.len();
+    assert_eq!(len, 0);
+    let string = format!("{}", array);
+    assert_eq!(string.as_str(), "[]");
+}
+
+#[test]
+fn truncate_two() {
+    let v = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let mut array: Array = Array::from(v.as_slice());
+    array.truncate(2);
+    let len: usize = array.len();
+    assert_eq!(len, 2);
+    let string = format!("{}", array);
+    assert_eq!(string.as_str(), "[1, 2]");
+}
+
+
+#[test]
+fn truncate_six() {
+    let v = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let mut array: Array = Array::from(v.as_slice());
+    array.truncate(6);
+    let len: usize = array.len();
+    assert_eq!(len, 6);
+    let string = format!("{}", array);
+    assert_eq!(string.as_str(), "[1, 2, 3, 4, 5, 6]");
+}
+
+
+#[test]
+fn truncate_oversize() {
+    let v = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let mut array: Array = Array::from(v.as_slice());
+    array.truncate(8);
+    let len: usize = array.len();
+    assert_eq!(len, 6);
+    let string = format!("{}", array);
+    assert_eq!(string.as_str(), "[1, 2, 3, 4, 5, 6]");
+}
 
