@@ -81,13 +81,3 @@ impl std::fmt::Debug for Function {
             .finish()
     }
 }
-
-
-impl Drop for Function {
-    fn drop(&mut self) {
-        println!("Function.drop() {}", self.name);
-    }
-}
-
-
-

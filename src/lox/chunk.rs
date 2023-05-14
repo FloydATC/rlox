@@ -235,10 +235,3 @@ impl std::fmt::Debug for Chunk {
         write!(f, "\n{}", result)
     }
 }
-
-
-impl Drop for Chunk {
-    fn drop(&mut self) {
-        println!("Chunk.drop()");
-    }
-}

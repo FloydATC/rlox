@@ -2,6 +2,8 @@
 
 use std::marker::PhantomData;
 
+use log::{debug};
+
 use super::ByteCode;
 use super::compile_error::CompileError;
 use super::compiler::Compiler;
@@ -46,7 +48,7 @@ impl<R: std::io::BufRead+std::io::Read> Builder<R> {
         };
 
         let function = parser.parse(&mut input, &mut output)?;
-        println!("{:#?}", function);
+        debug!("{:#?}", function);
         return Ok(ByteCode::new(function, globals));
 
     }

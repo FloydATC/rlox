@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod test;
 
-use log::{debug};
+use log::{trace, debug};
 
 use super::codeloop::CodeLoop;
 use super::compiler::Compiler;
@@ -51,7 +51,7 @@ impl<I: Tokenize> Parser<I> {
     pub fn parse(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<Function, CompileError> {
         
         loop {
-            debug!("loop begins");
+            trace!("loop begins");
             if input.eof() { break; }
             self.declaration(input, output)?;
         }
@@ -110,8 +110,8 @@ impl<I: Tokenize> Parser<I> {
     // Please accept my apologies.
     fn parse_precedence(&mut self, precedence: ParserPrec, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
 
-        debug!("advance");
         input.advance();
+        trace!("token={:?}", input.previous());
         let rule = self.previous_token_rule(input);
         
         match rule.prefix {
@@ -422,7 +422,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        debug!("begin");
+        trace!("token={:?}", input.current());
         if input.advance_on(TokenKind::Break) {
             self.break_statement(input, output)
         } else if input.advance_on(TokenKind::Continue) {

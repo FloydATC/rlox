@@ -2,6 +2,9 @@
 #[cfg(test)]
 mod test;
 
+use log::{trace, debug, warn};
+
+
 mod runtime;
 pub use runtime::{Class, Instance, Method, Upvalue};
 
@@ -40,7 +43,7 @@ impl VM {
 
 impl VM {
     pub fn execute(&mut self, bytecode: &ByteCode) -> Result<i32, RuntimeError> {
-        println!("VM.execute()");
+        trace!("initialize");
         self.initialize(&bytecode)?;
         
         loop {
@@ -50,8 +53,8 @@ impl VM {
             let opcode = self.callframe_mut().read_op();
 
             // Trace VM state
-            println!("IP={}:0x{:04x} SP=0x{:04x} CF=0x{:04x} Next={} ", fn_name, ip, self.stack.size(), self.callframe().stack_bottom(), opcode.mnemonic());
-            println!(" stack={:?}", self.stack);
+            debug!("IP={}:0x{:04x} SP=0x{:04x} CF=0x{:04x} Next={} stack=", fn_name, ip, self.stack.size(), self.callframe().stack_bottom(), opcode.mnemonic());
+            debug!("{:?}", self.stack);
             
             let result = match opcode {
                 OpCode::Exit		    => return self.opcode_exit(),
@@ -147,7 +150,7 @@ impl VM {
             
             // On error, dump message and return
             if let Err(mut runtime_error) = result {
-                eprintln!(
+                debug!(
                     "{} at ip={:#06x}\n{:?}", 
                     runtime_error.get_message(),
                     ip, 
@@ -161,12 +164,6 @@ impl VM {
 
 
     fn stack_trace(&self) -> Vec<String> {
-        //let mut result = vec![];
-        //for callframe in self.callframes.iter() {
-        //    result.push(format!("{:?}", callframe));
-        //}
-        //return result;
-
         self.callframes.iter().map(|callframe| format!("{:?}", callframe)).collect()
     }
 
@@ -196,7 +193,6 @@ impl VM {
 
     fn opcode_return(&mut self) -> Result<(), RuntimeError> {
         let return_value = self.pop();
-        //println!("OpCode::Return, close_upvalues");
         self.close_upvalues(self.callframe().stack_bottom());
         self.callframes.pop();
         if self.callframes.len() == 0 { 
@@ -229,9 +225,8 @@ impl VM {
 
     fn opcode_getconst(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
-        //let value = self.constants.value_by_id(id).clone();
         let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
-        //println!("opcode_getconst() loaded constant id=0x{:08x} onto stack: {}", id, value);
+        trace!("loaded constant id=0x{:08x} onto stack: {}", id, value);
         self.push(value);
         Ok(())
     }
@@ -241,14 +236,13 @@ impl VM {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let depth = self.slot_depth(id); // Stack index from bottom
         self.push(self.peek(depth).clone());
-        //println!("opcode_getlocal() fetched local variable id 0x{:08x} onto stack: {}", id, self.peek(0));
+        trace!("loaded local variable id=0x{:08x} onto stack: {}", id, self.peek(0));
         Ok(())
     }
 
 
     fn opcode_getupvalue(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
-        //print!("opcode_getupvalue() id 0x{:08x}:", id);
         let stack_addr;
         let inner;
         
@@ -266,13 +260,13 @@ impl VM {
         match inner {
             Some(value)	=> {
                 // This upvalue has been closed and now exists off the stack
-                //println!(" closed upvalue={}", value);
+                trace!("closed upvalue={}", value);
                 self.push(value);
             }
             None => {
                 // This value still lives on the stack
                 let value = self.stack.peek_addr(stack_addr).clone();
-                //println!(" open upvalue={}", value);
+                trace!("open upvalue={}", value);
                 self.push(value);
             }
         }
@@ -284,7 +278,7 @@ impl VM {
         let id = self.callframe_mut().read_bytes(len) as usize;
         // Compiler guarantees the variable is defined
         self.push(self.globals.value_by_id(id).unwrap().clone());
-        //println!("opcode_getglobal() loaded global 0x{:08x} onto stack: {}", id, self.globals.value_by_id(id).unwrap());
+        trace!("loaded global id=0x{:08x} onto stack: {}", id, self.globals.value_by_id(id).unwrap());
         Ok(())
     }
 
@@ -301,11 +295,10 @@ impl VM {
             if let Some(value) = instance.as_instance().get(&name) {
                 self.pop();
                 self.push(value.clone());
-                // Name is a field of this instance
-                //println!("opcode_getproperty() Field '{}' of {} pushed onto stack", name, instance);
+                trace!("loaded field '{}' of {} onto stack", name, instance);
                 return Ok(())
             } else {
-                //println!("opcode_getproperty() Method '{}' of {} pushed onto stack", name, instance);
+                trace!("loaded method '{}' of {} onto stack", name, instance);
                 return self.bind_method(&instance.as_instance().class(), &name);
             }
         } else {
@@ -316,18 +309,15 @@ impl VM {
 
     fn opcode_getsuper(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
-        //println!("opcode_getsuper() invoked");
         // Read field name from the constants table
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let method_name = constant.as_string();
 
         let superclass = self.pop();
-        //println!("opcode_getsuper() binding method '{}' to superclass {}", method_name, superclass);
-
         if self.bind_method(&superclass, method_name).is_err() {
             r_error!(format!("Could not bind method '{}' to superclass {}", method_name, superclass))
         }
-        //println!("opcode_getsuper() finished");
+        trace!("bound method '{}' to superclass {}", method_name, superclass);
         Ok(())
     }
 
@@ -340,7 +330,7 @@ impl VM {
     fn opcode_defglobal(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let value = self.pop();
-        //println!("opcode_defglobal() popped {} off stack, define as global 0x{:08x}", value, id);
+        trace!("popped {} off stack, define as global id=0x{:08x}", value, id);
         self.globals.define_by_id(id, value);
         Ok(())
     }
@@ -351,6 +341,7 @@ impl VM {
         let array = Array::from(&self.stack.as_slice()[self.stack.len()-elements..]);
         self.stack.truncate(self.stack.len() - elements); // Drop elements from stack
         self.push(Value::array(array));
+        trace!("popped {} value(s) off stack, defined array", elements);
         Ok(())
     }
 
@@ -367,12 +358,13 @@ impl VM {
         }
         if array.len() == 0 {
             if !value.is_array() { r_error!(format!("Can not copy '{}' as array", value)) }
+            trace!("copied array");
             self.push(Value::from(&value));
         } else if array.len() == 1 {
-            // element = array[0]
+            trace!("copied single value from array");
             self.push(array.pop().unwrap());
         } else {
-            // partial = array[0,1,2]
+            trace!("copied multiple values into new array");
             self.push(Value::array(array));
         }
         Ok(())
@@ -383,14 +375,14 @@ impl VM {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let depth = self.slot_depth(id); // Stack index from bottom
         self.poke(self.peek(0).clone(), depth);
-        //println!("opcode_setlocal() stored top of stack in local variable id 0x{:08x}: {}", id, self.peek(0));
+        trace!("popped value and copied to local variable id=0x{:08x}: {}", id, self.peek(0));
         Ok(())
     }
 
 
     fn opcode_setupvalue(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
-        //println!("setupvalue id={} of closure upvalues", id);
+        trace!("setupvalue id={} of closure upvalues", id);
         let value = self.peek(0).clone();
         let stack_addr;
         
@@ -405,11 +397,11 @@ impl VM {
             if upvalue.is_closed() {
                 // Not sure if we will ever actually write to a
                 // closed upvalue, but we can do so if needed.
-                //println!("  upvalue already closed, update as {}", value);
+                warn!("write to already closed upvalue, update as {}", value);
                 upvalue.close(value);
                 return Ok(()); // Note: Early return
             } else {
-                //println!("  upvalue still on the stack, update as {}", value);
+                trace!("upvalue still on the stack, update as {}", value);
                 stack_addr = upvalue.addr();
                 // Can't poke here because self is borrowed
             }
@@ -424,7 +416,7 @@ impl VM {
     fn opcode_setglobal(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let value = self.peek(0).clone();
-        //println!("opcode_setglobal() set id 0x{:08x} as {}", id, value);
+        trace!("set global id=0x{:08x} as {}", id, value);
         self.globals.define_by_id(id, value);
         Ok(())
     }
@@ -442,7 +434,7 @@ impl VM {
         if instance.is_instance() {
             let mut instance = instance.as_instance_mut();
             instance.set(field, value.clone());
-            //println!("opcode_setproperty() set field '{}' of {} to {}", field, instance, value);
+            trace!("set field '{}' of {} to {}", field, instance, value);
             self.push(value);
         } else {
             r_error!(format!("{} does not have properties to set", instance))
@@ -461,7 +453,7 @@ impl VM {
         
         // This opcode is followed by one variable length entry per upvalue
         for _i in 0..upvalue_count {
-            //println!("VM capturing upvalue {} of {}", _i, upvalue_count);
+            trace!("capturing upvalue {} of {}", _i, upvalue_count);
         
             // Decode is_local and id
             // Because we allow more than 255 upvalues and local variables,
@@ -472,7 +464,7 @@ impl VM {
             let id_len = byte & 127; // 1=byte, 2=word, 4=dword
             let id: usize = self.callframe_mut().read_bytes(id_len as usize) as usize;
             // Capture upvalue and insert into closure
-            //println!("  id={} is_local={}", id, is_local);
+            trace!("id={} is_local={}", id, is_local);
             if is_local {
                 closure.add_upvalue(self.capture_upvalue(self.callframe().stack_bottom() + id));
             } else {
@@ -489,10 +481,8 @@ impl VM {
     fn opcode_class(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
-        //println!("create class");
         let class = Class::new(name.as_string());
-        //println!("create value and push it");
-        //println!("opcode_class() Spawned class {} using constant 0x{:08x}: {}", class, id, name);
+        trace!("class {} defined using constant id=0x{:08x}: {}", class, id, name);
         self.push(Value::class(class));
         Ok(())
     }
@@ -503,7 +493,7 @@ impl VM {
         let method_name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).as_string().clone();
         let method_value = self.pop();
         let mut class_value = self.peek(0).clone();
-        //println!("opcode_method() popped {} off stack, added as method '{}' of {}", method_value, method_name, class_value);
+        trace!("popped {} off stack, added as method '{}' of {}", method_value, method_name, class_value);
         class_value.as_class_mut().set(&method_name, method_value);
         Ok(())
     }
@@ -585,7 +575,7 @@ impl VM {
     fn opcode_equal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
-        println!("Comparing {} and {}", a, b);
+        trace!("comparing {} and {} for equality", a, b);
         self.push(Value::boolean(a.eq(&b)));
         Ok(())
     }
@@ -593,6 +583,7 @@ impl VM {
     fn opcode_same(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
+        trace!("comparing {} and {} for sameness", a, b);
         self.push(Value::boolean(a.is(&b)));
         Ok(())
     }
@@ -600,6 +591,7 @@ impl VM {
     fn opcode_notequal(&mut self) -> Result<(), RuntimeError> {
         let b = self.pop();
         let a = self.pop();
+        trace!("comparing {} and {} for negative equality", a, b);
         self.push(Value::boolean(a != b));
         Ok(())
     }
@@ -652,7 +644,6 @@ impl VM {
 
     fn opcode_pop(&mut self) -> Result<(), RuntimeError> {
         let _value = self.pop();
-        //println!("POP = {}", value);
         Ok(())
     }
     
@@ -660,7 +651,6 @@ impl VM {
         let count = self.callframe_mut().read_bytes(1);
         for _ in 0..count {
             let _value = self.pop();
-            //println!("POP = {}", value);
         }
         Ok(())
     }
@@ -739,6 +729,7 @@ impl VM {
     }
     
     fn call_value(&mut self, value: Value, argc: u8) -> Result<(), RuntimeError> {
+        trace!("calling {} with {} argument(s)", value, argc);
         if value.is_closure() {
             self.call(value, argc)?;
         } else if value.is_method() {
@@ -770,7 +761,7 @@ impl VM {
         
     fn bind_method(&mut self, class: &Value, method_name: &str) -> Result<(), RuntimeError> {
         let receiver = self.stack.peek(0).clone();
-        //println!("bind_method() invoked, class={} method={} receiver={}", class, method_name, receiver);
+        trace!("class={} method={} receiver={}", class, method_name, receiver);
         if !class.is_class() {
             r_error!(format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class))
         }
@@ -779,11 +770,6 @@ impl VM {
         }
         // clox looks up the class by name, 
         // but the receiver already has a reference to its class.
-        //let instance = receiver_value.as_instance();
-        //println!("bind_method() instance={}", instance);
-        //let class = instance.class().as_class();
-        
-        //let result = class.as_class().get(method_name);
         match class.as_class().get(method_name) {
             Some(method_value) => {
                 let bound_method = Method::new(receiver, method_value.clone());        
@@ -807,7 +793,7 @@ impl VM {
     // Rc<RefCell<Option<Value>>> containing None
     // Open upvalues are kept in self.open_upvalues, a Vec<Upvalue>
     fn capture_upvalue(&mut self, stack_addr: usize) -> Upvalue<Value> {
-        //println!("VM.capture_upvalue() stack_addr={} stack={:?}", stack_addr, self.stack);
+        trace!("stack_addr={} stack={:?}", stack_addr, self.stack);
     
         // If slot is already captured, return the upvalue
         // Not exactly sure why, but I think this is because there may 
@@ -819,9 +805,7 @@ impl VM {
             if upvalue.addr() == stack_addr { return upvalue.clone(); }
         }
         
-        //let index = self.open_upvalues.len();
-        //println!("VM.capture_upvalue() capturing as index={} of open_upvalues", index);
-
+        trace!("capturing as index={} of open_upvalues", self.open_upvalues.len());
         let upvalue = Upvalue::new(stack_addr);
         self.open_upvalues.push(upvalue);
         return self.open_upvalues.last().unwrap().clone();
@@ -833,11 +817,11 @@ impl VM {
     // stack_addr will either point to the top of the stack 
     // or to the bottom of the stack in the current call frame
     fn close_upvalues(&mut self, stack_addr: usize) {
-        //println!("VM.close_upvalues() stack_addr={} stack={:?}", stack_addr, self.stack);
+        trace!("stack_addr={} stack={:?}", stack_addr, self.stack);
         loop {
             match self.open_upvalues.last_mut() {
                 Some(upvalue) => {
-                    //println!("  consider closing {}", upvalue);
+                    trace!("consider closing {}", upvalue);
                     
                     // Keep going while last_slot >= upvalue.slot()             
                     // in clox, slot is a pointer to the stack, 
@@ -846,7 +830,7 @@ impl VM {
                     // Stop if we find an upvalue object referencing a stack address
                     // below stack_addr
                     if upvalue.addr() < stack_addr { 
-                        //println!("  upvalue.addr() < stack_addr, exiting");
+                        trace!("upvalue.addr() < stack_addr, exiting");
                         return; 
                     }
                     
@@ -859,25 +843,16 @@ impl VM {
                     // but we can't do this while still borrowing a reference to it...
                 }
                 None => {
-                    //println!("  no more open upvalues, exiting.");
+                    trace!("no more open upvalues, exiting.");
                     return;
                 }
             }
-            //println!("  closed {}", self.open_upvalues.last().unwrap());
+            trace!("closed {}", self.open_upvalues.last().unwrap());
             
             // We're no longer borrowing a reference to self.open_upvalues
             // so we can safely pop the one we just closed.
             self.open_upvalues.pop();
-
-            //println!("  {} upvalue(s) still open", self.open_upvalues.len());
+            trace!("{} upvalue(s) still open", self.open_upvalues.len());
         }
     }
 }
-
-impl Drop for VM {
-    fn drop(&mut self) {
-        //println!("VM.drop()");
-    }
-}
-
-

@@ -1,5 +1,7 @@
 
 
+use log::{info};
+
 mod lox;
 use lox::{Builder, VM};
 
@@ -52,7 +54,7 @@ pub fn run(config: Config) -> Result<(), std::io::Error> {
                 let line = read_stdin()?;
                 if line == "exit" { break; }
                 let reader = std::io::Cursor::new(&line);
-                compile_and_execute(reader, &mut vm, |rc| println!("rc={}", rc));
+                compile_and_execute(reader, &mut vm, |rc| info!("rc={}", rc));
             }
         }
         Mode::Line => {
@@ -81,10 +83,14 @@ where
         Ok(bytecode) => {
             match vm.execute(&bytecode) {
                 Ok(rc) => action(rc),
-                Err(runtime_error) => eprint!("{}", runtime_error),
+                Err(runtime_error) => { 
+                    eprintln!("{}\n{}", runtime_error, runtime_error.get_stack_trace().join("\n"));
+                }
             }
         }
-        Err(compile_error) => eprint!("{}", compile_error),
+        Err(compile_error) => {
+            eprintln!("{}", compile_error);
+        }
     }
 }
 
