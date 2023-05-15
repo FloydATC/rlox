@@ -172,9 +172,9 @@ impl Value {
             Value::String(s) => {
                 if !key.is_number() { return None }
                 let index = key.as_number().floor();
-                if index < 0.0 || index >= s.len() as f64 { return None }
+                if index < 0.0 || index >= s.chars().count() as f64 { return None }
                 match s.chars().nth(index as usize) {
-                    Some(char) => return Some(Value::String(char.into())),
+                    Some(cp) => return Some(Value::String(cp.into())),
                     None => return None,
                 }
             }
@@ -182,6 +182,46 @@ impl Value {
             _ => None,
         }
     }
+
+    pub fn can_set(&self) -> bool {
+        match self {
+            Value::String(_) => true,
+            Value::Obj(obj) => obj.borrow().can_set(),
+            _ => false,
+        }
+    }
+
+    pub fn set(&mut self, key: &Value, value: Value) -> Result<(), String> {
+        match self {
+            Value::String(s) => {
+                // Check the index (note that index >= s.chars() will be checked further down so we don't walk the string twice)
+                if !key.is_number() { return Err(format!("Invalid subscript index '{}' for {}", key, self)) }
+                let index = key.as_number().floor();
+                if index < 0.0 { return Err(format!("Bad subscript index {} for {}", index, s)) }
+                let index = index as usize;
+                // The value must be a number (=unicode codepoint) or a string containing a single (unicode) character
+                let cp = if value.is_number() {
+                    match char::from_u32(value.as_number().floor() as u32) {
+                        None => return Err(format!("Invalid utf-8 codepoint {}", value.as_number().floor() as u32)),
+                        Some(cp) => cp,
+                    }
+                } else if value.is_string() && value.as_string().chars().count() == 1 {
+                    value.as_string().chars().nth(0).unwrap()
+                } else {
+                    return Err(format!("Can not set '{}' as a string character", value));
+                };
+                // If we made it this far, we're ready to split the string, replace a char and reassemble
+                let mut chars = s.chars().collect::<Vec<char>>();
+                if index >= chars.len() { return Err(format!("Bad subscript {} for '{}'", index, s)) };
+                chars[index] = cp;
+                *s = chars.into_iter().collect();
+                Ok(())
+            }
+            Value::Obj(obj) => obj.borrow_mut().set(key, value),
+            _ => Err(format!("Can't .set() on {}", self)),
+        }
+    }
+
 
 }
 

@@ -48,6 +48,13 @@ impl Array {
     }
 
 
+    pub fn set(&mut self, index: usize, value: Value) -> Result<(), String> {
+        if index >= self.values.len() { return Err(format!("Bad subscript {} for {:?}", index, self.values)) };
+        self.values[index] = value;
+        Ok(())
+    }
+
+
     pub fn extend_from_slice(&mut self, slice: &[Value]) 
     {
         self.values.extend_from_slice(slice);

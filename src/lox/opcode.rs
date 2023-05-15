@@ -114,7 +114,8 @@ pub enum OpCode {
     PopN,		// Followed by BYTE indicating number of values
     CloseUpvalue,
     Inherit,
-    Subscript,
+    GetSubscript,
+    SetSubscript,
     
     #[default]
     BAD 	        = 0xff,	// Unknown/bad opcodes resolve to this
@@ -211,7 +212,8 @@ impl OpCode {
             OpCode::PopN 		    => "POP",
             OpCode::CloseUpvalue	=> "CLOSE",
             OpCode::Inherit         => "INHRT",
-            OpCode::Subscript       => "SUB",
+            OpCode::GetSubscript    => "GSUB",
+            OpCode::SetSubscript    => "SSUB",
             
             OpCode::BAD 		    => "???",
         }

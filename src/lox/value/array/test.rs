@@ -295,3 +295,38 @@ fn truncate_oversize() {
     assert_eq!(string.as_str(), "[1, 2, 3, 4, 5, 6]");
 }
 
+#[test]
+fn set_array_elements() {
+    let v = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let mut array: Array = Array::from(v.as_slice());
+    array.set(0, Value::string("foo")).expect("failed unexpectedly");
+    array.set(2, Value::string("bar")).expect("failed unexpectedly");
+    array.set(5, Value::string("baz")).expect("failed unexpectedly");
+    assert_eq!(array.set(6, Value::string("ERROR")).is_err(), true);
+    assert_eq!(array.to_string(), "[foo, 2, bar, 4, 5, baz]");
+}
+
+#[test]
+fn get_array_elements() {
+    let v = vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::Number(3.0),
+        Value::Number(4.0),
+        Value::Number(5.0),
+        Value::Number(6.0),
+    ];
+    let array: Array = Array::from(v.as_slice());
+    assert_eq!(array.get(0), Some(&Value::Number(1.0)));
+    assert_eq!(array.get(2), Some(&Value::Number(3.0)));
+    assert_eq!(array.get(5), Some(&Value::Number(6.0)));
+    assert_eq!(array.get(6), None);
+}
+

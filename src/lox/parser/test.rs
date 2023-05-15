@@ -31,6 +31,7 @@ mod for_loops;
 
 
 fn test(code: &str) -> Result<ByteCode, CompileError> {
+    
     let reader = std::io::Cursor::new(code);
     let scanner = Scanner::new(reader);
     let mut input = Tokenizer::new(scanner);

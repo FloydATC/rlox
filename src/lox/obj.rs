@@ -119,6 +119,32 @@ impl Obj {
         }
     }
 
+
+    pub fn can_set(&self) -> bool {
+        match self {
+            Obj::Array(_) => true,
+            Obj::Class(_) => false, // MUST NOT modify a class after declaration!
+            Obj::Instance(_) => true,
+            _ => false,
+        }
+    }
+
+
+    pub fn set(&mut self, key: &Value, value: Value) -> Result<(), String> {
+        match self {
+            Obj::Array(a) => {
+                if !key.is_number() { return Err(format!("Invalid subscript '{}' for {}", key, a)) }
+                let index = key.as_number().floor();
+                if index < 0.0 || index >= a.len() as f64 { return Err(format!("Bad subscript {} for {}", key, a)) }
+                return a.set(index as usize, value);
+            }         
+            Obj::Instance(i) => if key.is_string() { Ok(i.set(key.as_string(), value)) } else { 
+                return Err(format!("Invalid subscript '{}' for {}", key, i)); 
+            },
+            _ => return Err(format!("Can't .set() on {}", self)),
+        }
+    }
+
 }
 
 //#[allow(dead_code)]

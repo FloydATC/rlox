@@ -307,3 +307,84 @@ fn subtract_array_from_number_original_is_unchanged() {
     assert_eq!(res.is_ok(), true);
     assert_eq!(res.unwrap(), 1);
 }
+
+#[test]
+fn set_array_subscript_1() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=['foo','bar','baz']; exit a[0] == 1;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_2() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=['foo','bar','baz']; exit a[1] == 'foo';";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_3() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=['foo','bar','baz']; exit a[2] == 'bar';";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_4() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=['foo','bar','baz']; exit a[3] == 'baz';";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_5() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=['foo','bar','baz']; exit a[4] == 5;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_single_value_1() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=123; exit a[0] == 1;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_single_value_2() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=123; exit a[1] == 123;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_single_value_3() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=123; exit a[2] == 123;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_single_value_4() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=123; exit a[3] == 123;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn set_array_subscript_single_value_5() {
+    let code = "var a=[1,2,3,4,5]; a[1,2,3]=123; exit a[4] == 5;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+

@@ -172,4 +172,47 @@ fn value_closure() {
     assert_eq!(value.is_truthy(), 	true);
 }
 
+#[test]
+fn get_from_ascii_string() {
+    let s = Value::string("abc");
+    assert_eq!(s.can_get(), true);
+    assert_eq!(s.get(&Value::number(-1.0)), None);
+    assert_eq!(s.get(&Value::number(0.0)), Some(Value::string("a")));
+    assert_eq!(s.get(&Value::number(1.0)), Some(Value::string("b")));
+    assert_eq!(s.get(&Value::number(2.0)), Some(Value::string("c")));
+    assert_eq!(s.get(&Value::number(3.0)), None);
+}
+
+#[test]
+fn get_from_utf8_string() {
+    let s = Value::string("\u{0200}\u{0201}\u{0202}");
+    assert_eq!(s.can_get(), true);
+    assert_eq!(s.get(&Value::number(-1.0)), None);
+    assert_eq!(s.get(&Value::number(0.0)), Some(Value::string("\u{0200}")));
+    assert_eq!(s.get(&Value::number(1.0)), Some(Value::string("\u{0201}")));
+    assert_eq!(s.get(&Value::number(2.0)), Some(Value::string("\u{0202}")));
+    assert_eq!(s.get(&Value::number(3.0)), None);
+}
+
+#[test]
+fn set_into_ascii_string() {
+    let mut s = Value::string("abc");
+    assert_eq!(s.can_set(), true);
+    s.set(&Value::number(0.0), Value::string("\u{0200}")).expect("failed unexpectedly");
+    s.set(&Value::number(1.0), Value::string("\u{0201}")).expect("failed unexpectedly");
+    s.set(&Value::number(2.0), Value::string("\u{0202}")).expect("failed unexpectedly");
+    assert_eq!(s.set(&Value::number(3.0), Value::string("X")).is_err(), true);
+    assert_eq!(s, Value::string("\u{0200}\u{0201}\u{0202}"));
+}
+
+#[test]
+fn set_into_utf8_string() {
+    let mut s = Value::string("\u{0200}\u{0201}\u{0202}");
+    assert_eq!(s.can_set(), true);
+    s.set(&Value::number(0.0), Value::string("a")).expect("failed unexpectedly");
+    s.set(&Value::number(1.0), Value::string("b")).expect("failed unexpectedly");
+    s.set(&Value::number(2.0), Value::string("c")).expect("failed unexpectedly");
+    assert_eq!(s.set(&Value::number(3.0), Value::string("X")).is_err(), true);
+    assert_eq!(s, Value::string("abc"));
+}
 

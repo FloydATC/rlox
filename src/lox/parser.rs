@@ -111,7 +111,7 @@ impl<I: Tokenize> Parser<I> {
     fn parse_precedence(&mut self, precedence: ParserPrec, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
 
         input.advance();
-        trace!("token={:?}", input.previous());
+        trace!("begin compiling precedence at token={:?}", input.previous());
         let rule = self.previous_token_rule(input);
         
         match rule.prefix {
@@ -422,7 +422,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        trace!("token={:?}", input.current());
+        trace!("begin compiling statement at token={:?}", input.current());
         if input.advance_on(TokenKind::Break) {
             self.break_statement(input, output)
         } else if input.advance_on(TokenKind::Continue) {
@@ -654,7 +654,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        debug!("begin");
+        debug!("begin compiling declaration");
         match input.current().kind() {
             TokenKind::Class 	=> self.class_declaration(input, output),
             TokenKind::Fun 	    => self.fun_declaration(input, output),
@@ -760,7 +760,7 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn expression(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        debug!("begin");
+        trace!("begin compiling expression at token={}", input.current().lexeme());
         self.parse_precedence(ParserPrec::Assignment, input, output)?;
         Ok(())
     }
@@ -907,14 +907,20 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn subscr(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    fn subscr(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // At this point, there should be a subscriptable value on the top of the stack
         // Build an array value, each element being an index into the first element
-        let elements = self.expressions_until(TokenKind::RightBracket, input, output)?;
+        let indices = self.expressions_until(TokenKind::RightBracket, input, output)?;
         self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
-        output.compiler.emit_op_variant(&OpCodeSet::defarray(), elements);
+        output.compiler.emit_op_variant(&OpCodeSet::defarray(), indices);
         // Now there are two values on the stack; the subscriptable value and an array of index values
-        output.compiler.emit_op(&OpCode::Subscript);
+        if can_assign && input.advance_on(TokenKind::Equal) {
+            if indices == 0 { c_error!(format!("Can not assign to subscript '[]'")) }
+            self.expression(input, output)?;
+            output.compiler.emit_op(&OpCode::SetSubscript);
+        } else {
+            output.compiler.emit_op(&OpCode::GetSubscript);
+        }
         Ok(())
     }
 

@@ -143,7 +143,8 @@ impl VM {
                 OpCode::PopN 		    => self.opcode_popn(),
                 OpCode::CloseUpvalue	=> self.opcode_closeupvalue(),
                 OpCode::Inherit	        => self.opcode_inherit(),
-                OpCode::Subscript       => self.opcode_subscript(),
+                OpCode::GetSubscript    => self.opcode_getsubscript(),
+                OpCode::SetSubscript    => self.opcode_setsubscript(),
 
                 OpCode::BAD 		    => self.opcode_bad(),
             };
@@ -345,7 +346,7 @@ impl VM {
         Ok(())
     }
 
-    fn opcode_subscript(&mut self) -> Result<(), RuntimeError> {
+    fn opcode_getsubscript(&mut self) -> Result<(), RuntimeError> {
         let keys = self.pop();
         let value = self.pop();
         if !value.can_get() { r_error!(format!("Can't subscript into value '{}'", value)) }
@@ -366,6 +367,30 @@ impl VM {
         } else {
             trace!("copied multiple values into new array");
             self.push(Value::array(array));
+        }
+        Ok(())
+    }
+
+
+    fn opcode_setsubscript(&mut self) -> Result<(), RuntimeError> {
+        let source = self.pop();
+        let keys = self.pop(); // Subscript keys of the destination
+        let mut destination = self.pop();
+        if source.is_array() && source.as_array().len() != keys.as_array().len() {
+            r_error!(format!("Length of source ({}) does not match the destination", source.as_array().len()))
+        }
+        if !destination.can_set() { r_error!(format!("Can not subscript into value '{}'", destination)) }
+
+        for (i, key) in keys.as_array().as_slice().iter().enumerate() {
+            trace!("setsubscript source={} key={} destination={}", source, key, destination);
+            let value = if source.is_array() { 
+                source.as_array().get(i).unwrap().clone() 
+            } else { 
+                source.clone() 
+            };
+            if let Err(msg) = destination.set(key, value) {
+                r_error!(format!("{}", msg));
+            }
         }
         Ok(())
     }
