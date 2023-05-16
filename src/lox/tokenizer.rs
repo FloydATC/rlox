@@ -137,6 +137,7 @@ impl<S: Scan> Tokenizer<S> {
             KEYWORD_DEBUG 	=> return Token::new_at(TokenKind::Debug, &lexeme, at),
             KEYWORD_ELSE 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
             KEYWORD_EXIT 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
+            KEYWORD_FOR 	=> return Token::new_at(TokenKind::For, &lexeme, at),
             KEYWORD_FUN 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),
             KEYWORD_FALSE 	=> return Token::new_at(TokenKind::False, &lexeme, at),
             KEYWORD_IF 	=> return Token::new_at(TokenKind::If, &lexeme, at),

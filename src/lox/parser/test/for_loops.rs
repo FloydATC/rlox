@@ -8,7 +8,7 @@ use super::test;
 
 // C-style for loops
 
-//#[test]
+#[test]
 fn parser_for_cstyle_skeleton() {
     let code = "for (;;) {}";
     println!("code={}", code);
@@ -19,9 +19,9 @@ fn parser_for_cstyle_skeleton() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_cond() {
-    let code = "for (;;true) {}";
+    let code = "for (;;{}) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
@@ -30,9 +30,9 @@ fn parser_for_cstyle_cond() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_each() {
-    let code = "for (;{};) {}";
+    let code = "for (;true;) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
@@ -41,9 +41,9 @@ fn parser_for_cstyle_each() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_each_cond() {
-    let code = "for (;{};true) {}";
+    let code = "for (;true;{}) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
@@ -52,18 +52,18 @@ fn parser_for_cstyle_each_cond() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_predefined_init() {
     let code = "var i; for (i=0;;) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
     let bytecode = res.unwrap();
-    assert_eq!(bytecode.globals().count(), 0);
+    assert_eq!(bytecode.globals().count(), 1);
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_inline_init() {
     let code = "for (var i=0;;) {}";
     println!("code={}", code);
@@ -74,9 +74,9 @@ fn parser_for_cstyle_inline_init() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_inline_init_cond() {
-    let code = "for (var i=0;;true) {}";
+    let code = "for (var i=0;true;) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
@@ -85,9 +85,9 @@ fn parser_for_cstyle_inline_init_cond() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_inline_init_each() {
-    let code = "for (var i=0;{};) {}";
+    let code = "for (var i=0;;{}) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
@@ -96,9 +96,9 @@ fn parser_for_cstyle_inline_init_each() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_inline_init_each_cond() {
-    let code = "for (var i=0;{};true) {}";
+    let code = "for (var i=0;true;{}) {}";
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
@@ -107,7 +107,7 @@ fn parser_for_cstyle_inline_init_each_cond() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_separate_scope() {
     let code = "var i; for (var i=0;;) {}";
     println!("code={}", code);

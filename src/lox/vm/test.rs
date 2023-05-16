@@ -9,6 +9,7 @@ mod arrays;
 mod classes;
 mod closures;
 mod expressions;
+mod for_loops;
 mod functions;
 mod globals;
 mod if_statement;

@@ -131,3 +131,34 @@ fn vm_while_var_declaration_is_local() {
     assert_eq!(res.is_ok(), true);
     assert_eq!(res.unwrap(), 1);
 }
+
+#[test]
+fn vm_while_var_declaration_countdown() {
+    let code = "var a=5; while (var b=a) { a=a-1; } exit a;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+#[should_panic]
+fn vm_while_var_declaration_scope_ends() {
+    let code = "var a=5; while (var b=a) { a=a-1; } exit b;";
+    let _res = compile_and_execute(code);
+}
+
+#[test]
+fn vm_while_var_declaration_uninitialized_is_false() {
+    let code = "while (var a) { exit 0; } exit 1;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+#[should_panic]
+fn vm_while_var_cannot_self_initialize() {
+    let code = "while (var a=a+1) { exit 0; } exit 1;";
+    let _res = compile_and_execute(code);
+}
+

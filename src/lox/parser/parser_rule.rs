@@ -226,6 +226,7 @@ impl<I: Tokenize> ParserRule<I> {
                 precedence: 	ParserPrec::None,
             },
             TokenKind::Var => return ParserRule::null(),
+            TokenKind::For => return ParserRule::null(),
             TokenKind::Fun => return ParserRule::null(),
             TokenKind::While => return ParserRule::null(),
             

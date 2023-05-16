@@ -54,6 +54,7 @@ pub enum TokenKind {
     Debug,
     Else,
     Exit,
+    For,
     Fun,
     If,
     Is,

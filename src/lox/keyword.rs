@@ -6,6 +6,7 @@ pub const KEYWORD_CONTINUE: &str = "continue";
 pub const KEYWORD_DEBUG:    &str = "debug";
 pub const KEYWORD_ELSE:     &str = "else";
 pub const KEYWORD_EXIT:     &str = "exit";
+pub const KEYWORD_FOR:      &str = "for";
 pub const KEYWORD_FUN:      &str = "fun";
 pub const KEYWORD_FALSE:    &str = "false";
 pub const KEYWORD_IF:       &str = "if";

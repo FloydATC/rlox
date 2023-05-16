@@ -431,6 +431,8 @@ impl<I: Tokenize> Parser<I> {
             self.debug_statement(input, output)
         } else if input.advance_on(TokenKind::Exit) {
             self.exit_statement(input, output)
+        } else if input.advance_on(TokenKind::For) {
+            self.for_statement(input, output)
         } else if input.advance_on(TokenKind::If) {
             self.if_statement(input, output)
         } else if input.advance_on(TokenKind::LeftCurly) {
@@ -465,28 +467,34 @@ impl<I: Tokenize> Parser<I> {
         c_error!(format!("Keyword '{}' is misplaced", input.previous().lexeme()), input.previous())
     }
 
+    fn want_semicolon_after(&mut self, what: &str, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        // Relax the rule if this looks like the end of a statement (required by C-style for loop increment)
+        if input.matches(TokenKind::RightParen) { return Ok(()) }
+        return self.consume(TokenKind::Semicolon, format!("Expected ';' after {}", what).as_str(), input, output);
+    }
+
     fn break_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.break_loop(input, output)?;
-        self.consume(TokenKind::Semicolon, "Expected ';' after 'break'", input, output)?;
+        self.want_semicolon_after(KEYWORD_BREAK, input, output)?;
         Ok(())
     }
 
     fn continue_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.continue_loop(input, output)?;
-        self.consume(TokenKind::Semicolon, "Expected ';' after 'continue'", input, output)?;
+        self.want_semicolon_after(KEYWORD_CONTINUE, input, output)?;
         Ok(())
     }
 
     fn debug_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.expression(input, output)?;
-        self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
+        self.want_semicolon_after("expression", input, output)?;
         output.compiler.emit_op(&OpCode::Debug); // Print result using std::fmt::Debug
         Ok(())
     }
     
     fn expression_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.expression(input, output)?;
-        self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
+        self.want_semicolon_after("expression", input, output)?;
         output.compiler.emit_op(&OpCode::Pop); // Discard result
         Ok(())
     }
@@ -497,7 +505,7 @@ impl<I: Tokenize> Parser<I> {
             output.compiler.emit_op(&OpCode::Null);
         } else {
             self.expression(input, output)?;
-            self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
+            self.want_semicolon_after("expression", input, output)?;
         }
         output.compiler.emit_op(&OpCode::Exit);
         Ok(())
@@ -529,7 +537,7 @@ impl<I: Tokenize> Parser<I> {
     
     fn print_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.expression(input, output)?;
-        self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
+        self.want_semicolon_after("expression", input, output)?;
         output.compiler.emit_op(&OpCode::Print); // Print result using std::fmt::Display
         Ok(())
     }
@@ -546,15 +554,15 @@ impl<I: Tokenize> Parser<I> {
                 c_error!(format!("Can not '{}' a value from initializer", KEYWORD_RETURN), input.previous())
             }
             self.expression(input, output)?;
-            self.consume(TokenKind::Semicolon, "Expected ';' after expression", input, output)?;
+            self.want_semicolon_after("expression", input, output)?;
         }
         output.compiler.emit_op(&OpCode::Return);
         Ok(())
     }
 
     fn while_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        self.begin_loop(output);
         self.begin_scope();
+        self.begin_loop(output);
         
         // while..
         let negate = input.advance_on(TokenKind::Not);
@@ -574,12 +582,67 @@ impl<I: Tokenize> Parser<I> {
         // ..do
         self.statement(input, output)?;
 
-        self.end_scope(output);
         self.end_loop(output);
         output.compiler.patch_jmp(end_jmp);
+        self.end_scope(output);
         Ok(())
     }
 
+
+    fn for_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        // for..
+        if input.advance_on(TokenKind::LeftParen) {
+            self.for_statement_cstyle(input, output)?;
+        } else {
+            c_error!(format!("'{}'-loop syntax error", KEYWORD_FOR))
+        }
+        Ok(())
+    }
+
+
+    // C-style loop: for (initializer; condition; increment) {}
+    fn for_statement_cstyle(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        self.begin_scope();
+
+        // initializer (if any)
+        if !input.advance_on(TokenKind::Semicolon) { 
+            self.declaration(input, output)?; // Expects and consumes trailing ';'
+        }
+
+        self.begin_loop(output);
+        let loop_start = output.compiler.current_ip();
+
+        // condition (if any)
+        if !input.advance_on(TokenKind::Semicolon) {
+            self.expression(input, output)?;
+            self.want_semicolon_after(format!("'{}'-loop condition", KEYWORD_FOR).as_str(), input, output)?;
+        } else {
+            output.compiler.emit_op(&OpCode::True);
+        }
+        let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
+        let loop_body = output.compiler.emit_jmp(&OpCode::Jmp);
+
+        // increment (if any)
+        let after_each = output.compiler.current_ip();
+        if !input.matches(TokenKind::RightParen) { 
+            self.statement(input, output)?;
+        }
+
+        output.compiler.emit_op(&OpCode::Jmp);
+        output.compiler.emit_bytes(loop_start, OpCode::Jmp.len());
+        self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-loop increment", KEYWORD_FOR).as_str(), input, output)?;
+
+        // loop body
+        output.compiler.patch_jmp(loop_body);
+        self.statement(input, output)?;
+        output.compiler.emit_op(&OpCode::Jmp);
+        output.compiler.emit_bytes(after_each, OpCode::Jmp.len());
+
+        self.end_loop(output);
+        output.compiler.patch_jmp(end_jmp);
+        self.end_scope(output);
+        Ok(())
+    }
 
     // ======== Loop break/continue handling ========
 

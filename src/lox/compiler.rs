@@ -74,12 +74,12 @@ impl Compiler {
     }
 
 
-    pub fn emit_bytes(&mut self, byte: u32, len: usize) {
+    pub fn emit_bytes(&mut self, dword: u32, len: usize) {
         self.function
             .as_mut()
             .expect("Internal error: self.function is None")
             .chunk()
-            .append_bytes(byte, len);
+            .append_bytes(dword, len);
     }
 
     
