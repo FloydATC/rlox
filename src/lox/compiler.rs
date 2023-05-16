@@ -47,19 +47,19 @@ impl Compiler {
         match arg {
             0..=0xff => {
                 //println!("emitting opcode={} len={} arg={}", ops.byte.mnemonic(), ops.byte.len(), arg);
-                assert_eq!(ops.byte.len(), 1);
+                debug_assert_eq!(ops.byte.len(), 1);
                 self.emit_op(&ops.byte);
                 self.emit_bytes(arg as u32, ops.byte.len());
             }
             0x100..=0xffff => {
                 //println!("emitting opcode={} len={} arg={}", ops.word.mnemonic(), ops.word.len(), arg);
-                assert_eq!(ops.byte.len(), 2);
+                debug_assert_eq!(ops.byte.len(), 2);
                 self.emit_op(&ops.word);
                 self.emit_bytes(arg as u32, ops.byte.len());
             }
             0x10000..=0xffffffff => {
                 //println!("emitting opcode={} len={} arg={}", ops.dword.mnemonic(), ops.dword.len(), arg);
-                assert_eq!(ops.byte.len(), 4);
+                debug_assert_eq!(ops.byte.len(), 4);
                 self.emit_op(&ops.dword);
                 self.emit_bytes(arg as u32, ops.byte.len());
             }

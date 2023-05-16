@@ -176,7 +176,7 @@ impl<S: Scan> Tokenizer<S> {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
-        assert_eq!(lexeme.as_str(), want);
+        debug_assert_eq!(lexeme.as_str(), want);
         return lexeme;
     }
 
