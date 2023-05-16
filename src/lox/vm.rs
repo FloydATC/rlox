@@ -61,6 +61,7 @@ impl VM {
                 OpCode::Return 		    => self.opcode_return(),
                 OpCode::Debug		    => self.opcode_debug(),
                 OpCode::Print		    => self.opcode_print(),
+                OpCode::Dup 		    => self.opcode_dup(),
 
                 OpCode::GetConst8 	    |
                 OpCode::GetConst16 	    |
@@ -215,6 +216,11 @@ impl VM {
     fn opcode_debug(&mut self) -> Result<(), RuntimeError> {
         let value = self.pop();
         println!("DEBUG> {:?}", value);
+        Ok(())
+    }
+
+    fn opcode_dup(&mut self) -> Result<(), RuntimeError> {
+        self.push(self.peek(0).clone());
         Ok(())
     }
 

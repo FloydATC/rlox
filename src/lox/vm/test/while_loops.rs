@@ -115,3 +115,19 @@ fn vm_while_not_false() {
     assert_eq!(res.is_ok(), true);
     assert_eq!(res.unwrap(), 1);
 }
+
+#[test]
+fn vm_while_var_declaration() {
+    let code = "while (var a=true) { exit a; } exit 0;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}
+
+#[test]
+fn vm_while_var_declaration_is_local() {
+    let code = "var a=1; while (var a=false) {} exit a;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 1);
+}

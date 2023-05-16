@@ -554,6 +554,7 @@ impl<I: Tokenize> Parser<I> {
 
     fn while_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.begin_loop(output);
+        self.begin_scope();
         
         // while..
         let negate = input.advance_on(TokenKind::Not);
@@ -561,7 +562,11 @@ impl<I: Tokenize> Parser<I> {
         if input.current().matches(TokenKind::RightParen) {
             c_error!(format!("Expected conditional expression, got '{}'", input.current().lexeme()), input.current())
         }
-        self.expression(input, output)?;
+        if input.advance_on(TokenKind::Var) {
+            self.var_expression(input, output)?;
+        } else {
+            self.expression(input, output)?;
+        }
         self.consume(TokenKind::RightParen, format!("Expected ')' after '{}'-condition", KEYWORD_WHILE).as_str(), input, output)?;
         if negate { output.compiler.emit_op(&OpCode::Negate) }
         
@@ -569,6 +574,7 @@ impl<I: Tokenize> Parser<I> {
         // ..do
         self.statement(input, output)?;
 
+        self.end_scope(output);
         self.end_loop(output);
         output.compiler.patch_jmp(end_jmp);
         Ok(())
@@ -729,14 +735,8 @@ impl<I: Tokenize> Parser<I> {
     fn var_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         input.advance(); // Consume Var token
         let name_id = self.parse_variable("Expected variable name", input, output)?;
-        
-        if input.advance_on(TokenKind::Equal) {
-            self.expression(input, output)?;
-        } else {
-            output.compiler.emit_op(&OpCode::Null);
-        }
+        self.var_initializer(input, output)?;
         self.consume(TokenKind::Semicolon, "Expected ';' after variable declaration", input, output)?;
-        
         self.define_variable(name_id, output);
         Ok(())
     } 
@@ -970,6 +970,27 @@ impl<I: Tokenize> Parser<I> {
     fn variable(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let token = input.previous().clone();
         self.named_variable(&token, can_assign, input, output)?;
+        Ok(())
+    }
+
+    // while() and for() loops can declare a single variable 
+    // if the conditional expression starts with KEYWORD_VAR
+    fn var_expression(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        let name_id = self.parse_variable("Expected variable name", input, output)?;
+        self.var_initializer(input, output)?;
+        // Unlike a var declaration, a var expression must leave a copy of the assigned value on the stack
+        output.compiler.emit_op(&OpCode::Dup); 
+        self.define_variable(name_id, output);
+        Ok(())
+    } 
+
+
+    fn var_initializer(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        if input.advance_on(TokenKind::Equal) {
+            self.expression(input, output)?;
+        } else {
+            output.compiler.emit_op(&OpCode::Null);
+        }
         Ok(())
     }
 

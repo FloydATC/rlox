@@ -96,6 +96,7 @@ impl Chunk {
             OpCode::Exit 		    => self.opcode_immediate(ip),
             OpCode::Print 		    => self.opcode_immediate(ip),
             OpCode::Return 		    => self.opcode_immediate(ip),
+            OpCode::Dup 		    => self.opcode_immediate(ip),
 
             OpCode::GetConst8 		|
             OpCode::GetConst16 		|

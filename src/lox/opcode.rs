@@ -19,6 +19,7 @@ pub enum OpCode {
     Exit	        = 0x01,
     Print	        = 0x02,
     Return 	        = 0x03,
+    Dup,                    // push(peek(0)) to duplicate a value
     
     // Push constant value onto stack
     GetConst8	    = 0x10,	// Followed by BYTE indexing table of constants
@@ -130,6 +131,7 @@ impl OpCode {
             OpCode::Exit            => "EXIT",
             OpCode::Print           => "PRINT",
             OpCode::Return          => "RET",
+            OpCode::Dup             => "DUP",
 
             OpCode::GetConst8       => "GETC",
             OpCode::GetConst16      => "GETC",
