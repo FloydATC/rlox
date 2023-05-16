@@ -698,8 +698,7 @@ impl VM {
             r_error!(format!("Can not inherit from {} because it is not a class", superclass))
         }
         // Copy parent methods
-        // Compiler emits INHRT before any MTHD so we know the method table is empty
-        *class.as_class_mut().methods_mut() = superclass.as_class().methods().clone();
+        class.as_class_mut().inherit_from(&superclass);
         self.push(class);
         Ok(())
     }
