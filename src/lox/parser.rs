@@ -469,6 +469,8 @@ impl<I: Tokenize> Parser<I> {
 
     fn want_semicolon_after(&mut self, what: &str, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // Relax the rule if this looks like the end of a statement (required by C-style for loop increment)
+        if input.matches(TokenKind::EOF) { return Ok(()) }
+        if input.matches(TokenKind::RightCurly) { return Ok(()) }
         if input.matches(TokenKind::RightParen) { return Ok(()) }
         return self.consume(TokenKind::Semicolon, format!("Expected ';' after {}", what).as_str(), input, output);
     }
