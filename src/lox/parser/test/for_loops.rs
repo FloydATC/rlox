@@ -120,8 +120,8 @@ fn parser_for_cstyle_separate_scope() {
 
 // List style for..in loops
 
-//#[test]
-fn parser_for_predefined_in_list() {
+#[test]
+fn parser_for_global_in_list() {
     let code = "var v1; for v1 in () {}";
     println!("code={}", code);
     let res = test(code);
@@ -131,8 +131,8 @@ fn parser_for_predefined_in_list() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
-fn parser_for_inline_in_list() {
+#[test]
+fn parser_for_local_in_list() {
     let code = "for var v1 in () {}";
     println!("code={}", code);
     let res = test(code);
@@ -142,8 +142,19 @@ fn parser_for_inline_in_list() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
-fn parser_for_inline_in_list_break() {
+#[test]
+fn parser_for_outer_local_in_list() {
+    let code = "{ var v1; for v1 in () {} }";
+    println!("code={}", code);
+    let res = test(code);
+    assert_eq!(res.is_ok(), true);
+    let bytecode = res.unwrap();
+    assert_eq!(bytecode.globals().count(), 0);
+    assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
+}
+
+#[test]
+fn parser_for_local_in_list_break() {
     let code = "for var v1 in () { break; }";
     println!("code={}", code);
     let res = test(code);
@@ -153,8 +164,8 @@ fn parser_for_inline_in_list_break() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
-fn parser_for_inline_in_list_continue() {
+#[test]
+fn parser_for_local_in_list_continue() {
     let code = "for var v1 in () { continue; }";
     println!("code={}", code);
     let res = test(code);
@@ -166,19 +177,19 @@ fn parser_for_inline_in_list_continue() {
 
 // Iterator style for..in loops
 
-//#[test]
-fn parser_for_predefined_in_expr() {
+#[test]
+fn parser_for_global_in_expr() {
     let code = "var v1; var v2; for v1 in v2 {}"; // Loop until v2 is falsy
     println!("code={}", code);
     let res = test(code);
     assert_eq!(res.is_ok(), true);
     let bytecode = res.unwrap();
-    assert_eq!(bytecode.globals().count(), 1);
+    assert_eq!(bytecode.globals().count(), 2);
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
-fn parser_for_inline_in_expr() {
+#[test]
+fn parser_for_local_in_expr() {
     let code = "var v2; for var v1 in v2 {}"; // Loop until v2 is falsy
     println!("code={}", code);
     let res = test(code);
@@ -188,8 +199,8 @@ fn parser_for_inline_in_expr() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
-fn parser_for_inline_in_expr_break() {
+#[test]
+fn parser_for_local_in_expr_break() {
     let code = "var v2; for var v1 in v2 { break; }";
     println!("code={}", code);
     let res = test(code);
@@ -199,8 +210,8 @@ fn parser_for_inline_in_expr_break() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
-fn parser_for_inline_in_expr_continue() {
+#[test]
+fn parser_for_local_in_expr_continue() {
     let code = "var v2; for var v1 in v2 { continue; }";
     println!("code={}", code);
     let res = test(code);
@@ -240,7 +251,7 @@ fn parser_naked_continue() {
     assert_eq!(at.charno, 1);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_break() {
     let code = "for (;;) { break; }";
     println!("code={}", code);
@@ -251,7 +262,7 @@ fn parser_for_cstyle_break() {
     assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
 }
 
-//#[test]
+#[test]
 fn parser_for_cstyle_continue() {
     let code = "for (;;) { continue; }";
     println!("code={}", code);

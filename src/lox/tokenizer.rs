@@ -141,6 +141,7 @@ impl<S: Scan> Tokenizer<S> {
             KEYWORD_FUN 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),
             KEYWORD_FALSE 	=> return Token::new_at(TokenKind::False, &lexeme, at),
             KEYWORD_IF 	=> return Token::new_at(TokenKind::If, &lexeme, at),
+            KEYWORD_IN 	=> return Token::new_at(TokenKind::In, &lexeme, at),
             KEYWORD_INF 	=> return Token::new_at(TokenKind::Inf, &lexeme, at),
             KEYWORD_IS 	=> return Token::new_at(TokenKind::Is, &lexeme, at),
             KEYWORD_NAN 	=> return Token::new_at(TokenKind::Nan, &lexeme, at),

@@ -1,6 +1,6 @@
 
 
-use super::value::{Array, Value};
+use super::value::{Array, Value, ValueIterator};
 use super::function::Function;
 use super::vm::{Class, Instance, Method};
 use super::closure::Closure;
@@ -14,6 +14,7 @@ pub enum Obj {
     Class(Class),
     Closure(Closure),
     Instance(Instance),
+    Iterator(ValueIterator),
     Method(Method),
 }
 
@@ -36,6 +37,9 @@ impl Obj {
     }
     pub fn instance(i: Instance) -> Obj {
         Obj::Instance(i)
+    }
+    pub fn iterator(i: ValueIterator) -> Obj {
+        Obj::Iterator(i)
     }
     pub fn method(m: Method) -> Obj {
         Obj::Method(m)
@@ -78,6 +82,13 @@ impl Obj {
     pub fn is_instance(&self) -> bool {
         match self {
             Obj::Instance(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_iterator(&self) -> bool {
+        match self {
+            Obj::Iterator(_) 	=> true,
             _			=> false,
         }
     }
@@ -227,6 +238,20 @@ impl Obj {
         }
     }
 
+    pub fn as_iterator(&self) -> &ValueIterator {
+        match self {
+            Obj::Iterator(i) => return i,
+            _ => panic!("{:?} is not a ValueIterator Object", self),
+        }
+    }
+
+    pub fn as_iterator_mut(&mut self) -> &mut ValueIterator {
+        match self {
+            Obj::Iterator(i) => return i,
+            _ => panic!("{:?} is not a ValueIterator Object", self),
+        }
+    }
+
     pub fn as_method(&self) -> &Method {
         match self {
             Obj::Method(m) => return m,
@@ -343,7 +368,7 @@ impl PartialEq for Obj {
     fn eq(&self, other: &Obj) -> bool { 
         match (self, other) {
             (Obj::Array(a), Obj::Array(b)) => {
-                println!("comparing Obj::Arrays");
+                //println!("comparing Obj::Arrays");
                 a.eq(b)
             }
             // Obj types must be same object
@@ -351,6 +376,7 @@ impl PartialEq for Obj {
             (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),
             (Obj::Closure(a), Obj::Closure(b))   => std::ptr::eq(a, b),
             (Obj::Instance(a), Obj::Instance(b)) => std::ptr::eq(a, b),
+            (Obj::Iterator(a), Obj::Iterator(b)) => std::ptr::eq(a, b),
             (Obj::Method(a), Obj::Method(b)) 	 => std::ptr::eq(a, b),
             _ => false, // Obj types mismatch
         }
@@ -385,6 +411,9 @@ impl std::fmt::Display for Obj {
             Obj::Instance(inst) => {
                 write!(f, "Obj::Instance(class={})", inst.class_name())
             }
+            Obj::Iterator(iter) => {
+                write!(f, "Obj::Iterator({})", iter)
+            }
             Obj::Method(m) => {
                 write!(f, "Obj::Method({}.{})", m.receiver_class_name(), m.method_name())
             }
@@ -401,6 +430,7 @@ impl From<&Obj> for Obj {
             Obj::Class(c) => Obj::Class(c.clone()),
             Obj::Closure(c) => Obj::Closure(c.clone()),
             Obj::Instance(i) => Obj::Instance(i.clone()),
+            Obj::Iterator(i) => Obj::Iterator(i.clone()),
             Obj::Method(m) => Obj::Method(m.clone()),
         }
     }

@@ -2,6 +2,8 @@
 #[cfg(test)]
 mod test;
 
+use std::borrow::BorrowMut;
+
 use log::{trace, debug, warn};
 
 
@@ -14,7 +16,7 @@ use super::keyword::*;
 use super::ByteCode;
 use super::callframe::CallFrame;
 use super::stack::Stack;
-use super::value::Value;
+use super::value::{Value, ValueIterator};
 use super::globals::Globals;
 use super::closure::Closure;
 use crate::lox::{RuntimeError, r_error};
@@ -62,6 +64,9 @@ impl VM {
                 OpCode::Debug		    => self.opcode_debug(),
                 OpCode::Print		    => self.opcode_print(),
                 OpCode::Dup 		    => self.opcode_dup(),
+                OpCode::MakeIter        => self.opcode_makeiter(),
+                OpCode::ReadIter        => self.opcode_readiter(),
+                OpCode::NextIter        => self.opcode_nextiter(),
 
                 OpCode::GetConst8 	    |
                 OpCode::GetConst16 	    |
@@ -195,8 +200,12 @@ impl VM {
 
     fn opcode_return(&mut self) -> Result<(), RuntimeError> {
         let return_value = self.pop();
+        let bottom = self.callframe().stack_bottom();
+        trace!("return statement: stack_bottom={}", bottom);
         self.close_upvalues(self.callframe().stack_bottom());
         self.callframes.pop();
+        trace!("  stack height is now {}", self.stack.len());
+        while self.stack.len() > bottom { self.pop(); } // Workaround hack to solve problem with receiver being left on the stack
         if self.callframes.len() == 0 { 
             // Note: The compiler should make this impossible but we're checking just in case
             r_error!(format!("Can not 'return' from top-level code, use 'exit' instead."))
@@ -221,6 +230,57 @@ impl VM {
 
     fn opcode_dup(&mut self) -> Result<(), RuntimeError> {
         self.push(self.peek(0).clone());
+        Ok(())
+    }
+
+    fn opcode_makeiter(&mut self) -> Result<(), RuntimeError> {
+        match ValueIterator::new(self.pop()) {
+            Err(msg) => r_error!(format!("{}", msg)),
+            Ok(iter) => self.poke(Value::iterator(iter), 2),
+        }
+        trace!("opcode_makeiter() placed iterator={} in stack slot at depth=2", self.peek(2));
+        Ok(())
+    }
+
+    fn opcode_readiter(&mut self) -> Result<(), RuntimeError> {
+        let mut iter_value = self.peek(2).clone();
+        let mut iter = iter_value.borrow_mut().as_iterator_mut();
+        let (value, next) = iter.next();
+        if next.is_some() { 
+            self.poke(Value::Bool(true), 1);
+            self.poke(next.unwrap().clone(), 0);
+        } else {
+            self.poke(Value::Bool(false), 1);
+            self.poke(Value::Null, 0);
+        }
+        trace!("opcode_readiter() next={}", value);    
+        if value.is_instance() {
+            self.push(value.clone());
+            trace!("load method '{}' of {} onto stack", KEYWORD_NEXT, value);
+            self.bind_method(&value.as_instance().class(), KEYWORD_NEXT)?; 
+            let method = self.pop();
+            self.push(value.clone());
+            self.push(next.unwrap().clone());
+            //let receiver = self.pop(); // Discard the instance
+            //println!("discard the copy of the receiver from the stack, now bound to the method: {}", receiver);
+            trace!("call method={} of receiver={} with 1 argument: last={}", method, self.peek(1), self.peek(0));
+            self.call_value(method, 1)?; 
+        }
+        Ok(())
+    }
+
+    fn opcode_nextiter(&mut self) -> Result<(), RuntimeError> {
+        if self.peek(1).is_instance() {
+            // Clean up after method call
+            let last = self.pop();
+            let _instance = self.pop();
+            self.poke(Value::Bool(!last.is(&Value::Null)), 1);
+            self.poke(last, 0);
+        }
+        let mut iter_value = self.peek(2).clone();
+        let mut iter = iter_value.borrow_mut().as_iterator_mut();
+        trace!("opcode_nextiter() copying value={} back to iterator last()", self.peek(0));
+        *iter.last() = self.peek(0).clone();
         Ok(())
     }
 
@@ -406,7 +466,7 @@ impl VM {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let depth = self.slot_depth(id); // Stack index from bottom
         self.poke(self.peek(0).clone(), depth);
-        trace!("popped value and copied to local variable id=0x{:08x}: {}", id, self.peek(0));
+        trace!("value copied to local variable id=0x{:08x}: {}", id, self.peek(0));
         Ok(())
     }
 
@@ -728,10 +788,14 @@ impl VM {
     }
 
     fn slot_depth(&self, slot: usize) -> usize {
-        return self.stack.size()
+        trace!("current stack size is {}", self.stack.size());
+        trace!("callframe stack bottom is at {}", self.callframe().stack_bottom());
+        let depth = self.stack.size()
             - self.callframe().stack_bottom()
             - 1
             - slot;
+        trace!("requested slot is {}; {} - {} - 1 - {} = {}", slot, self.stack.size(), self.callframe().stack_bottom(), slot, depth);
+        return depth;
     }
 
 
@@ -764,7 +828,7 @@ impl VM {
             self.call(value, argc)?;
         } else if value.is_method() {
             let bound = value.as_method();
-            self.stack.poke(bound.receiver().clone(), argc as usize);
+            self.stack.poke(bound.receiver().clone(), argc as usize);            
             self.call(bound.method().clone(), argc)?;
         } else if value.is_class() {
             let initializer = match value.as_class().get(KEYWORD_INIT) {

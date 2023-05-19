@@ -57,6 +57,7 @@ pub enum TokenKind {
     For,
     Fun,
     If,
+    In,
     Is,
     Not,
     Of,

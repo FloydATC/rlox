@@ -69,11 +69,3 @@ impl std::fmt::Display for Instance {
         write!(f, "Instance(class={})", self.class_name())
     }
 }
-
-
-impl Drop for Instance {
-    fn drop(&mut self) {
-        println!("Instance.drop() {}", self.class_name());
-    }
-}
-

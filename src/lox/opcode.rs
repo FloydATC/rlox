@@ -20,6 +20,9 @@ pub enum OpCode {
     Print	        = 0x02,
     Return 	        = 0x03,
     Dup,                    // push(peek(0)) to duplicate a value
+    MakeIter,               // pop, define iterator, push
+    ReadIter,               // peek(0), push true/false for continue, push next value, finally call method if instance iterator
+    NextIter,               // peek(2), update last value
     
     // Push constant value onto stack
     GetConst8	    = 0x10,	// Followed by BYTE indexing table of constants
@@ -132,6 +135,9 @@ impl OpCode {
             OpCode::Print           => "PRINT",
             OpCode::Return          => "RET",
             OpCode::Dup             => "DUP",
+            OpCode::MakeIter        => "MKIT",
+            OpCode::ReadIter        => "RDIT",
+            OpCode::NextIter        => "NXIT",
 
             OpCode::GetConst8       => "GETC",
             OpCode::GetConst16      => "GETC",

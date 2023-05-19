@@ -67,3 +67,108 @@ fn for_loop_count_down() {
     assert_eq!(res.unwrap(), 0);
 }
 
+// Iterator-style loops using FOR..IN
+
+#[test]
+fn for_in_list_using_global() {
+    let code = "var i; var sum=0; for i in (1,2,4) { sum=sum+i; } exit sum;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_list_using_local() {
+    let code = "var sum=0; for var i in (1,2,4) { sum=sum+i; } exit sum;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_empty_list_using_global() {
+    let code = "var i; var sum=7; for i in () { sum=sum+i; } exit sum;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_empty_list_using_local() {
+    let code = "var sum=7; for var i in () { sum=sum+i; } exit sum;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_array_using_global() {
+    let code = "var a=[1,2,4]; var i; var sum=0; for i in a { sum=sum+i; } exit sum;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_array_using_local() {
+    let code = "var a=[1,2,4]; var sum=0; for var i in a { sum=sum+i; } exit sum;";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_instance_using_global() {
+    let code = "
+        class c { 
+            init() { 
+                this.i=1; 
+            } 
+            next(last) { 
+                if (last is null) 
+                    return this.i; 
+                last=last*2; 
+                if (last > 4) 
+                    return null; 
+                else 
+                    return last; 
+            } 
+        } 
+        var ix=c(); 
+        var i; 
+        var sum=0; 
+        for i in ix { sum=sum+i; } 
+        exit sum;
+    ";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+
+#[test]
+fn for_in_instance_using_local() {
+    let code = "
+        class c { 
+            init() { 
+                this.i=1; 
+            } 
+            next(last) { 
+                if (last is null) 
+                    return this.i; 
+                last=last*2; 
+                if (last > 4) 
+                    return null; 
+                else 
+                    return last; 
+            } 
+        } 
+        var ix=c(); 
+        var sum=0; 
+        for var i in ix { sum=sum+i; } 
+        exit sum;
+    ";
+    let res = compile_and_execute(code);
+    assert_eq!(res.is_ok(), true);
+    assert_eq!(res.unwrap(), 7);
+}
+

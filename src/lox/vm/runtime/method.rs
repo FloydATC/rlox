@@ -74,10 +74,3 @@ impl std::fmt::Display for Method {
         write!(f, "Method({}.{})", self.receiver_class_name(), self.method_name())
     }
 }
-
-
-impl Drop for Method {
-    fn drop(&mut self) {
-        println!("Method.drop() {}.{}", self.receiver_class_name(), self.method_name());
-    }
-}

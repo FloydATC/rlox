@@ -206,6 +206,7 @@ impl<I: Tokenize> ParserRule<I> {
             TokenKind::Else => return ParserRule::null(),
             TokenKind::Exit => return ParserRule::null(),
             TokenKind::If => return ParserRule::null(),
+            TokenKind::In => return ParserRule::null(),
             TokenKind::Is => return ParserRule {
                 prefix: 	None, 
                 infix: 		Some(Parser::binary), 

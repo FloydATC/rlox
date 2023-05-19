@@ -121,6 +121,7 @@ impl std::fmt::Debug for TokenKind {
             TokenKind::For		=> write!(f, "For"),
             TokenKind::Fun		=> write!(f, "Fun"),
             TokenKind::If		=> write!(f, "If"),
+            TokenKind::In		=> write!(f, "In"),
             TokenKind::Is		=> write!(f, "Is"),
             TokenKind::Not      => write!(f, "Not"),
             TokenKind::Of		=> write!(f, "Of"),

@@ -12,8 +12,11 @@ use super::vm::{Class, Method, Instance};
 use super::closure::Closure;
 
 mod array;
+mod value_iterator;
 
 pub use array::Array;
+pub use value_iterator::ValueIterator;
+
 
 #[derive(Debug)]
 pub enum Value {
@@ -63,6 +66,10 @@ impl Value {
 
     pub fn instance(i: Instance) -> Value {
         Value::Obj(Rc::new(RefCell::new(Obj::instance(i))))
+    }
+
+    pub fn iterator(i: ValueIterator) -> Value {
+        Value::Obj(Rc::new(RefCell::new(Obj::iterator(i))))
     }
 
     pub fn method(m: Method) -> Value {
@@ -142,6 +149,13 @@ impl Value {
     pub fn is_instance(&self) -> bool {
         match self {
             Value::Obj(obj) 	=> RefCell::borrow(obj).is_instance(),
+            _ 			=> false
+        }
+    }
+
+    pub fn is_iterator(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_iterator(),
             _ 			=> false
         }
     }
@@ -390,6 +404,28 @@ impl Value {
         match self {
             Value::Obj(obj)	=> {
                 RefMut::map(obj.borrow_mut(), |o| o.as_instance_mut())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_iterator(&self) -> Ref<'_, ValueIterator> {
+        match self {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_iterator())
+            }
+            _			=> {
+                panic!("{} is not an object", self)
+            }
+        }
+    }
+    
+    pub fn as_iterator_mut(&self) -> RefMut<'_, ValueIterator> {
+        match self {
+            Value::Obj(obj)	=> {
+                RefMut::map(obj.borrow_mut(), |o| o.as_iterator_mut())
             }
             _			=> {
                 panic!("{} is not an object", self)

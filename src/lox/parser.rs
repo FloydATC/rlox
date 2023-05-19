@@ -592,19 +592,19 @@ impl<I: Tokenize> Parser<I> {
 
 
     fn for_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        // for..
+        self.begin_scope();
         if input.advance_on(TokenKind::LeftParen) {
             self.for_statement_cstyle(input, output)?;
         } else {
-            c_error!(format!("'{}'-loop syntax error", KEYWORD_FOR))
+            self.for_in_statement(input, output)?;
         }
+        self.end_scope(output);
         Ok(())
     }
 
 
     // C-style loop: for (initializer; condition; increment) {}
     fn for_statement_cstyle(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        self.begin_scope();
 
         // initializer (if any)
         if !input.advance_on(TokenKind::Semicolon) { 
@@ -642,9 +642,100 @@ impl<I: Tokenize> Parser<I> {
 
         self.end_loop(output);
         output.compiler.patch_jmp(end_jmp);
-        self.end_scope(output);
         Ok(())
     }
+
+
+    // Iterator-style loop: for identifier in iterator {}
+    fn for_in_statement(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+
+        // Single identifier or an anonymous array of identifiers, with or without a preceding KEYWORD_VAR
+        // This will be the loop variable so we need the opcodeset and the name_id
+        let identifier = self.identifier(input, output)?;
+        let (_op_read, op_write, name_id) = self.variable_opcodes(&identifier, output)?;
+
+        self.consume(TokenKind::In, format!("Expected keyword '{}' after identifier", KEYWORD_IN).as_str(), input, output)?;
+
+        // We need to reserve three slots on the stack
+        // Their names are for our convenience and they are invalid so the user can not mess with them
+        self.make_internal_variable("__iter__", output);
+        self.make_internal_variable("__iter:continue__", output);
+        self.make_internal_variable("__iter:last__", output);
+
+        // Expression or list of expressions to iterate over, place on the stack
+        if input.advance_on(TokenKind::LeftParen) {
+            let num_elements = self.expressions_until(TokenKind::RightParen, input, output)?;
+            self.consume(TokenKind::RightParen, "Expected ')' after expression list", input, output)?;
+            output.compiler.emit_op_variant(&OpCodeSet::defarray(), num_elements);
+        } else {
+            self.expression(input, output)?;
+        }
+
+        // Turn the topmost value on the stack into an iterator, then store in a reserved slot
+        output.compiler.emit_op(&OpCode::MakeIter);
+
+        self.begin_loop(output);
+
+        // Fetch next value from iterator on the stack. This uses the reserved slots.
+        output.compiler.emit_op(&OpCode::ReadIter); // poke continue=true/false, poke last value, call method if ValueIterator::Instance
+        output.compiler.emit_op(&OpCode::NextIter); // copy value back to iterator (no effect unless iterating over an instance)
+
+        // Terminate loop if __iter:continue__ is false
+        self.get_internal_variable("__iter:continue__", output);
+        let end_jmp = output.compiler.emit_jmp(&OpCode::JmpFalseP);
+
+        // Copy __iter:last__ to the loop variable
+        self.get_internal_variable("__iter:last__", output);
+        output.compiler.emit_op_variant(&op_write, name_id as u64);
+        output.compiler.emit_op(&OpCode::Pop);
+
+        // Loop body
+        self.statement(input, output)?;
+
+        // Mark the end of the loop
+        self.end_loop(output);
+
+        // We are done
+        output.compiler.patch_jmp(end_jmp);
+
+        // A neat side-effect of registering our three stack slots as local variables;
+        // they get automatically cleaned up for us when the scope ends, 
+        // along with the loop variable if that too was declared locally.
+        trace!("compiled FOR..IN loop, locals={:#?}", output.locals);
+        Ok(())
+    }
+
+
+    // Used by FOR..IN to reserve stack slots for iterator use
+    fn make_internal_variable(&mut self, name: &str, output: &mut ParserOutput) {
+        output.locals.declare_local(name, self.scopes.len());
+        output.locals.last_local().unwrap().define();        
+        output.compiler.emit_op(&OpCode::Null);
+    }
+
+
+    // Used by FOR..IN to get the value of a stack slot reserved for iterator use
+    fn get_internal_variable(&mut self, name: &str, output: &mut ParserOutput) {
+        let id = output.locals.resolve_local(name).unwrap();
+        output.compiler.emit_op_variant(&OpCodeSet::getlocal(), id as u64);
+    }
+
+
+    // Used by FOR..IN to declare a local uninitialized variable if needed
+    fn identifier(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<Token, CompileError> {
+        if input.advance_on(TokenKind::Var) {
+            // New identifier
+            let name_id = self.parse_variable("Expected variable name", input, output)?;
+            output.compiler.emit_op(&OpCode::Null);
+            self.define_variable(name_id, output);
+        } else {
+            // Existing identifier
+            // We will look up the proper opcode and id using input.previous() so there's nothing to do here            
+            self.consume(TokenKind::Identifier, format!("Expected '(', '{}' or identifier after '{}'", KEYWORD_VAR, KEYWORD_FOR).as_str(), input, output)?;
+        }
+        return Ok(input.previous().clone());
+    }
+
 
     // ======== Loop break/continue handling ========
 
