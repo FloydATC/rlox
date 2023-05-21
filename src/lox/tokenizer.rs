@@ -4,8 +4,17 @@ mod test;
 
 
 use crate::lox::{Token, TokenKind};
-use super::scanner::Scan;
+use super::Scan;
+use super::Scanner;
+use super::Scanners;
 use super::keyword::*;
+
+
+#[derive(PartialEq)]
+enum IncludeTimes {
+    Once,
+    Any,
+}
 
 
 pub trait Tokenize {
@@ -20,32 +29,41 @@ pub trait Tokenize {
 
 // ======== Layout ========
 #[allow(dead_code)]
-pub struct Tokenizer<T> {
-    scanner: Option<T>,
+pub struct Tokenizer<'a> {
+    scanners: Scanners<'a>,
     current: Option<Token>,
     previous: Option<Token>,
+    library: String,
+    included: Vec<String>,
 }
 
 
 // ======== Public interface ========
 #[allow(dead_code)]
-impl<S: Scan> Tokenizer<S> {
+impl<'a> Tokenizer<'a> {
+
+    pub fn new(scanner: impl Scan + 'a) -> Tokenizer<'a> {
+        return Tokenizer::new_with_library(scanner, "lib/");
+    }
+
 
     // Construct a Tokenizer that uses Scanner for input
-    pub fn new(scanner: S) -> Tokenizer<S> {
+    pub fn new_with_library(scanner: impl Scan + 'a, library: &str) -> Tokenizer<'a> {
         let mut tokenizer = Tokenizer {
-            scanner: 	Some(scanner),
+            scanners: 	Scanners::new(scanner),
             current: 	None,
             previous:	None,
+            library: String::from(library),
+            included: vec![],
         };
         tokenizer.advance();
         return tokenizer;
     }
-    
+
 }
 
 
-impl<S: Scan> Tokenize for Tokenizer<S> {
+impl<'a> Tokenize for Tokenizer<'a> {
 
     // Return a reference to current token
     fn current(&self) -> &Token {
@@ -74,6 +92,15 @@ impl<S: Scan> Tokenize for Tokenizer<S> {
         self.previous = self.current.take();
 
         self.skip_whitespace();
+
+        // Process directives, if any
+        while self.scanner().current() == '#' { 
+            if let Err(msg) = self.directive() {
+                self.current = Some(Token::new_at(TokenKind::Error, msg.as_str(), self.scanner().at()));
+                return;
+            }
+            self.skip_whitespace();
+        }
 
         let token;
         if self.scanner().eof() {
@@ -108,9 +135,9 @@ impl<S: Scan> Tokenize for Tokenizer<S> {
 
 
 // ======== Private methods ========
-impl<S: Scan> Tokenizer<S> {
-    fn scanner(&mut self) -> &mut S {
-        return self.scanner.as_mut().unwrap();
+impl<'a> Tokenizer<'a> {
+    fn scanner(&mut self) -> &mut dyn Scan {
+        return &mut self.scanners;
     }
 
     // Use scanner to produce next Token
@@ -121,7 +148,71 @@ impl<S: Scan> Tokenizer<S> {
         // Not an identifier or a number so it must be a symbol
         return self.symbol_token();        
     }
-    
+
+    fn directive(&mut self) -> Result<(), String> {
+        self.scanner().advance(); // Consume '#'
+        let at = self.scanner().at();
+        let mut directive = String::new();
+        while is_alphanum(self.scanner().current()) || self.scanner().matches('_') {
+            directive.push(self.scanner().current());
+            self.scanner().advance();    
+        }
+        match directive.as_str() {
+            "include" => self.include_directive(IncludeTimes::Any, at),
+            "include_once" => self.include_directive(IncludeTimes::Once, at),
+            _ => Err(format!("Bad directive '{}' at {:?}", directive, at)),
+        }
+    }
+
+    fn include_directive(&mut self, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+        match self.scanner().current() {
+            '<' => self.include_library_file(times, at),
+            '"' => self.include_user_file(times, at),
+            _ => Err(format!("Expected '<' or '\"' after #include directive at {:?}", at)),
+        }
+    }
+
+    fn parse_filename(&mut self, until: char) -> String {
+        self.scanner().advance(); // Consume leading terminator
+        let mut filename = String::new();
+        while self.scanner().current() != until && !self.scanner().eof() {
+            filename.push(self.scanner().current());
+            self.scanner().advance();
+        }
+        if !self.scanner().eof() { self.scanner().advance(); } // Consume trailing terminator
+        return filename;
+    }
+
+    fn include_library_file(&mut self, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+        let filename = self.parse_filename('>');
+        let path = format!("{}{}", self.library, filename);
+        self.include_file("library", path, times, at)
+    }
+
+    fn include_user_file(&mut self, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+        let path = self.parse_filename('"');
+        self.include_file("user", path, times, at)
+    }
+
+    fn include_file(&mut self, libtype: &str, path: String, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+        if self.included.contains(&path) && times == IncludeTimes::Once { 
+            // File already included once
+            return Ok(()); 
+        }
+        match std::fs::File::open(&path) {
+            Err(io_error) => {
+                Err(format!("Error including {} file {} at {:?}: {}", libtype, path, at, io_error))
+            },
+            Ok(file) => {
+                let reader = std::io::BufReader::new(file);
+                let scanner = Scanner::new(reader);
+                self.scanners.include(scanner);
+                self.included.push(path);
+                Ok(())
+            }
+        }
+    }
+
     // First character is a-z or A-Z
     fn identifier_token(&mut self) -> Token {
         let at = self.scanner().at();

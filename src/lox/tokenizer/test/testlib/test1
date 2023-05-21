@@ -1,0 +1,3 @@
+// Note: This is a lox source file, not Rust. Do not edit.
+// Used by src/lox/tokenizer/test/directives.rs
+test
