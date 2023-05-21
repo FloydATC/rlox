@@ -3,7 +3,7 @@
 use log::{info};
 
 mod lox;
-use lox::{Builder, VM};
+use lox::{Compiler, VM};
 
 pub enum Mode {
     Repl,
@@ -78,7 +78,7 @@ where
     R: std::io::BufRead + std::io::Read, 
     F: FnOnce(i32),
 {
-    let builder = Builder::new();
+    let builder = Compiler::new();
     match builder.compile(input) {
         Ok(bytecode) => {
             match vm.execute(&bytecode) {

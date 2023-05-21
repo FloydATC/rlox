@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 
-use crate::lox::Value;
+use crate::lox::common::Value;
 
 
 #[derive(Clone)]

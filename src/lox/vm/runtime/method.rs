@@ -1,6 +1,6 @@
 
 
-use crate::lox::Value;
+use crate::lox::common::Value;
 
 // Note: This object represents a Bound Method at runtime
 

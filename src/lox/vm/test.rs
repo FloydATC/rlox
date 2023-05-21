@@ -1,7 +1,7 @@
 
 
 use super::RuntimeError;
-use crate::lox::Builder;
+use crate::lox::Compiler;
 use super::VM;
 
 
@@ -23,7 +23,7 @@ mod while_loops;
 
 
 fn compile_and_execute(code: &str) -> Result<i32, RuntimeError> {
-    let builder = Builder::new();
+    let builder = Compiler::new();
     let reader = std::io::Cursor::new(code);
     match builder.compile(reader) {
         Ok(bytecode) => {
