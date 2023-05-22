@@ -71,6 +71,9 @@ impl CallFrame {
 // Used by the VM when generating a stack trace after a RuntimeError
 impl std::fmt::Debug for CallFrame {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:0x{:08x}", self.closure_ref().name(), self.ip())
+        match self.closure_ref().function_ref().at() {
+            Some(at) => write!(f, "{}:0x{:08x} at {}", self.closure_ref().name(), self.ip(), at),
+            None => write!(f, "{}:0x{:08x}", self.closure_ref().name(), self.ip()),
+        }
     }
 }

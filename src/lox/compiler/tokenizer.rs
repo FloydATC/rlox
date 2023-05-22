@@ -5,7 +5,7 @@ mod test;
 
 use super::{Token, TokenKind};
 use super::{Scan, Scanner, Scanners};
-use crate::lox::common::keyword::*;
+use crate::lox::common::{At, keyword::*};
 
 
 #[derive(PartialEq)]
@@ -149,24 +149,24 @@ impl<'a> Tokenizer<'a> {
 
     fn directive(&mut self) -> Result<(), String> {
         self.scanner().advance(); // Consume '#'
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let mut directive = String::new();
         while is_alphanum(self.scanner().current()) || self.scanner().matches('_') {
             directive.push(self.scanner().current());
             self.scanner().advance();    
         }
         match directive.as_str() {
-            "include" => self.include_directive(IncludeTimes::Any, at),
-            "include_once" => self.include_directive(IncludeTimes::Once, at),
-            _ => Err(format!("Bad directive '{}' at {:?}", directive, at)),
+            "include" => self.include_directive(IncludeTimes::Any, &at),
+            "include_once" => self.include_directive(IncludeTimes::Once, &at),
+            _ => Err(format!("Bad directive '{}' at {:?}", directive, &at)),
         }
     }
 
-    fn include_directive(&mut self, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+    fn include_directive(&mut self, times: IncludeTimes, at: &At) -> Result<(), String> {
         match self.scanner().current() {
             '<' => self.include_library_file(times, at),
             '"' => self.include_user_file(times, at),
-            _ => Err(format!("Expected '<' or '\"' after #include directive at {:?}", at)),
+            _ => Err(format!("Expected '<' or '\"' after #include directive at {}", at)),
         }
     }
 
@@ -181,18 +181,18 @@ impl<'a> Tokenizer<'a> {
         return filename;
     }
 
-    fn include_library_file(&mut self, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+    fn include_library_file(&mut self, times: IncludeTimes, at: &At) -> Result<(), String> {
         let filename = self.parse_filename('>');
         let path = format!("{}{}", self.library, filename);
         self.include_file("library", path, times, at)
     }
 
-    fn include_user_file(&mut self, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+    fn include_user_file(&mut self, times: IncludeTimes, at: &At) -> Result<(), String> {
         let path = self.parse_filename('"');
         self.include_file("user", path, times, at)
     }
 
-    fn include_file(&mut self, libtype: &str, path: String, times: IncludeTimes, at: (usize, usize, usize)) -> Result<(), String> {
+    fn include_file(&mut self, libtype: &str, path: String, times: IncludeTimes, at: &At) -> Result<(), String> {
         if self.included.contains(&path) && times == IncludeTimes::Once { 
             // File already included once
             return Ok(()); 
@@ -203,7 +203,7 @@ impl<'a> Tokenizer<'a> {
             },
             Ok(file) => {
                 let reader = std::io::BufReader::new(file);
-                let scanner = Scanner::new(reader);
+                let scanner = Scanner::new(&path, reader);
                 self.scanners.include(scanner);
                 self.included.push(path);
                 Ok(())
@@ -213,38 +213,38 @@ impl<'a> Tokenizer<'a> {
 
     // First character is a-z or A-Z
     fn identifier_token(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let mut lexeme = String::new();
         while is_alphanum(self.scanner().current()) || self.scanner().matches('_') {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
         match lexeme.as_str() {
-            KEYWORD_BREAK 	=> return Token::new_at(TokenKind::Break, &lexeme, at),
-            KEYWORD_CLASS 	=> return Token::new_at(TokenKind::Class, &lexeme, at),
-            KEYWORD_CONTINUE 	=> return Token::new_at(TokenKind::Continue, &lexeme, at),
-            KEYWORD_DEBUG 	=> return Token::new_at(TokenKind::Debug, &lexeme, at),
-            KEYWORD_ELSE 	=> return Token::new_at(TokenKind::Else, &lexeme, at),
-            KEYWORD_EXIT 	=> return Token::new_at(TokenKind::Exit, &lexeme, at),
-            KEYWORD_FOR 	=> return Token::new_at(TokenKind::For, &lexeme, at),
-            KEYWORD_FUN 	=> return Token::new_at(TokenKind::Fun, &lexeme, at),
-            KEYWORD_FALSE 	=> return Token::new_at(TokenKind::False, &lexeme, at),
-            KEYWORD_IF 	=> return Token::new_at(TokenKind::If, &lexeme, at),
-            KEYWORD_IN 	=> return Token::new_at(TokenKind::In, &lexeme, at),
-            KEYWORD_INF 	=> return Token::new_at(TokenKind::Inf, &lexeme, at),
-            KEYWORD_IS 	=> return Token::new_at(TokenKind::Is, &lexeme, at),
-            KEYWORD_NAN 	=> return Token::new_at(TokenKind::Nan, &lexeme, at),
-            KEYWORD_NOT 	=> return Token::new_at(TokenKind::Not, &lexeme, at),
-            KEYWORD_NULL 	=> return Token::new_at(TokenKind::Null, &lexeme, at),
-            KEYWORD_OF 	=> return Token::new_at(TokenKind::Of, &lexeme, at),
-            KEYWORD_PRINT 	=> return Token::new_at(TokenKind::Print, &lexeme, at),
-            KEYWORD_RETURN 	=> return Token::new_at(TokenKind::Return, &lexeme, at),
-            KEYWORD_SUPER 	=> return Token::new_at(TokenKind::Super, &lexeme, at),
-            KEYWORD_THIS 	=> return Token::new_at(TokenKind::This, &lexeme, at),
-            KEYWORD_TRUE 	=> return Token::new_at(TokenKind::True, &lexeme, at),
-            KEYWORD_VAR 	=> return Token::new_at(TokenKind::Var,	&lexeme, at),
-            KEYWORD_WHILE 	=> return Token::new_at(TokenKind::While, &lexeme, at),
-            _ => return Token::new_at(TokenKind::Identifier, &lexeme, at),
+            KEYWORD_BREAK 	=> return Token::new_at(TokenKind::Break, &lexeme, &at),
+            KEYWORD_CLASS 	=> return Token::new_at(TokenKind::Class, &lexeme, &at),
+            KEYWORD_CONTINUE 	=> return Token::new_at(TokenKind::Continue, &lexeme, &at),
+            KEYWORD_DEBUG 	=> return Token::new_at(TokenKind::Debug, &lexeme, &at),
+            KEYWORD_ELSE 	=> return Token::new_at(TokenKind::Else, &lexeme, &at),
+            KEYWORD_EXIT 	=> return Token::new_at(TokenKind::Exit, &lexeme, &at),
+            KEYWORD_FOR 	=> return Token::new_at(TokenKind::For, &lexeme, &at),
+            KEYWORD_FUN 	=> return Token::new_at(TokenKind::Fun, &lexeme, &at),
+            KEYWORD_FALSE 	=> return Token::new_at(TokenKind::False, &lexeme, &at),
+            KEYWORD_IF 	=> return Token::new_at(TokenKind::If, &lexeme, &at),
+            KEYWORD_IN 	=> return Token::new_at(TokenKind::In, &lexeme, &at),
+            KEYWORD_INF 	=> return Token::new_at(TokenKind::Inf, &lexeme, &at),
+            KEYWORD_IS 	=> return Token::new_at(TokenKind::Is, &lexeme, &at),
+            KEYWORD_NAN 	=> return Token::new_at(TokenKind::Nan, &lexeme, &at),
+            KEYWORD_NOT 	=> return Token::new_at(TokenKind::Not, &lexeme, &at),
+            KEYWORD_NULL 	=> return Token::new_at(TokenKind::Null, &lexeme, &at),
+            KEYWORD_OF 	=> return Token::new_at(TokenKind::Of, &lexeme, &at),
+            KEYWORD_PRINT 	=> return Token::new_at(TokenKind::Print, &lexeme, &at),
+            KEYWORD_RETURN 	=> return Token::new_at(TokenKind::Return, &lexeme, &at),
+            KEYWORD_SUPER 	=> return Token::new_at(TokenKind::Super, &lexeme, &at),
+            KEYWORD_THIS 	=> return Token::new_at(TokenKind::This, &lexeme, &at),
+            KEYWORD_TRUE 	=> return Token::new_at(TokenKind::True, &lexeme, &at),
+            KEYWORD_VAR 	=> return Token::new_at(TokenKind::Var,	&lexeme, &at),
+            KEYWORD_WHILE 	=> return Token::new_at(TokenKind::While, &lexeme, &at),
+            _ => return Token::new_at(TokenKind::Identifier, &lexeme, &at),
         }
     }
     
@@ -271,29 +271,29 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn number_base2(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let mut lexeme = self.number_prefix("0b");
         while is_base2digit(self.scanner().current()) {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
-        return Token::new_at(TokenKind::Base2Number, &lexeme, at);
+        return Token::new_at(TokenKind::Base2Number, &lexeme, &at);
     }
 
 
     fn number_base8(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let mut lexeme = self.number_prefix("0o");
         while is_base8digit(self.scanner().current()) {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
-        return Token::new_at(TokenKind::Base8Number, &lexeme, at);
+        return Token::new_at(TokenKind::Base8Number, &lexeme, &at);
     }
 
 
     fn number_base10(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let mut lexeme = String::new();
         let mut dots = 0;
         // Allow decimal point if immediately followed by another digit...
@@ -305,18 +305,18 @@ impl<'a> Tokenizer<'a> {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
-        return Token::new_at(TokenKind::Base10Number, &lexeme, at);
+        return Token::new_at(TokenKind::Base10Number, &lexeme, &at);
     }
 
 
     fn number_base16(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let mut lexeme = self.number_prefix("0x");
         while is_base16digit(self.scanner().current()) {
             lexeme.push(self.scanner().current());
             self.scanner().advance();    
         }
-        return Token::new_at(TokenKind::Base16Number, &lexeme, at);
+        return Token::new_at(TokenKind::Base16Number, &lexeme, &at);
     }
 
 
@@ -338,13 +338,13 @@ impl<'a> Tokenizer<'a> {
 
     // Single or double quoted string
     fn string_token(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         let quote = self.scanner().current();
         let mut string = String::new();
         self.scanner().advance(); // Consume leading quote
         while self.scanner().current() != quote {
             if self.scanner().eof() {
-                return Token::new_at(TokenKind::Error, "Unterminated string", at);
+                return Token::new_at(TokenKind::Error, "Unterminated string", &at);
             }
             let c = self.scanner().current();
             if c == '\\' {
@@ -355,7 +355,7 @@ impl<'a> Tokenizer<'a> {
                         string = string + unescaped.as_str();
                     }
                     Err(msg) => {
-                        return Token::new_at(TokenKind::Error, msg.as_str(), at);
+                        return Token::new_at(TokenKind::Error, msg.as_str(), &at);
                     }
                 }
             } else {
@@ -364,74 +364,74 @@ impl<'a> Tokenizer<'a> {
             }
         }
         self.scanner().advance(); // Consume trailing quote
-        return Token::new_at(TokenKind::String, string.as_str(), at);
+        return Token::new_at(TokenKind::String, string.as_str(), &at);
     }
 
     // First character is not alphanumerical so it must be a symbol
     fn symbol_token(&mut self) -> Token {
-        let at = self.scanner().at();
+        let at = self.scanner().at().clone();
         match self.scanner().current() {
-            ',' => return self.make_token_at(",", TokenKind::Comma, at),
-            '.' => return self.make_token_at(".", TokenKind::Dot, at),
-            '+' => return self.make_token_at("+", TokenKind::Plus, at),
-            '-' => return self.make_token_at("-", TokenKind::Minus, at),
-            '*' => return self.make_token_at("*", TokenKind::Star, at),
-            '/' => return self.make_token_at("/", TokenKind::Slash, at),
-            '%' => return self.make_token_at("%", TokenKind::Percent, at),
-            ';' => return self.make_token_at(";", TokenKind::Semicolon, at),
-            '[' => return self.make_token_at("[", TokenKind::LeftBracket, at),
-            '{' => return self.make_token_at("{", TokenKind::LeftCurly, at),
-            '(' => return self.make_token_at("(", TokenKind::LeftParen, at),
-            ']' => return self.make_token_at("]", TokenKind::RightBracket, at),
-            '}' => return self.make_token_at("}", TokenKind::RightCurly, at),
-            ')' => return self.make_token_at(")", TokenKind::RightParen, at),
+            ',' => return self.make_token_at(",", TokenKind::Comma, &at),
+            '.' => return self.make_token_at(".", TokenKind::Dot, &at),
+            '+' => return self.make_token_at("+", TokenKind::Plus, &at),
+            '-' => return self.make_token_at("-", TokenKind::Minus, &at),
+            '*' => return self.make_token_at("*", TokenKind::Star, &at),
+            '/' => return self.make_token_at("/", TokenKind::Slash, &at),
+            '%' => return self.make_token_at("%", TokenKind::Percent, &at),
+            ';' => return self.make_token_at(";", TokenKind::Semicolon, &at),
+            '[' => return self.make_token_at("[", TokenKind::LeftBracket, &at),
+            '{' => return self.make_token_at("{", TokenKind::LeftCurly, &at),
+            '(' => return self.make_token_at("(", TokenKind::LeftParen, &at),
+            ']' => return self.make_token_at("]", TokenKind::RightBracket, &at),
+            '}' => return self.make_token_at("}", TokenKind::RightCurly, &at),
+            ')' => return self.make_token_at(")", TokenKind::RightParen, &at),
             '&' => {
                 match self.scanner().peek() {
-                    '&' => return self.make_token_at("&&", TokenKind::AmpAmp, at),
-                    _ => return self.make_token_at("&", TokenKind::Amp, at),
+                    '&' => return self.make_token_at("&&", TokenKind::AmpAmp, &at),
+                    _ => return self.make_token_at("&", TokenKind::Amp, &at),
                 }
             }
             '|' => {
                 match self.scanner().peek() {
-                    '|' => return self.make_token_at("||", TokenKind::PipePipe, at),
-                    _ => return self.make_token_at("|", TokenKind::Pipe, at),
+                    '|' => return self.make_token_at("||", TokenKind::PipePipe, &at),
+                    _ => return self.make_token_at("|", TokenKind::Pipe, &at),
                 }
             }
             '>' => {
                 match self.scanner().peek() {
-                    '=' => return self.make_token_at(">=", TokenKind::GreaterEqual, at),
-                    _ => return self.make_token_at(">", TokenKind::Greater, at),
+                    '=' => return self.make_token_at(">=", TokenKind::GreaterEqual, &at),
+                    _ => return self.make_token_at(">", TokenKind::Greater, &at),
                 }
             }
             '<' => {
                 match self.scanner().peek() {
-                    '=' => return self.make_token_at("<=", TokenKind::LessEqual, at),
-                    _ => return self.make_token_at("<", TokenKind::Less, at),
+                    '=' => return self.make_token_at("<=", TokenKind::LessEqual, &at),
+                    _ => return self.make_token_at("<", TokenKind::Less, &at),
                 }
             }
             '!' => {
                 match self.scanner().peek() {
-                    '=' => return self.make_token_at("!=", TokenKind::BangEqual, at),
-                    _ => return self.make_token_at("!", TokenKind::Bang, at),
+                    '=' => return self.make_token_at("!=", TokenKind::BangEqual, &at),
+                    _ => return self.make_token_at("!", TokenKind::Bang, &at),
                 }
             }
             '=' => {
                 match self.scanner().peek() {
-                    '=' => return self.make_token_at("==", TokenKind::EqualEqual, at),
-                    _ => return self.make_token_at("=", TokenKind::Equal, at),
+                    '=' => return self.make_token_at("==", TokenKind::EqualEqual, &at),
+                    _ => return self.make_token_at("=", TokenKind::Equal, &at),
                 }
             }
             '"' | '\'' => return self.string_token(),
             _ => {
                 // Bad/unknown symbol encountered, return an Error token
                 let lexeme = self.scanner().current().to_string();
-                self.make_token_at(&lexeme, TokenKind::Error, at)
+                self.make_token_at(&lexeme, TokenKind::Error, &at)
             }
         }
     }
     
     // Make a token and scan past the lexeme
-    fn make_token_at(&mut self, lexeme: &str, kind: TokenKind, at: (usize, usize, usize)) -> Token {
+    fn make_token_at(&mut self, lexeme: &str, kind: TokenKind, at: &At) -> Token {
         for _c in lexeme.chars() { self.scanner().advance(); }
         return Token::new_at(kind, lexeme, at);
     }

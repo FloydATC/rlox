@@ -1,6 +1,6 @@
 
 
-use crate::lox::common::{ByteCode, Function, FunctionKind, Globals};
+use crate::lox::common::{At, ByteCode, Function, FunctionKind, Globals};
 use crate::lox::compiler::{ChunkWriter, CompileError, Locals, Scanner, Tokenizer};
 
 
@@ -26,10 +26,10 @@ fn test(code: &str) -> Result<ByteCode, CompileError> {
     
     // This code duplicates a lot of what the Compiler does. Hmm.
     let reader = std::io::Cursor::new(code);
-    let scanner = Scanner::new(reader);
+    let scanner = Scanner::new("test", reader);
     let mut input = Tokenizer::new(scanner);
 
-    let function = Function::new("__test__", FunctionKind::Script);
+    let function = Function::new("__test__", FunctionKind::Script, None);
     let mut writer = ChunkWriter::new(function);
     let mut globals = Globals::new();
 
@@ -101,8 +101,8 @@ fn parser_global_var_duplicate() {
     assert_eq!(error.get_message(), "Global 'a' already declared");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 12);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 12);
 }
 
 #[test]
@@ -124,8 +124,8 @@ fn parser_global_function_duplicate() {
     assert_eq!(error.get_message(), "Global 'f' already declared");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 16);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 16);
 }
 
 #[test]
@@ -147,8 +147,8 @@ fn parser_global_class_malformed_1() {
     assert_eq!(error.get_message(), "Expected '{' after class name, got '('");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 8);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 8);
 }
 
 #[test]
@@ -160,8 +160,8 @@ fn parser_global_class_malformed_2() {
     assert_eq!(error.get_message(), "Expected '}' after class body, got '\0'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 10);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 10);
 }
 
 #[test]
@@ -173,8 +173,8 @@ fn parser_global_class_malformed_3() {
     assert_eq!(error.get_message(), "Expected class name, got '{'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 7);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 7);
 }
 
 #[test]
@@ -186,8 +186,8 @@ fn parser_global_class_duplicate() {
     assert_eq!(error.get_message(), "Global 'c' already declared");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 18);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 18);
 }
 
 #[test]
@@ -199,8 +199,8 @@ fn parser_break_not_in_loop() {
     assert_eq!(error.get_message(), "Keyword 'break' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 
 #[test]
@@ -212,8 +212,8 @@ fn parser_continue_not_in_loop() {
     assert_eq!(error.get_message(), "Keyword 'continue' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 
 #[test]
@@ -241,8 +241,8 @@ fn parser_function_256_params_bad() {
     assert_eq!(error.get_message(), "Can not have more than 255 parameters");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 2047);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 2047);
 }
 
 #[test]
@@ -274,8 +274,8 @@ fn parser_duplicate_locals() {
     assert_eq!(error.get_message(), "Variable named 'v' already declared in this scope");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 22);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 22);
 }
 
 #[test]
@@ -287,8 +287,8 @@ fn parser_duplicate_arg_bad() {
     assert_eq!(error.get_message(), "Variable named 'v' already declared in this scope");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 10);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 10);
 }
 
 #[test]
@@ -300,8 +300,8 @@ fn parser_same_arg_and_local_bad() {
     assert_eq!(error.get_message(), "Variable named 'v' already declared in this scope");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 16);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 16);
 }
 
 #[test]
@@ -313,8 +313,8 @@ fn parser_undeclared_local_bad() {
     assert_eq!(error.get_message(), "Undeclared variable 'v'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 18);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 18);
 }
 
 #[test]
@@ -336,8 +336,8 @@ fn parser_self_initialize_local_bad() {
     assert_eq!(error.get_message(), "Can not read local variable in its own initializer");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 17);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 17);
 }
 
 #[test]
@@ -349,8 +349,8 @@ fn parser_initialize_local_using_same_global_impossible() {
     assert_eq!(error.get_message(), "Can not read local variable in its own initializer");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 24);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 24);
 }
 
 #[test]
@@ -382,8 +382,8 @@ fn parser_class_inherit_self_bad() {
     assert_eq!(error.get_message(), "Class 'c2' can not inherit from itself");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 25);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 25);
 }
 
 #[test]
@@ -415,8 +415,8 @@ fn parser_super_without_superclass() {
     assert_eq!(error.get_message(), "Can not use 'super' in a class with no superclass");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 25);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 25);
 }
 
 #[test]
@@ -438,7 +438,15 @@ fn parser_super_is_accessor_only() {
     assert_eq!(error.get_message(), "Expected '.' after 'super', got ';'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 48);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 48);
+}
+
+
+#[test]
+fn function_declared_at() {
+    let at = At::new("filename");
+    let function = Function::new("__test__", FunctionKind::Script, Some(at.clone()));
+    assert_eq!(&Some(at), function.at());
 }
 

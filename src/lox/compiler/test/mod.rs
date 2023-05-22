@@ -10,10 +10,7 @@ use super::ChunkWriter;
 
 #[test]
 fn chunk_writer_new() {
-    let function = Function::new("__test__", FunctionKind::Script);
+    let function = Function::new("__test__", FunctionKind::Script, None);
     let _writer = ChunkWriter::new(function);
 }
-
-
-
 

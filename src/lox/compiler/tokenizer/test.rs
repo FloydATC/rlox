@@ -1,6 +1,6 @@
 
 
-use crate::lox::compiler::*;
+use crate::lox::compiler::{Scanner, Tokenizer, Tokenize, TokenKind};
 //use crate::lox::TokenKind;
 //use super::{Tokenizer, Tokenize};
 
@@ -17,7 +17,7 @@ mod directives;
 fn tokenizer_emptystring() {
     let code = "";
     let reader = std::io::Cursor::new(code);    
-    let scanner = Scanner::new(reader);
+    let scanner = Scanner::new("test", reader);
     let tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::EOF);
     assert_eq!(tokenizer.current().lexeme(), "\0");
@@ -27,7 +27,7 @@ fn tokenizer_emptystring() {
 fn tokenizer_symbols() {
     let code = "+-*/";
     let reader = std::io::Cursor::new(code);    
-    let scanner = Scanner::new(reader);
+    let scanner = Scanner::new("test", reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -53,7 +53,7 @@ fn tokenizer_symbols() {
 fn tokenizer_symbols_and_newlines() {
     let code = "+\n-\n*\n/\n";
     let reader = std::io::Cursor::new(code);    
-    let scanner = Scanner::new(reader);
+    let scanner = Scanner::new("test", reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Plus);
     assert_eq!(tokenizer.current().lexeme(), "+");
@@ -75,7 +75,7 @@ fn tokenizer_symbols_and_newlines() {
 fn tokenizer_add() {
     let code = "2+3";
     let reader = std::io::Cursor::new(code);    
-    let scanner = Scanner::new(reader);
+    let scanner = Scanner::new("test", reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::Base10Number);
     assert_eq!(tokenizer.current().lexeme(), "2");
@@ -94,7 +94,7 @@ fn tokenizer_add() {
 fn tokenizer_keyword_is() {
     let code = "true is false";
     let reader = std::io::Cursor::new(code);    
-    let scanner = Scanner::new(reader);
+    let scanner = Scanner::new("test", reader);
     let mut tokenizer = Tokenizer::new(scanner);
     assert_eq!(tokenizer.current().kind(), TokenKind::True);
     assert_eq!(tokenizer.current().lexeme(), "true");

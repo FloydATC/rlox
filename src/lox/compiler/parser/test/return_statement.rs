@@ -12,8 +12,8 @@ fn parser_return_at_toplevel() {
     assert_eq!(error.get_message(), "Can not 'return' from top level code");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 
 #[test]
@@ -45,8 +45,8 @@ fn parser_return_super_from_function() {
     assert_eq!(error.get_message(), "Can not use 'super' outside of a class");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 19);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 19);
 }
 
 #[test]
@@ -58,8 +58,8 @@ fn parser_return_this_from_function() {
     assert_eq!(error.get_message(), "Can not use 'this' outside of a class");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 19);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 19);
 }
 
 #[test]
@@ -81,8 +81,8 @@ fn parser_return_value_from_initializer_bad() {
     assert_eq!(error.get_message(), "Can not 'return' a value from initializer");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 20);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 20);
 }
 
 #[test]

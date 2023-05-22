@@ -52,8 +52,8 @@ fn parser_if_statement_missing_paren_1() {
     assert_eq!(error.get_message(), "Expected '(' after 'if', got 'true'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 4);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 4);
 }
 
 #[test]
@@ -65,8 +65,8 @@ fn parser_if_statement_missing_paren_2() {
     assert_eq!(error.get_message(), "Expected ')' after 'if'-condition, got '{'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 10);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 10);
 }
 
 #[test]
@@ -78,8 +78,8 @@ fn parser_if_statement_missing_expression() {
     assert_eq!(error.get_message(), "Expected conditional expression, got ')'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 5);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 5);
 }
 
 #[test]
@@ -91,8 +91,8 @@ fn parser_if_statement_naked_expression() {
     assert_eq!(error.get_message(), "Expected '(' after 'if', got 'true'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 4);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 4);
 }
 
 #[test]
@@ -104,8 +104,8 @@ fn parser_if_statement_missing_then() {
     assert_eq!(error.get_message(), "Expected expression");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 10);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 10);
 }
 
 #[test]
@@ -117,8 +117,8 @@ fn parser_if_statement_open_then() {
     assert_eq!(error.get_message(), "Expected '}' after block, got '\0'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 12);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 12);
 }
 
 #[test]
@@ -130,8 +130,8 @@ fn parser_if_statement_with_else_nothing() {
     assert_eq!(error.get_message(), "Expected expression");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 18);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 18);
 }
 
 #[test]
@@ -143,8 +143,8 @@ fn parser_if_statement_with_open_else() {
     assert_eq!(error.get_message(), "Expected '}' after block, got '\0'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 20);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 20);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn parser_else_not_after_if() {
     assert_eq!(error.get_message(), "Keyword 'else' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 

@@ -24,12 +24,11 @@ impl Token {
     }
     
     
-    pub fn new_at(kind: TokenKind, lexeme: &str, at: (usize, usize, usize)) -> Token {
-        let at = At::new(at);
+    pub fn new_at(kind: TokenKind, lexeme: &str, at: &At) -> Token {
         Token {
             kind,
             lexeme:	lexeme.to_string(),
-            at:		Some(at),
+            at:		Some(at.clone()),
         }
     }
     

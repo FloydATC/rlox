@@ -233,8 +233,8 @@ fn parser_naked_break() {
     assert_eq!(error.get_message(), "Keyword 'break' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 
 #[test]
@@ -247,8 +247,8 @@ fn parser_naked_continue() {
     assert_eq!(error.get_message(), "Keyword 'continue' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 
 #[test]

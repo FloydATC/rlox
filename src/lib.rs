@@ -54,18 +54,19 @@ pub fn run(config: Config) -> Result<(), std::io::Error> {
                 let line = read_stdin()?;
                 if line == "exit" { break; }
                 let reader = std::io::Cursor::new(&line);
-                compile_and_execute(reader, &mut vm, |rc| info!("rc={}", rc));
+                compile_and_execute("INPUT", reader, &mut vm, |rc| info!("rc={}", rc));
             }
         }
         Mode::Line => {
             let line = config.line.unwrap();
             let reader = std::io::Cursor::new(&line);
-            compile_and_execute(reader, &mut vm, |rc| std::process::exit(rc));
+            compile_and_execute("INPUT", reader, &mut vm, |rc| std::process::exit(rc));
         }
         Mode::File => {
-            let file = std::fs::File::open(config.filename.unwrap())?;
+            let filename = config.filename.unwrap();
+            let file = std::fs::File::open(&filename)?;
             let reader = std::io::BufReader::new(file);
-            compile_and_execute(reader, &mut vm, |rc| std::process::exit(rc));
+            compile_and_execute(&filename, reader, &mut vm, |rc| std::process::exit(rc));
         }
     }
     
@@ -73,13 +74,13 @@ pub fn run(config: Config) -> Result<(), std::io::Error> {
 }
 
 
-fn compile_and_execute<R, F>(input: R, vm: &mut lox::VM, action: F) 
+fn compile_and_execute<R, F>(filename: &str, input: R, vm: &mut lox::VM, action: F) 
 where
     R: std::io::BufRead + std::io::Read, 
     F: FnOnce(i32),
 {
     let builder = Compiler::new();
-    match builder.compile(input) {
+    match builder.compile(filename, input) {
         Ok(bytecode) => {
             match vm.execute(&bytecode) {
                 Ok(rc) => action(rc),

@@ -25,7 +25,7 @@ mod while_loops;
 fn compile_and_execute(code: &str) -> Result<i32, RuntimeError> {
     let builder = Compiler::new();
     let reader = std::io::Cursor::new(code);
-    match builder.compile(reader) {
+    match builder.compile("test", reader) {
         Ok(bytecode) => {
             match VM::new().execute(&bytecode) {
                 Ok(rc) => {

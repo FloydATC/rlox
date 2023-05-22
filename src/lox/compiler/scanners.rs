@@ -4,6 +4,12 @@
 mod test;
 
 
+// Container for multiple Scanner instances, used by Tokenizer when including files
+
+
+use crate::lox::common::At;
+
+
 use super::Scan;
 
 
@@ -48,7 +54,7 @@ impl<'a> Scan for Scanners<'a> {
         }
     }
 
-    fn at(&self) -> (usize, usize, usize) {
+    fn at(&self) -> &At {
         return self.current_scanner().at();
     }
 

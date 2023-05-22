@@ -68,8 +68,8 @@ fn parser_cannot_assign_to_literal_string() {
     assert_eq!(error.get_message(), "Invalid assignment target");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 3);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 3);
 }
 
 #[test]
@@ -82,8 +82,8 @@ fn parser_unterminated_emptystring() {
     assert_eq!(error.get_message(), "Expected expression");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 3);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 3);
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn parser_unterminated_anystring() {
     assert_eq!(error.get_message(), "Expected expression");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 6);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 6);
 }
 

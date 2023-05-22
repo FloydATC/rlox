@@ -360,7 +360,8 @@ impl<I: Tokenize> Parser<I> {
         output.locals.begin_function(kind.has_receiver());
     
         // Create a new compilation unit
-        let mut function = Function::new(name, kind);    
+        let at = input.previous().get_at().cloned();
+        let mut function = Function::new(name, kind, at);    
         let mut writer = ChunkWriter::new(function);        
         
         let mut inner_output = ParserOutput {

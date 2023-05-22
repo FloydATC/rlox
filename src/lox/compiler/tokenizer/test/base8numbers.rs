@@ -8,7 +8,7 @@ fn tokenizer_base8number_digits() {
         let want = format!("0o{}", digit);
         println!("digit={} code={} want={}", digit, code, want);
         let reader = std::io::Cursor::new(code);    
-        let scanner = Scanner::new(reader);
+        let scanner = Scanner::new("test", reader);
         let tokenizer = Tokenizer::new(scanner);
         assert_eq!(tokenizer.current().kind(), TokenKind::Base8Number);
         assert_eq!(tokenizer.current().lexeme(), want);
@@ -22,7 +22,7 @@ fn tokenizer_base8number_numbers() {
         let want = format!("0o{:04o}", number);
         println!("number={} code={} want={}", number, code, want);
         let reader = std::io::Cursor::new(code);    
-        let scanner = Scanner::new(reader);
+        let scanner = Scanner::new("test", reader);
         let tokenizer = Tokenizer::new(scanner);
         assert_eq!(tokenizer.current().kind(), TokenKind::Base8Number);
         assert_eq!(tokenizer.current().lexeme(), want);
@@ -36,7 +36,7 @@ fn tokenizer_base2number_numbers_ignore_decimals() {
         let want = format!("0o{:04o}", number);
         println!("number={} code={} want={}", number, code, want);
         let reader = std::io::Cursor::new(code);    
-        let scanner = Scanner::new(reader);
+        let scanner = Scanner::new("test", reader);
         let tokenizer = Tokenizer::new(scanner);
         assert_eq!(tokenizer.current().kind(), TokenKind::Base8Number);
         assert_eq!(tokenizer.current().lexeme(), want);
@@ -50,7 +50,7 @@ fn tokenizer_base2number_numbers_cutoff_nonoctal() {
         let want = format!("0o{:04o}", number);
         println!("number={} code={} want={}", number, code, want);
         let reader = std::io::Cursor::new(code);    
-        let scanner = Scanner::new(reader);
+        let scanner = Scanner::new("test", reader);
         let tokenizer = Tokenizer::new(scanner);
         assert_eq!(tokenizer.current().kind(), TokenKind::Base8Number);
         assert_eq!(tokenizer.current().lexeme(), want);

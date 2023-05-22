@@ -35,8 +35,8 @@ fn parser_while_missing_left_paren() {
     assert_eq!(error.get_message(), "Expected '(' after 'while', got 'true'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 7);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 7);
 }
 
 #[test]
@@ -49,8 +49,8 @@ fn parser_while_naked_expression() {
     assert_eq!(error.get_message(), "Expected '(' after 'while', got 'true'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 7);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 7);
 }
 
 #[test]
@@ -63,8 +63,8 @@ fn parser_while_missing_right_paren() {
     assert_eq!(error.get_message(), "Expected ')' after 'while'-condition, got '{'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 13);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 13);
 }
 
 #[test]
@@ -77,8 +77,8 @@ fn parser_while_missing_condition() {
     assert_eq!(error.get_message(), "Expected conditional expression, got ')'");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 8);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 8);
 }
 
 #[test]
@@ -91,8 +91,8 @@ fn parser_while_missing_stmt() {
     assert_eq!(error.get_message(), "Expected expression");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 13);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 13);
 }
 
 #[test]
@@ -105,8 +105,8 @@ fn parser_while_else() {
     assert_eq!(error.get_message(), "Keyword 'else' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 17);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 17);
 }
 
 #[test]
@@ -130,8 +130,8 @@ fn parser_naked_break() {
     assert_eq!(error.get_message(), "Keyword 'break' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 
 #[test]
@@ -144,7 +144,7 @@ fn parser_naked_continue() {
     assert_eq!(error.get_message(), "Keyword 'continue' is misplaced");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 1);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 1);
 }
 

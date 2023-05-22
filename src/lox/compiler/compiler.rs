@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use log::{debug};
 
 
-use crate::lox::common::{ByteCode, Function, FunctionKind, Globals};
+use crate::lox::{common::{ByteCode, Function, FunctionKind, Globals}, compiler::Tokenize};
 
 
 use super::{ChunkWriter, CompileError, Locals, Parser, ParserOutput, Scanner, Tokenizer};
@@ -23,12 +23,13 @@ impl<R: std::io::BufRead+std::io::Read> Compiler<R> {
         }
     }
 
-    pub fn compile(&self, reader: R) -> Result<ByteCode, CompileError> {
+    pub fn compile(&self, filename: &str, reader: R) -> Result<ByteCode, CompileError> {
 
-        let scanner = Scanner::new(reader);
+        let scanner = Scanner::new(filename, reader);
         let mut input = Tokenizer::new(scanner);
 
-        let function = Function::new("__main__", FunctionKind::Script);    
+        let at = input.current().get_at().cloned();
+        let function = Function::new("__main__", FunctionKind::Script, at);    
         let mut writer = ChunkWriter::new(function);
 
         let mut parser = Parser::new();

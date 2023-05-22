@@ -35,8 +35,8 @@ fn parser_cannot_assign_to_null() {
     assert_eq!(error.get_message(), "Invalid assignment target");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 5);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 5);
 }
 
 #[test]
@@ -71,8 +71,8 @@ fn parser_cannot_assign_to_true() {
     assert_eq!(error.get_message(), "Invalid assignment target");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 5);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 5);
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn parser_cannot_assign_to_false() {
     assert_eq!(error.get_message(), "Invalid assignment target");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
-    assert_eq!(at.lineno, 1);
-    assert_eq!(at.charno, 6);
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 6);
 }
 

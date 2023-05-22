@@ -127,7 +127,7 @@ fn value_string_2() {
 
 #[test]
 fn value_function() {
-    let f = Function::new("", FunctionKind::Script);
+    let f = Function::new("", FunctionKind::Script, None);
     let value = Value::function(f);
     assert_eq!(value.is_null(), 	false);
     assert_eq!(value.is_boolean(), 	false);
@@ -157,7 +157,7 @@ fn value_class() {
 
 #[test]
 fn value_closure() {
-    let f = Function::new("", FunctionKind::Script);
+    let f = Function::new("", FunctionKind::Script, None);
     let f_value = Value::function(f);
     let c = Closure::new(f_value);
     let value = Value::closure(c);

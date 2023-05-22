@@ -2,18 +2,16 @@
 #[cfg(test)]
 mod test;
 
-// Scanner object takes input &str, 
-// stores it internally as Vec<char>
 
-// Returns char at pos+0, pos+1 or pos+2 
-// while tracking current lineno and charno
+use crate::lox::common::At;
+
 
 // Note: Peeking beyond EOF is okay, returns '\0'
 
 
 pub trait Scan {
     fn advance(&mut self);
-    fn at(&self) -> (usize, usize, usize);
+    fn at(&self) -> &At;
     fn current(&mut self) -> char;
     fn peek(&mut self) -> char;
     fn peek_next(&mut self) -> char;
@@ -26,13 +24,8 @@ pub trait Scan {
 
 // ======== Layout ========
 pub struct Scanner<R> {
-    pos:	usize,
-    //len:	usize,
-    //chars:	Vec<char>,
     reader: R,
-    fileno:	usize,
-    lineno:	usize,
-    charno:	usize,
+    at: At,
 }
 
 
@@ -41,13 +34,10 @@ pub struct Scanner<R> {
 impl<R: std::io::BufRead+std::io::Read> Scanner<R> {
 
     // Constructor
-    pub fn new(reader: R) -> Scanner<R> {
+    pub fn new(filename: &str, reader: R) -> Scanner<R> {
         Scanner {
-            pos:	0,
             reader,
-            fileno:	0,
-            lineno:	1,
-            charno:	1,
+            at: At::new(filename),
         }
     }
 
@@ -60,13 +50,7 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
     fn advance(&mut self) {
         if !self.eof() {
             // Track lineno, charno
-            if self.current() == '\n' {
-                self.lineno = self.lineno + 1;
-                self.charno = 1;
-            } else {
-                self.charno = self.charno + 1;
-            }
-            self.pos = self.pos + 1;
+            if self.current() == '\n' { self.at.incr_line() } else { self.at.incr_char() }
             let mut buf = [0x00u8];
             self.reader.read_exact(&mut buf)
                 .unwrap_or_else(|io_error| panic!("read_exact() returned {}", io_error))
@@ -74,9 +58,9 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
     }
     
 
-    // Return a tuple with current (fileno, lineno, charno)
-    fn at(&self) -> (usize, usize, usize) {
-        return (self.fileno, self.lineno, self.charno);
+    // Return an object describing the current read position in the input stream
+    fn at(&self) -> &At {
+        return &self.at;
     }
     
 
@@ -88,12 +72,6 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
             }
             Err(io_error) => panic!("fill_buf() returned {}", io_error),
         }
-
-//        if self.pos+0 < self.len {
-//            return self.chars[self.pos+0];
-//        } else {
-//            return '\0';
-//        }
     }
 
 
@@ -105,12 +83,6 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
             }
             Err(io_error) => panic!("fill_buf() returned {}", io_error),
         }
-
-//        if self.pos+1 < self.len {
-//            return self.chars[self.pos+1];
-//        } else {
-//            return '\0';
-//        }
     }
 
 
@@ -122,12 +94,6 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
             }
             Err(io_error) => panic!("fill_buf() returned {}", io_error),
         }
-
-//        if self.pos+2 < self.len {
-//            return self.chars[self.pos+2];
-//        } else {
-//            return '\0';
-//        }
     }
 
 
@@ -153,7 +119,6 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
             Ok(buffer) => buffer.len() == 0,
             Err(io_error) => panic!("fill_buf() returned {}", io_error),
         }
-        //return self.pos >= self.len;
     }
 
 }
