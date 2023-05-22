@@ -3,6 +3,8 @@
 use log::{info};
 
 mod lox;
+mod native;
+
 use lox::{Compiler, VM};
 
 pub enum Mode {
@@ -42,10 +44,15 @@ impl Config {
 }
 
 
+fn register_natives(vm: &mut VM) {
+    vm.native_callables().insert_method("len", native::len, 0);
+}
+
 
 // Called from main() after parsing command line
 pub fn run(config: Config) -> Result<(), std::io::Error> {
     let mut vm = VM::new();
+    register_natives(&mut vm);
 
     match config.mode {
         Mode::Repl => {

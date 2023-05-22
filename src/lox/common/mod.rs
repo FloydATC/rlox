@@ -16,4 +16,4 @@ pub use bytecode::ByteCode;
 pub use chunk::Chunk;
 pub use globals::Globals;
 pub use opcode::{OpCode, OpCodeSet};
-pub use value::{Array, Closure, Function, FunctionKind, Value, ValueIterator, Obj};
+pub use value::{Array, Closure, Function, FunctionKind, NativeCallable, NativeCallables, Value, ValueIterator, Obj};

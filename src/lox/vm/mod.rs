@@ -12,7 +12,7 @@ mod vm;
 
 
 pub use callframe::CallFrame;
-pub use runtime::{Class, Instance, Method, Upvalue};
+pub use runtime::{Class, Instance, Method, NativeMethod, Upvalue};
 pub use runtime_error::{RuntimeError, r_error};
 pub use stack::Stack;
 pub use vm::VM;

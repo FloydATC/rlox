@@ -7,10 +7,11 @@ use log::{trace, debug, warn};
 
 
 use super::CallFrame;
+use super::runtime::NativeMethod;
 use crate::lox::common::keyword::*;
 use crate::lox::common::ByteCode;
 use super::Stack;
-use crate::lox::common::{Array, Value, ValueIterator};
+use crate::lox::common::{Array, Value, ValueIterator, NativeCallables};
 use crate::lox::common::Globals;
 use crate::lox::common::Closure;
 use super::{RuntimeError, r_error};
@@ -24,6 +25,7 @@ pub struct VM {
     stack: Stack<Value>,
     globals: Globals<Value>,
     open_upvalues: Vec<Upvalue<Value>>, // Note: Runtime representation
+    native_callables: NativeCallables,
 }
 
 
@@ -34,8 +36,14 @@ impl VM {
             stack: 		Stack::new(), 
             globals:		Globals::new(),
             open_upvalues:	vec![],
+            native_callables: NativeCallables::new(),
         }
     }
+
+    pub fn native_callables(&mut self) -> &mut NativeCallables {
+        return &mut self.native_callables;
+    }
+    
 }
 
 
@@ -239,6 +247,7 @@ impl VM {
     }
 
     fn opcode_readiter(&mut self) -> Result<(), RuntimeError> {
+        trace!("opcode_readiter() stack={:?}", self.stack);
         let mut iter_value = self.peek(2).clone();
         let mut iter = iter_value.borrow_mut().as_iterator_mut();
         let (value, next) = iter.next();
@@ -251,14 +260,13 @@ impl VM {
         }
         trace!("opcode_readiter() next={}", value);    
         if value.is_instance() {
-            self.push(value.clone());
+            self.push(value.clone()); // receiver (=instance)
             trace!("load method '{}' of {} onto stack", KEYWORD_NEXT, value);
-            self.bind_method(&value.as_instance().class(), KEYWORD_NEXT)?; 
+            self.bind_method(&value.as_instance().class(), KEYWORD_NEXT)?; // pops receiver, pushes bound method
             let method = self.pop();
-            self.push(value.clone());
-            self.push(next.unwrap().clone());
-            //let receiver = self.pop(); // Discard the instance
-            //println!("discard the copy of the receiver from the stack, now bound to the method: {}", receiver);
+            self.push(value.clone()); // receiver again so opcode_nextiter() can see it
+            self.push(Value::Null); // Empty slot where call_value() will put the receiver
+            self.push(next.unwrap().clone()); // Previous value or Value::Null if this is the first iteration
             trace!("call method={} of receiver={} with 1 argument: last={}", method, self.peek(1), self.peek(0));
             self.call_value(method, 1)?; 
         }
@@ -266,6 +274,7 @@ impl VM {
     }
 
     fn opcode_nextiter(&mut self) -> Result<(), RuntimeError> {
+        trace!("opcode_nextiter() stack={:?}", self.stack);
         if self.peek(1).is_instance() {
             // Clean up after method call
             let last = self.pop();
@@ -352,21 +361,29 @@ impl VM {
         let constant = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
         let name = constant.as_string();
 
-        let instance = self.peek(0).clone();	// Receiver Value
+        let receiver = self.peek(0).clone();	// Receiver Value
 
-        if instance.is_instance() {
-            if let Some(value) = instance.as_instance().get(&name) {
+        // Check the user-defined fields and methods (note that these may shadow any built-in ones)
+        if receiver.is_instance() {
+            if let Some(value) = receiver.as_instance().get(name) {
                 self.pop();
                 self.push(value.clone());
-                trace!("loaded field '{}' of {} onto stack", name, instance);
+                trace!("loaded field '{}' of {} onto stack", name, receiver);
                 return Ok(())
-            } else {
-                trace!("loaded method '{}' of {} onto stack", name, instance);
-                return self.bind_method(&instance.as_instance().class(), &name);
             }
-        } else {
-            r_error!(format!("{} does not have properties to get", instance))
+            if let Some(_) = receiver.as_instance().class().get(&constant) {
+                trace!("loaded method '{}' of {} onto stack", name, receiver);
+                return self.bind_method(&receiver.as_instance().class(), name);
+            }
         }
+
+        // If the name matches a built-in method, bind it and push it onto the stack
+        if let Some(callable) = self.native_callables().get_method(name).cloned() {
+            return self.bind_native_method(callable); // The receiver is still on the stack
+        }
+
+        // Not found, return a RuntimeError
+        r_error!(format!("{} does not have a method or field '{}'", receiver, name))
     }
 
 
@@ -824,7 +841,7 @@ impl VM {
             self.call(value, argc)?;
         } else if value.is_method() {
             let bound = value.as_method();
-            self.stack.poke(bound.receiver().clone(), argc as usize);            
+            self.stack.poke(bound.receiver().clone(), argc as usize);       
             self.call(bound.method().clone(), argc)?;
         } else if value.is_class() {
             let initializer = match value.as_class().get(KEYWORD_INIT) {
@@ -842,6 +859,16 @@ impl VM {
             } else if argc != 0 {
                 r_error!(format!("Expected 0 arguments but got {}", argc))
             }
+        } else if value.is_native_method() {
+            let bound = value.as_native_method();
+            if bound.method().as_native().arity() != argc as usize{
+                r_error!(format!("Expected {} argument(s) but got {}", bound.method().as_native().arity(), argc))
+            }
+            self.stack.poke(bound.receiver().clone(), argc as usize);
+            let depth = self.stack.len() - argc as usize - 1;
+            let result = bound.method().as_native().callable()(&self.stack.as_slice()[depth..])?;
+            self.stack.truncate(depth); // Discard the receiver and the arguments, if any
+            self.push(result);
         } else {
             r_error!(format!("VM.call_value({}, {}) not implemented.", value, argc))
         }
@@ -850,7 +877,7 @@ impl VM {
 
         
     fn bind_method(&mut self, class: &Value, method_name: &str) -> Result<(), RuntimeError> {
-        let receiver = self.stack.peek(0).clone();
+        let receiver = self.stack.pop();
         trace!("class={} method={} receiver={}", class, method_name, receiver);
         if !class.is_class() {
             r_error!(format!("Can not bind '{}' to {} as {} because it is not a class", method_name, receiver, class))
@@ -871,6 +898,14 @@ impl VM {
             }
         }
     }
+
+    fn bind_native_method(&mut self, callable: Value) -> Result<(), RuntimeError> {
+        let receiver = self.pop();
+        let bound_native_method = NativeMethod::new(receiver, callable);
+        self.push(Value::native_method(bound_native_method));
+        Ok(())
+    }
+
 }
 
 

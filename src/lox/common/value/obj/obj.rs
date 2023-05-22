@@ -2,9 +2,10 @@
 
 
 use crate::lox::common::Function;
-use crate::lox::vm::{Class, Instance, Method};
+use crate::lox::vm::{Class, Instance, Method, NativeMethod};
 use crate::lox::common::Closure;
 use crate::lox::common::{Array, Value, ValueIterator};
+use super::NativeCallable;
 
 
 #[allow(dead_code)]
@@ -17,6 +18,8 @@ pub enum Obj {
     Instance(Instance),
     Iterator(ValueIterator),
     Method(Method),
+    Native(NativeCallable),
+    NativeMethod(NativeMethod),
 }
 
 
@@ -44,6 +47,15 @@ impl Obj {
     }
     pub fn method(m: Method) -> Obj {
         Obj::Method(m)
+    }
+
+
+    pub fn native(nc: NativeCallable) -> Obj {
+        Obj::Native(nc)
+    }
+
+    pub fn native_method(nc: NativeMethod) -> Obj {
+        Obj::NativeMethod(nc)
     }
 
 }
@@ -100,6 +112,21 @@ impl Obj {
             _			=> false,
         }
     }
+
+    pub fn is_native(&self) -> bool {
+        match self {
+            Obj::Native(_) 	=> true,
+            _			=> false,
+        }
+    }
+
+    pub fn is_native_method(&self) -> bool {
+        match self {
+            Obj::NativeMethod(_) 	=> true,
+            _			=> false,
+        }
+    }
+
 }
 
 
@@ -260,11 +287,33 @@ impl Obj {
         }
     }
 
+    pub fn as_native(&self) -> &NativeCallable {
+        match self {
+            Obj::Native(nc) => return nc,
+            _ => panic!("{:?} is not a NativeCallable Object", self),
+        }
+    }
+
+    pub fn as_native_method(&self) -> &NativeMethod {
+        match self {
+            Obj::NativeMethod(nm) => return nm,
+            _ => panic!("{:?} is not a NativeMethod Object", self),
+        }
+    }
+
 }
 
-// Arithmetics
 
 impl Obj {
+
+    pub fn len(&self) -> Option<usize> {
+        match self {
+            Obj::Array(a) => Some(a.len()),
+            _ => None,
+        }
+    }
+
+    // Arithmetics
 
     pub fn append_value(&self, other: &Value) -> Result<Value, String> {
         match (self, other) {
@@ -418,6 +467,12 @@ impl std::fmt::Display for Obj {
             Obj::Method(m) => {
                 write!(f, "Obj::Method({}.{})", m.receiver_class_name(), m.method_name())
             }
+            Obj::Native(nc) => {
+                write!(f, "Obj::Native({})", nc.name())
+            }
+            Obj::NativeMethod(nm) => {
+                write!(f, "Obj::NativeMethod({}.{})", nm.receiver(), nm.method().as_native().name())
+            }
         }
     }
 }
@@ -433,6 +488,8 @@ impl From<&Obj> for Obj {
             Obj::Instance(i) => Obj::Instance(i.clone()),
             Obj::Iterator(i) => Obj::Iterator(i.clone()),
             Obj::Method(m) => Obj::Method(m.clone()),
+            Obj::Native(nc) => Obj::Native(nc.clone()),
+            Obj::NativeMethod(nm) => Obj::NativeMethod(nm.clone()),
         }
     }
 }

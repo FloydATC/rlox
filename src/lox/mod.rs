@@ -1,7 +1,7 @@
 
-mod common;
-mod compiler;
-mod vm;
+pub mod common;
+pub mod compiler;
+pub mod vm;
 
 
 pub use compiler::{Compiler, CompileError};
