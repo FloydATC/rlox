@@ -297,7 +297,8 @@ impl VM {
 
     fn opcode_getconst(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
-        let value = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
+        // When reading from the constant table, we must copy, not clone; constants are immutable
+        let value = Value::from(self.callframe().closure_ref().function_ref().read_constants().value_by_id(id));
         trace!("loaded constant id=0x{:08x} onto stack: {}", id, value);
         self.push(value);
         Ok(())
@@ -365,7 +366,7 @@ impl VM {
 
         // Check the user-defined fields and methods (note that these may shadow any built-in ones)
         if receiver.is_instance() {
-            if let Some(value) = receiver.as_instance().get(name) {
+            if let Some(value) = receiver.as_instance().get(name.as_str()) {
                 self.pop();
                 self.push(value.clone());
                 trace!("loaded field '{}' of {} onto stack", name, receiver);
@@ -373,12 +374,12 @@ impl VM {
             }
             if let Some(_) = receiver.as_instance().class().get(&constant) {
                 trace!("loaded method '{}' of {} onto stack", name, receiver);
-                return self.bind_method(&receiver.as_instance().class(), name);
+                return self.bind_method(&receiver.as_instance().class(), name.as_str());
             }
         }
 
         // If the name matches a built-in method, bind it and push it onto the stack
-        if let Some(callable) = self.native_callables().get_method(name).cloned() {
+        if let Some(callable) = self.native_callables().get_method(name.as_str()).cloned() {
             return self.bind_native_method(callable); // The receiver is still on the stack
         }
 
@@ -394,7 +395,7 @@ impl VM {
         let method_name = constant.as_string();
 
         let superclass = self.pop();
-        if self.bind_method(&superclass, method_name).is_err() {
+        if self.bind_method(&superclass, method_name.as_str()).is_err() {
             r_error!(format!("Could not bind method '{}' to superclass {}", method_name, superclass))
         }
         trace!("bound method '{}' to superclass {}", method_name, superclass);
@@ -537,7 +538,7 @@ impl VM {
 
         if instance.is_instance() {
             let mut instance = instance.as_instance_mut();
-            instance.set(field, value.clone());
+            instance.set(field.as_str(), value.clone());
             trace!("set field '{}' of {} to {}", field, instance, value);
             self.push(value);
         } else {
@@ -585,7 +586,7 @@ impl VM {
     fn opcode_class(&mut self, len: usize) -> Result<(), RuntimeError> {
         let id = self.callframe_mut().read_bytes(len) as usize;
         let name = self.callframe().closure_ref().function_ref().read_constants().value_by_id(id).clone();
-        let class = Class::new(name.as_string());
+        let class = Class::new(name.as_string().as_str());
         trace!("class {} defined using constant id=0x{:08x}: {}", class, id, name);
         self.push(Value::class(class));
         Ok(())
@@ -866,7 +867,7 @@ impl VM {
             }
             self.stack.poke(bound.receiver().clone(), argc as usize);
             let depth = self.stack.len() - argc as usize - 1;
-            let result = bound.method().as_native().callable()(&self.stack.as_slice()[depth..])?;
+            let result = bound.method().as_native().callable()(&mut self.stack.as_mut_slice()[depth..])?;
             self.stack.truncate(depth); // Discard the receiver and the arguments, if any
             self.push(result);
         } else {

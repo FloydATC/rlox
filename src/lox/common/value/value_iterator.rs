@@ -39,7 +39,7 @@ impl ValueIterator {
 
     fn new_instance(ivalue: Value) -> Result<Self, String> {
         //println!("new_instance() iterator from {}", ivalue);
-        match ivalue.as_instance().class().get(&Value::String(KEYWORD_NEXT.into())) {
+        match ivalue.as_instance().class().get(&Value::string(KEYWORD_NEXT)) {
             None => return Err(format!("No method named '{}' in {}", KEYWORD_NEXT, ivalue)),
             Some(m) => {
                 //println!("new_instance() verifying method={}", m);
@@ -62,15 +62,16 @@ impl ValueIterator {
 
     fn next_in_string(&mut self) -> (&Value, Option<&Value>) {
         if let ValueIterator::String(s, byte, last) = self {
-            let (_head, tail) = s.as_string().split_at(*byte);
+            let input = s.as_string();
+            let (_head, tail) = input.split_at(*byte);
             match tail.chars().nth(0) {
                 None => { 
                     // Reached end of string
                     return (s, None); 
                 }
-                Some(char) => {
-                    *byte = *byte + char.len_utf8();
-                    *last = Value::String(char.into());
+                Some(ch) => {
+                    *byte = *byte + ch.len_utf8();
+                    *last = Value::string(String::from(ch).as_str());
                     return (s, Some(last));
                 }
             }

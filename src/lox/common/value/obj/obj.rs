@@ -1,6 +1,5 @@
 
 
-
 use crate::lox::common::Function;
 use crate::lox::vm::{Class, Instance, Method, NativeMethod};
 use crate::lox::common::Closure;
@@ -20,6 +19,7 @@ pub enum Obj {
     Method(Method),
     Native(NativeCallable),
     NativeMethod(NativeMethod),
+    String(String),
 }
 
 
@@ -54,8 +54,14 @@ impl Obj {
         Obj::Native(nc)
     }
 
+
     pub fn native_method(nc: NativeMethod) -> Obj {
         Obj::NativeMethod(nc)
+    }
+
+
+    pub fn string(s: &str) -> Obj {
+        Obj::String(String::from(s))
     }
 
 }
@@ -127,6 +133,13 @@ impl Obj {
         }
     }
 
+    pub fn is_string(&self) -> bool {
+        match self {
+            Obj::String(_) 	=> true,
+            _			=> false,
+        }
+    }
+
 }
 
 
@@ -139,21 +152,31 @@ impl Obj {
             Obj::Array(_) => true,
             Obj::Class(_) => true,
             Obj::Instance(_) => true,
+            Obj::String(_) => true,
             _ => false,
         }
     }
 
 
-    pub fn get(&self, key: &Value) -> Option<&Value> {
+    pub fn get(&self, key: &Value) -> Option<Value> {
         match self {
             Obj::Array(a) => {
                 if !key.is_number() { return None }
                 let index = key.as_number().floor();
                 if index < 0.0 || index >= a.len() as f64 { return None }
-                return a.get(index as usize);
+                return a.get(index as usize).cloned();
             }
-            Obj::Class(c) => if key.is_string() { c.get(key.as_string()) } else { None },
-            Obj::Instance(i) => if key.is_string() { i.get(key.as_string()) } else { None },
+            Obj::Class(c) => if key.is_string() { c.get(key.as_string().as_str()).cloned() } else { None },
+            Obj::Instance(i) => if key.is_string() { i.get(key.as_string().as_str()).cloned() } else { None },
+            Obj::String(s) => {
+                if !key.is_number() { return None }
+                let index = key.as_number().floor();
+                if index < 0.0 || index >= s.chars().count() as f64 { return None }
+                match s.chars().nth(index as usize) {
+                    Some(cp) => return Some(Value::string(String::from(cp).as_str())),
+                    None => return None,
+                }
+            }
             _ => None,
         }
     }
@@ -164,6 +187,7 @@ impl Obj {
             Obj::Array(_) => true,
             Obj::Class(_) => false, // MUST NOT modify a class after declaration!
             Obj::Instance(_) => true,
+            Obj::String(_) => true,
             _ => false,
         }
     }
@@ -177,9 +201,33 @@ impl Obj {
                 if index < 0.0 || index >= a.len() as f64 { return Err(format!("Bad subscript {} for {}", key, a)) }
                 return a.set(index as usize, value);
             }         
-            Obj::Instance(i) => if key.is_string() { Ok(i.set(key.as_string(), value)) } else { 
+            Obj::Instance(i) => if key.is_string() { Ok(i.set(key.as_string().as_str(), value)) } else { 
                 return Err(format!("Invalid subscript '{}' for {}", key, i)); 
             },
+            Obj::String(s) => {
+                // Check the index (note that index >= s.chars() will be checked further down so we don't walk the string twice)
+                if !key.is_number() { return Err(format!("Invalid subscript index '{}' for {}", key, self)) }
+                let index = key.as_number().floor();
+                if index < 0.0 { return Err(format!("Bad subscript index {} for {}", index, s)) }
+                let index = index as usize;
+                // The value must be a number (=unicode codepoint) or a string containing a single (unicode) character
+                let cp = if value.is_number() {
+                    match char::from_u32(value.as_number().floor() as u32) {
+                        None => return Err(format!("Invalid utf-8 codepoint {}", value.as_number().floor() as u32)),
+                        Some(cp) => cp,
+                    }
+                } else if value.is_string() && value.as_string().chars().count() == 1 {
+                    value.as_string().chars().nth(0).unwrap()
+                } else {
+                    return Err(format!("Can not set '{}' as a string character", value));
+                };
+                // If we made it this far, we're ready to split the string, replace a char and reassemble
+                let mut chars = s.chars().collect::<Vec<char>>();
+                if index >= chars.len() { return Err(format!("Bad subscript {} for '{}'", index, s)) };
+                chars[index] = cp;
+                *s = chars.into_iter().collect();
+                Ok(())
+            }
             _ => return Err(format!("Can't .set() on {}", self)),
         }
     }
@@ -192,7 +240,8 @@ impl Obj {
 
     pub fn is_truthy(&self) -> bool {
         match self {
-            _			=> true,	// All objects are truthy (for now)
+            Obj::String(s) => s != "",
+            _ => true,	// All other objects are truthy (for now)
         }
     }
 
@@ -301,6 +350,20 @@ impl Obj {
         }
     }
 
+    pub fn as_string(&self) -> &String {
+        match self {
+            Obj::String(s) => return s,
+            _ => panic!("{:?} is not a String Object", self),
+        }
+    }
+
+    pub fn as_string_mut(&mut self) -> &mut String {
+        match self {
+            Obj::String(s) => return s,
+            _ => panic!("{:?} is not a String Object", self),
+        }
+    }
+
 }
 
 
@@ -309,6 +372,7 @@ impl Obj {
     pub fn len(&self) -> Option<usize> {
         match self {
             Obj::Array(a) => Some(a.len()),
+            Obj::String(s) => Some(s.chars().count()),
             _ => None,
         }
     }
@@ -338,6 +402,12 @@ impl Obj {
                     let mut copy = a.clone();
                     copy.extend_from_slice(other.as_array().as_slice());
                     return Ok(Value::array(copy));
+                }
+            }
+            Obj::String(a) => {
+                if other.is_string() {
+                    let string = format!("{}{}", a, other.as_string());
+                    return Ok(Value::string(&string));
                 }
             }
             _ => {}
@@ -376,6 +446,7 @@ impl Obj {
         return Err(format!("Can not prepend value {} to {}", &other, &self));
     }
 
+/*
     pub fn subtract_value(&self, other: &Value) -> Result<Value, String> {
         match (self, other) {
             (Obj::Array(a), _) => {
@@ -409,6 +480,18 @@ impl Obj {
         }
         return Err(format!("Can not subtract {} from value {}", &self, &other));
     }
+*/
+
+    pub fn repeat(&self, count: usize) -> Result<Value, String> {
+        match self {
+            Obj::String(s) => {
+                let string = s.repeat(count);
+                return Ok(Value::string(&string));
+            }
+            _ => {}
+        }
+        return Err(format!("Can not multiply {}", &self));
+    }
 
 }
 
@@ -421,7 +504,8 @@ impl PartialEq for Obj {
                 //println!("comparing Obj::Arrays");
                 a.eq(b)
             }
-            // Obj types must be same object
+            (Obj::String(a), Obj::String(b)) 	 => a.eq(b),
+            // All other Obj types must be same object
             (Obj::Function(a), Obj::Function(b)) => std::ptr::eq(a, b),
             (Obj::Class(a), Obj::Class(b)) 	 => std::ptr::eq(a, b),
             (Obj::Closure(a), Obj::Closure(b))   => std::ptr::eq(a, b),
@@ -473,6 +557,7 @@ impl std::fmt::Display for Obj {
             Obj::NativeMethod(nm) => {
                 write!(f, "Obj::NativeMethod({}.{})", nm.receiver(), nm.method().as_native().name())
             }
+            Obj::String(s)	=> write!(f, "{}", s), // Strings print without any decoration
         }
     }
 }
@@ -490,6 +575,7 @@ impl From<&Obj> for Obj {
             Obj::Method(m) => Obj::Method(m.clone()),
             Obj::Native(nc) => Obj::Native(nc.clone()),
             Obj::NativeMethod(nm) => Obj::NativeMethod(nm.clone()),
+            Obj::String(s) => Obj::String(s.clone()),
         }
     }
 }

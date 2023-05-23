@@ -107,7 +107,7 @@ fn value_string_1() {
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	false);
-    assert_eq!(value.as_string(), 	"");
+    assert_eq!(value.as_string().as_str(), 	"");
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn value_string_2() {
     assert_eq!(value.is_closure(), 	false);
 
     assert_eq!(value.is_truthy(), 	true);
-    assert_eq!(value.as_string(), 	"foo");
+    assert_eq!(value.as_string().as_str(), 	"foo");
 }
 
 #[test]

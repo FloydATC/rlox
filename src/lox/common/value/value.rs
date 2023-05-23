@@ -16,7 +16,6 @@ pub enum Value {
     Null,
     Bool(bool),
     Number(f64),
-    String(String),
     Obj(Rc<RefCell<Obj>>),
 }
 
@@ -35,10 +34,6 @@ impl Value {
 
     pub fn number(n: f64) -> Value {
         Value::Number(n)
-    }
-
-    pub fn string(s: &str) -> Value {
-        Value::String(s.to_string())
     }
 
     pub fn array(a: Array) -> Value {
@@ -81,6 +76,11 @@ impl Value {
         Value::Obj(Rc::new(RefCell::new(Obj::native_method(nm))))
     }
 
+    pub fn string(s: &str) -> Value {
+        Value::Obj(Rc::new(RefCell::new(Obj::string(s))))
+    }
+
+
 }
     
 
@@ -106,13 +106,6 @@ impl Value {
         match self {
             Value::Number(_)	=> true,
             _			=> false,
-        }
-    }
-
-    pub fn is_string(&self) -> bool {
-        match self {
-            Value::String(_) 	=> true,
-            _ 			=> false
         }
     }
 
@@ -186,6 +179,13 @@ impl Value {
         }
     }
 
+    pub fn is_string(&self) -> bool {
+        match self {
+            Value::Obj(obj) 	=> RefCell::borrow(obj).is_string(),
+            _ 			=> false
+        }
+    }
+
 }
 
 
@@ -194,7 +194,6 @@ impl Value {
 
     pub fn can_get(&self) -> bool {
         match self {
-            Value::String(_) => true,
             Value::Obj(obj) => obj.borrow().can_get(),
             _ => false,
         }
@@ -202,23 +201,13 @@ impl Value {
 
     pub fn get(&self, key: &Value) -> Option<Value> {
         match self {
-            Value::String(s) => {
-                if !key.is_number() { return None }
-                let index = key.as_number().floor();
-                if index < 0.0 || index >= s.chars().count() as f64 { return None }
-                match s.chars().nth(index as usize) {
-                    Some(cp) => return Some(Value::String(cp.into())),
-                    None => return None,
-                }
-            }
-            Value::Obj(obj) => obj.borrow().get(key).cloned(),
+            Value::Obj(obj) => obj.borrow().get(key),
             _ => None,
         }
     }
 
     pub fn can_set(&self) -> bool {
         match self {
-            Value::String(_) => true,
             Value::Obj(obj) => obj.borrow().can_set(),
             _ => false,
         }
@@ -226,30 +215,6 @@ impl Value {
 
     pub fn set(&mut self, key: &Value, value: Value) -> Result<(), String> {
         match self {
-            Value::String(s) => {
-                // Check the index (note that index >= s.chars() will be checked further down so we don't walk the string twice)
-                if !key.is_number() { return Err(format!("Invalid subscript index '{}' for {}", key, self)) }
-                let index = key.as_number().floor();
-                if index < 0.0 { return Err(format!("Bad subscript index {} for {}", index, s)) }
-                let index = index as usize;
-                // The value must be a number (=unicode codepoint) or a string containing a single (unicode) character
-                let cp = if value.is_number() {
-                    match char::from_u32(value.as_number().floor() as u32) {
-                        None => return Err(format!("Invalid utf-8 codepoint {}", value.as_number().floor() as u32)),
-                        Some(cp) => cp,
-                    }
-                } else if value.is_string() && value.as_string().chars().count() == 1 {
-                    value.as_string().chars().nth(0).unwrap()
-                } else {
-                    return Err(format!("Can not set '{}' as a string character", value));
-                };
-                // If we made it this far, we're ready to split the string, replace a char and reassemble
-                let mut chars = s.chars().collect::<Vec<char>>();
-                if index >= chars.len() { return Err(format!("Bad subscript {} for '{}'", index, s)) };
-                chars[index] = cp;
-                *s = chars.into_iter().collect();
-                Ok(())
-            }
             Value::Obj(obj) => obj.borrow_mut().set(key, value),
             _ => Err(format!("Can't .set() on {}", self)),
         }
@@ -271,7 +236,6 @@ impl Value {
                 if n.is_nan() { return false }
                 *n != 0.0
             }
-            Value::String(s) => s != "",
             Value::Obj(obj) => RefCell::borrow(obj).is_truthy(),
         }
     }
@@ -287,7 +251,6 @@ impl Value {
                 if a.is_infinite() && b.is_infinite() { return a.is_sign_negative() == b.is_sign_negative() } 
                 a.eq(b)
             }
-            (Value::String(a), Value::String(b)) => a.eq(b),
             (Value::Obj(a), Value::Obj(b)) => Rc::ptr_eq(a, b), // Same RefCell?
             _ => false,
         }
@@ -313,15 +276,6 @@ impl Value {
         }
     }
 
-    pub fn as_string(&self) -> &String {
-        match self {
-            Value::String(s) 	=> return &s,
-            _ 			=> {
-                panic!("{} is not a string", self)
-            }
-        }
-    }
-    
     pub fn as_obj(&self) -> Ref<'_, Obj> {
         match self {
             Value::Obj(obj) 	=> return obj.borrow(),
@@ -485,6 +439,28 @@ impl Value {
         }
     }
     
+    pub fn as_string(&self) -> Ref<'_, String> {
+        match self {
+            Value::Obj(obj)	=> {
+                Ref::map(obj.borrow(), |o| o.as_string())
+            }
+            _			=> {
+                panic!("{} is not a string", self)
+            }
+        }
+    }
+    
+    pub fn as_string_mut(&self) -> RefMut<'_, String> {
+        match self {
+            Value::Obj(obj)	=> {
+                RefMut::map(obj.borrow_mut(), |o| o.as_string_mut())
+            }
+            _			=> {
+                panic!("{} is not a string", self)
+            }
+        }
+    }
+    
 }
 
 
@@ -492,7 +468,6 @@ impl Value {
 
     pub fn len(&self) -> Option<usize> {
         match self {
-            Value::String(s) => Some(s.chars().count()),
             Value::Obj(obj) => obj.borrow().len(),
             _ => None,
         }
@@ -511,10 +486,6 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a + b));
             }
-            (Value::String(a), Value::String(b)) => {
-                let string = format!("{}{}", a, b);
-                return Ok(Value::string(&string));
-            }
             (Value::Obj(obj), _) => {
                 return obj.borrow().append_value(&other);
             }
@@ -532,12 +503,14 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a - b));
             }
+/*
             (Value::Obj(obj), _) => {
                 return obj.borrow().subtract_value(&other);
             }
             (_, Value::Obj(obj)) => {
                 return obj.borrow().subtract_from_value(&self);
             }
+*/
             _ => {}
         }
         return Err(format!("Can not subtract operands {} and {}", &self, &other));
@@ -551,10 +524,9 @@ impl Value {
             (Value::Number(a), Value::Number(b)) => {
                 return Ok(Value::number(a * b));
             }
-            (Value::String(a), Value::Number(b)) => {
-                let count = *b as usize;
-                let string = a.repeat(count);
-                return Ok(Value::string(&string));
+            (Value::Obj(a), Value::Number(b)) => {
+                if *b < 0.0 { return Err(format!("Can not multiply {} with negative number {}", self, other)); }
+                return a.borrow().repeat(*b as usize);
             }
             _ => {}
         }
@@ -592,7 +564,6 @@ impl Clone for Value {
             Value::Null => Value::Null,
             Value::Bool(b) => Value::boolean(*b),
             Value::Number(n) => Value::number(*n),
-            Value::String(s) => Value::string(s),
             Value::Obj(o) => Value::Obj(o.clone()),
         }
     }
@@ -606,7 +577,6 @@ impl PartialEq for Value {
             (Value::Bool(a), Value::Bool(b)) => a == b,
             // Note: NAN != NAN, INF != INF, -INF != -INF
             (Value::Number(a), Value::Number(b)) => a.eq(b),
-            (Value::String(a), Value::String(b)) => a.eq(b),
             (Value::Obj(ra), Value::Obj(rb)) => ra.borrow().eq(&rb.borrow()),
             _ => false, // Value types mismatch
         }    
@@ -618,7 +588,6 @@ impl std::cmp::PartialOrd for Value {
     fn partial_cmp(&self, other: &Value) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
-            (Value::String(a), Value::String(b)) => a.partial_cmp(b),
             (Value::Obj(a), Value::Obj(b)) => a.partial_cmp(b),
             _ => None, // Value types mismatch or can't be ordered
         }
@@ -635,7 +604,6 @@ impl std::fmt::Display for Value {
                 if n.is_nan() { return write!(f, "nan") }
                 write!(f, "{}", n)
             }
-            Value::String(s)	=> write!(f, "{}", s),
             Value::Obj(rc)	=> write!(f, "{}", RefCell::borrow(rc)),
         }
     }
@@ -648,7 +616,6 @@ impl From<&Value> for Value {
             Value::Null => Value::Null,
             Value::Bool(b) => Value::Bool(*b),
             Value::Number(n) => Value::Number(*n),
-            Value::String(s) => Value::String(s.clone()),
             // Clone the inner Obj, not the Rc<RefCell<Obj>>
             Value::Obj(obj) => {
                 let copy = Obj::from(obj.borrow().clone());

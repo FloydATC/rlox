@@ -277,38 +277,6 @@ fn add_array_to_multiple_numbers_original_is_unchanged() {
 }
 
 #[test]
-fn subtract_number_from_array_works_as_pop() {
-    let code = "var a=[1,2,3,4,5,6]; var b=a-2; exit b == [1,2,3,4];";
-    let res = compile_and_execute(code);
-    assert_eq!(res.is_ok(), true);
-    assert_eq!(res.unwrap(), 1);
-}
-
-#[test]
-fn subtract_number_from_array_original_is_unchanged() {
-    let code = "var a=[1,2,3,4,5,6]; var b=a-2; exit a == [1,2,3,4,5,6];";
-    let res = compile_and_execute(code);
-    assert_eq!(res.is_ok(), true);
-    assert_eq!(res.unwrap(), 1);
-}
-
-#[test]
-fn subtract_array_from_number_works_as_shift() {
-    let code = "var a=[1,2,3,4,5,6]; var b=2-a; exit b == [3,4,5,6];";
-    let res = compile_and_execute(code);
-    assert_eq!(res.is_ok(), true);
-    assert_eq!(res.unwrap(), 1);
-}
-
-#[test]
-fn subtract_array_from_number_original_is_unchanged() {
-    let code = "var a=[1,2,3,4,5,6]; var b=2-a; exit a == [1,2,3,4,5,6];";
-    let res = compile_and_execute(code);
-    assert_eq!(res.is_ok(), true);
-    assert_eq!(res.unwrap(), 1);
-}
-
-#[test]
 fn set_array_subscript_1() {
     let code = "var a=[1,2,3,4,5]; a[1,2,3]=['foo','bar','baz']; exit a[0] == 1;";
     let res = compile_and_execute(code);

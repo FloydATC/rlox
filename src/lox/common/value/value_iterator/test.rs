@@ -8,7 +8,7 @@ use super::ValueIterator;
 #[test]
 fn string_iterator_empty() {
     let str = "";
-    let s = Value::String(str.into());
+    let s = Value::string(str);
     let mut iter = ValueIterator::new(s.clone()).unwrap();
     let (val, next) = iter.next();
     assert_eq!((val, next), (&s, None));
@@ -17,7 +17,7 @@ fn string_iterator_empty() {
 #[test]
 fn string_iterator_ascii() {
     let str = "abc";
-    let s = Value::String(str.into());
+    let s = Value::string(str);
     let mut iter = ValueIterator::new(s.clone()).unwrap();
     let (val, next) = iter.next();
     assert_eq!((val, next.unwrap().as_string().as_str()), (&s, "a"));
@@ -32,7 +32,7 @@ fn string_iterator_ascii() {
 #[test]
 fn string_iterator_utf8() {
     let str = "\u{0201}\u{0202}\u{0203}";
-    let s = Value::String(str.into());
+    let s = Value::string(str);
     let mut iter = ValueIterator::new(s.clone()).unwrap();
     let (val, next) = iter.next();
     assert_eq!((val, next.unwrap().as_string().as_str()), (&s, "\u{0201}"));

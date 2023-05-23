@@ -75,6 +75,10 @@ impl<T> Stack<T> {
         self.elements.as_slice()
     }
 
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self.elements.as_mut_slice()
+    }
+
     pub fn len(&self) -> usize {
         self.elements.len()
     }

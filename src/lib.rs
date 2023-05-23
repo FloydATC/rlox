@@ -46,6 +46,10 @@ impl Config {
 
 fn register_natives(vm: &mut VM) {
     vm.native_callables().insert_method("len", native::len, 0);
+    vm.native_callables().insert_method("pop", native::pop, 0);
+    vm.native_callables().insert_method("push", native::push, 1);
+    vm.native_callables().insert_method("shift", native::shift, 0);
+    vm.native_callables().insert_method("unshift", native::unshift, 1);
 }
 
 
