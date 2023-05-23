@@ -1,5 +1,9 @@
 
 
+#[cfg(test)]
+mod test;
+
+
 mod shift;
 mod len;
 mod pop;
