@@ -34,7 +34,7 @@ pub struct Scanner<R> {
 
 // ======== Public interface ========
 #[allow(dead_code)]
-impl<R: std::io::BufRead+std::io::Read> Scanner<R> {
+impl<R: std::io::BufRead> Scanner<R> {
 
     // Constructor
     pub fn new(filename: &str, reader: R) -> Scanner<R> {
@@ -71,7 +71,7 @@ impl<R: std::io::BufRead> Scanner<R> {
 }
 
 
-impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
+impl<R: std::io::BufRead> Scan for Scanner<R> {
 
     // Increment pos unless we have reached eof
     fn advance(&mut self) {
