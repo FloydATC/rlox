@@ -94,5 +94,86 @@ fn scanner_count_lines_and_chars() {
     assert_eq!(scanner.peek_next(), 'r');
 }
 
+#[test]
+fn scanner_utf8_single() {
+    let code = "\u{0201}";
+    let reader = std::io::Cursor::new(code);
+    let mut scanner = Scanner::new("test", reader);
+    let at = scanner.at();
+    assert_eq!(at.charno(), 1);
+    assert_eq!(scanner.eof(), false);
+    assert_eq!(scanner.current(), '\u{0201}');
+    assert_eq!(scanner.peek(), '\0');
+    assert_eq!(scanner.peek_next(), '\0');
+    scanner.advance();
+    let at = scanner.at();
+    assert_eq!(at.charno(), 2);
+    assert_eq!(scanner.eof(), true);
+    assert_eq!(scanner.current(), '\0');
+    assert_eq!(scanner.peek(), '\0');
+    assert_eq!(scanner.peek_next(), '\0');
+}
+
+#[test]
+fn scanner_utf8_double() {
+    let code = "\u{0201}\u{0202}";
+    let reader = std::io::Cursor::new(code);
+    let mut scanner = Scanner::new("test", reader);
+    let at = scanner.at();
+    assert_eq!(at.charno(), 1);
+    assert_eq!(scanner.eof(), false);
+    assert_eq!(scanner.current(), '\u{0201}');
+    assert_eq!(scanner.peek(), '\u{0202}');
+    assert_eq!(scanner.peek_next(), '\0');
+    scanner.advance();
+    let at = scanner.at();
+    assert_eq!(at.charno(), 2);
+    assert_eq!(scanner.eof(), false);
+    assert_eq!(scanner.current(), '\u{0202}');
+    assert_eq!(scanner.peek(), '\0');
+    assert_eq!(scanner.peek_next(), '\0');
+    scanner.advance();
+    let at = scanner.at();
+    assert_eq!(at.charno(), 3);
+    assert_eq!(scanner.eof(), true);
+    assert_eq!(scanner.current(), '\0');
+    assert_eq!(scanner.peek(), '\0');
+    assert_eq!(scanner.peek_next(), '\0');
+}
+
+#[test]
+fn scanner_utf8_triple() {
+    let code = "\u{0201}\u{0202}\u{0203}";
+    let reader = std::io::Cursor::new(code);
+    let mut scanner = Scanner::new("test", reader);
+    let at = scanner.at();
+    assert_eq!(at.charno(), 1);
+    assert_eq!(scanner.eof(), false);
+    assert_eq!(format!("{:x}", scanner.current() as u32), format!("{:x}", '\u{0201}' as u32));
+    assert_eq!(scanner.peek(), '\u{0202}');
+    assert_eq!(scanner.peek_next(), '\u{0203}');
+    scanner.advance();
+    let at = scanner.at();
+    assert_eq!(at.charno(), 2);
+    assert_eq!(scanner.eof(), false);
+    assert_eq!(format!("{:x}", scanner.current() as u32), format!("{:x}", '\u{0202}' as u32));
+    assert_eq!(scanner.peek(), '\u{0203}');
+    assert_eq!(scanner.peek_next(), '\0');
+    scanner.advance();
+    let at = scanner.at();
+    assert_eq!(at.charno(), 3);
+    assert_eq!(scanner.eof(), false);
+    assert_eq!(scanner.current(), '\u{0203}');
+    assert_eq!(scanner.peek(), '\0');
+    assert_eq!(scanner.peek_next(), '\0');
+    scanner.advance();
+    let at = scanner.at();
+    assert_eq!(at.charno(), 4);
+    assert_eq!(scanner.eof(), true);
+    assert_eq!(scanner.current(), '\0');
+    assert_eq!(scanner.peek(), '\0');
+    assert_eq!(scanner.peek_next(), '\0');
+}
+
 
 

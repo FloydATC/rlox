@@ -28,13 +28,16 @@ impl At {
     pub fn incr_line(&mut self) {
         self.charno = 1;
         self.lineno = self.lineno + 1;
-        self.pos = self.pos + 1;
     }
 
 
     pub fn incr_char(&mut self) {
         self.charno = self.charno + 1;
-        self.pos = self.pos + 1;
+    }
+
+
+    pub fn incr_pos(&mut self, bytes: usize) {
+        self.pos = self.pos + bytes;
     }
 
 

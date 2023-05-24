@@ -3,6 +3,9 @@
 mod test;
 
 
+use utf8conv::FromUtf8;
+
+
 use crate::lox::common::At;
 
 
@@ -44,16 +47,42 @@ impl<R: std::io::BufRead+std::io::Read> Scanner<R> {
 }
 
 
+// ======== Private ========
+impl<R: std::io::BufRead> Scanner<R> {
+
+    fn nth_char(&mut self, count: usize) -> char {
+        match self.reader.fill_buf() {
+            Ok(buffer) => {
+
+                if buffer.len() == 0 { return '\0'; } // Fail early
+                let mut utf8_parser = FromUtf8::new();
+                let mut buf_iter = buffer.iter();
+                let mut char_iter = utf8_parser.utf8_ref_to_char_with_iter(&mut buf_iter);
+                match char_iter.nth(count) {
+                    Some(ch) => return ch,
+                    None => return '\0',
+                }
+
+            }
+            Err(io_error) => panic!("fill_buf() returned {}", io_error),
+        }
+    }
+
+}
+
+
 impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
 
     // Increment pos unless we have reached eof
     fn advance(&mut self) {
         if !self.eof() {
             // Track lineno, charno
-            if self.current() == '\n' { self.at.incr_line() } else { self.at.incr_char() }
-            let mut buf = [0x00u8];
-            self.reader.read_exact(&mut buf)
-                .unwrap_or_else(|io_error| panic!("read_exact() returned {}", io_error))
+            let ch = self.current();
+            let ch_len = ch.len_utf8();
+            if ch == '\n' { self.at.incr_line() } else { self.at.incr_char() }
+            println!("advance by ch_len={}", ch_len);
+            self.at.incr_pos(ch_len);
+            self.reader.consume(ch_len);
         }
     }
     
@@ -66,34 +95,19 @@ impl<R: std::io::BufRead+std::io::Read> Scan for Scanner<R> {
 
     // Return char at pos+0 (or zero if eof)    
     fn current(&mut self) -> char {
-        match self.reader.fill_buf() {
-            Ok(buffer) => {
-                if buffer.len() >= 1 { buffer[0] as char } else { '\0' }
-            }
-            Err(io_error) => panic!("fill_buf() returned {}", io_error),
-        }
+        return self.nth_char(0);
     }
 
 
     // Return char at pos+1 (or zero if eof)
     fn peek(&mut self) -> char {
-        match self.reader.fill_buf() {
-            Ok(buffer) => {
-                if buffer.len() >= 2 { buffer[1] as char } else { '\0' }
-            }
-            Err(io_error) => panic!("fill_buf() returned {}", io_error),
-        }
+        return self.nth_char(1);
     }
 
 
     // Return char at pos+2 (or zero if eof)
     fn peek_next(&mut self) -> char {
-        match self.reader.fill_buf() {
-            Ok(buffer) => {
-                if buffer.len() >= 3 { buffer[2] as char } else { '\0' }
-            }
-            Err(io_error) => panic!("fill_buf() returned {}", io_error),
-        }
+        return self.nth_char(2);
     }
 
 
