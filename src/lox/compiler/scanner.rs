@@ -80,7 +80,6 @@ impl<R: std::io::BufRead> Scan for Scanner<R> {
             let ch = self.current();
             let ch_len = ch.len_utf8();
             if ch == '\n' { self.at.incr_line() } else { self.at.incr_char() }
-            println!("advance by ch_len={}", ch_len);
             self.at.incr_pos(ch_len);
             self.reader.consume(ch_len);
         }
