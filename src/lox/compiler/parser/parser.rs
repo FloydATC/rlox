@@ -1,23 +1,17 @@
 
-#[cfg(test)]
-mod test;
-
 use log::{trace, debug};
 
-use super::{Class, CodeLoop, CompileError, c_error, ChunkWriter, Hierarchy, ParserOutput, Token, Tokenize, TokenKind};
+
+use crate::lox::compiler::{Class, CodeLoop, CompileError, c_error, ChunkWriter, Hierarchy, Scope, Token, Tokenize, TokenKind};
 use crate::lox::common::Function;
 use crate::lox::common::FunctionKind;
 use crate::lox::common::keyword::*;
-use super::Scope;
 use crate::lox::common::{OpCode, OpCodeSet};
 use crate::lox::common::Value;
 
 
-mod parser_prec;
-mod parser_rule;
+use super::{ParserOutput, ParserPrec, ParserRule};
 
-use parser_prec::ParserPrec;
-use parser_rule::ParserRule;
 
 
 #[allow(dead_code)]
@@ -919,7 +913,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn and(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn and(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let end_jmp = output.writer.emit_jmp(&OpCode::JmpFalseQ);
         output.writer.emit_op(&OpCode::Pop);
         self.parse_precedence(ParserPrec::And, input, output)?;
@@ -927,14 +921,14 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn array(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn array(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let elements = self.expressions_until(TokenKind::RightBracket, input, output)?;
         self.consume(TokenKind::RightBracket, "Expected ']' after array elements", input, output)?;
         output.writer.emit_op_variant(&OpCodeSet::defarray(), elements);
         Ok(())
     }
 
-    fn base2number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn base2number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0b");
         let float = i64::from_str_radix(without_prefix, 2).unwrap() as f64;
@@ -942,7 +936,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn base8number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn base8number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0o");
         let float = i64::from_str_radix(without_prefix, 8).unwrap() as f64;
@@ -950,14 +944,14 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn base10number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn base10number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let float: f64 = lexeme.parse().unwrap();
         self.emit_constant(Value::number(float), output);
         Ok(())
     }
 
-    fn base16number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn base16number(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let lexeme = input.previous().lexeme();
         let without_prefix = lexeme.trim_start_matches("0x");
         let float = i64::from_str_radix(without_prefix, 16).unwrap() as f64;
@@ -965,7 +959,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn binary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
+    pub(crate) fn binary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
 
         let mut operator = input.previous().kind();
         let rule = ParserRule::<I>::for_token(&operator);
@@ -1004,14 +998,14 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn call(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn call(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let arg_count = self.argument_list(input, output)?;
         output.writer.emit_op(&OpCode::Call);
         output.writer.emit_bytes(arg_count as u32, OpCode::Call.len());
         Ok(())
     }
 
-    fn dot(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn dot(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.consume(TokenKind::Identifier, "Expected property name after '.'", input, output)?;
         let name_id = self.identifier_constant(input.previous(), output);
     
@@ -1024,13 +1018,13 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn grouping(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn grouping(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         self.expression(input, output)?;
         self.consume(TokenKind::RightParen, "Expect ')' after expression", input, output)?;
         Ok(())
     }
 
-    fn literal(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn literal(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let literal = input.previous().kind();
         match literal {
             TokenKind::False	=> output.writer.emit_op(&OpCode::False),
@@ -1045,7 +1039,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn or(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn or(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let else_jmp = output.writer.emit_jmp(&OpCode::JmpFalseQ);
         let end_jmp = output.writer.emit_jmp(&OpCode::Jmp);
         output.writer.patch_jmp(else_jmp);
@@ -1055,13 +1049,13 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn string(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn string(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let value = Value::string(input.previous().lexeme());
         self.emit_constant(value, output);
         Ok(())
     }
 
-    fn subscr(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn subscr(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // At this point, there should be a subscriptable value on the top of the stack
         // Build an array value, each element being an index into the first element
         let indices = self.expressions_until(TokenKind::RightBracket, input, output)?;
@@ -1078,7 +1072,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn super_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn super_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         if self.classes.current_name().is_none() { 
             c_error!(format!("Can not use '{}' outside of a class", KEYWORD_SUPER), input.previous())
         }
@@ -1096,11 +1090,11 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn ternary(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn ternary(&mut self, _can_assign: bool, _input: &mut I, _output: &mut ParserOutput) -> Result<(), CompileError> {
         panic!("Not yet implemented.");
     }
 
-    fn this_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn this_(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         if self.classes.current_name().is_none() { 
             c_error!(format!("Can not use '{}' outside of a class", KEYWORD_THIS), input.previous())
         }
@@ -1108,7 +1102,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn unary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn unary(&mut self, _can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let operator = input.previous().kind();
         self.parse_precedence(ParserPrec::Unary, input, output)?;
         match operator {
@@ -1121,7 +1115,7 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    fn variable(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn variable(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let token = input.previous().clone();
         self.named_variable(&token, can_assign, input, output)?;
         Ok(())

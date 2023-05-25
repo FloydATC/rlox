@@ -15,7 +15,7 @@ pub struct Compiler<R> {
 }
 
 
-impl<R: std::io::BufRead+std::io::Read> Compiler<R> {
+impl<R: std::io::BufRead> Compiler<R> {
 
     pub fn new() -> Self {
         Compiler {

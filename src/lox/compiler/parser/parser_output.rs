@@ -1,8 +1,7 @@
 
 
-use super::{ChunkWriter, Locals};
-use crate::lox::common::Globals;
-use crate::lox::common::Value;
+use crate::lox::compiler::{ChunkWriter, Locals};
+use crate::lox::common::{Globals, Value};
 
 
 pub struct ParserOutput<'a> {
