@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 
 use crate::lox::compiler::{CompileError, c_error};
+use crate::lox::common::IdentifierKind;
 use super::Global;
 
 // The rlox compiler accesses variables by name =~ O(logN)
@@ -30,13 +31,13 @@ impl<T> Globals<T> {
     // Return Ok(id) if name is unique
     // Otherwise, return Err(String)
     // Note: Used at script compile time only
-    pub fn declare(&mut self, name: &str) -> Result<usize, CompileError> {
+    pub fn declare(&mut self, name: &str, kind: IdentifierKind) -> Result<usize, CompileError> {
         let opt_global = self.index.get(name);
         match opt_global {
             None => {
                 let id = self.values.len();
                 self.values.push(None);
-                self.index.insert(name.to_string(), Global::new(id));
+                self.index.insert(name.to_string(), Global::new(id, kind));
                 return Ok(id);
             }
             Some(_) => {

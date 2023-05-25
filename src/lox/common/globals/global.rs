@@ -1,18 +1,25 @@
 
 
+use crate::lox::common::IdentifierKind;
+
+
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Global {
-    defined: bool,
     index: usize,
+    kind: IdentifierKind,
+    defined: bool,
 }
 
 
+#[allow(dead_code)]
 impl Global {
 
-    pub fn new(index: usize) -> Self {
+    pub fn new(index: usize, kind: IdentifierKind) -> Self {
         Global {
-            defined: false,
             index,
+            kind,
+            defined: false,
         }
     }
 
@@ -24,6 +31,16 @@ impl Global {
 
     pub fn is_defined(&self) -> bool {
         self.defined
+    }
+
+
+    pub fn is_mutable(&self) -> bool {
+        self.kind.is_mutable()
+    }
+
+
+    pub fn kind(&self) -> &IdentifierKind {
+        return &self.kind;
     }
 
 

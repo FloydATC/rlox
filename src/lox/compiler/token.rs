@@ -114,6 +114,7 @@ impl std::fmt::Debug for TokenKind {
             // Keywords
             TokenKind::Break		=> write!(f, "Break"),
             TokenKind::Class		=> write!(f, "Class"),
+            TokenKind::Const		=> write!(f, "Const"),
             TokenKind::Continue		=> write!(f, "Continue"),
             TokenKind::Debug		=> write!(f, "Debug"),
             TokenKind::Else		=> write!(f, "Else"),

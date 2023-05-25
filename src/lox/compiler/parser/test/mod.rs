@@ -17,6 +17,8 @@ mod for_loops;
 mod if_statement;
 mod return_statement;
 mod trailing_comma;
+mod variables;
+mod constants;
 mod while_loops;
 mod literals;
 mod strings;

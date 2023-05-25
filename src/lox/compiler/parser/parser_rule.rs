@@ -166,7 +166,7 @@ impl<I: Tokenize> ParserRule<I> {
                 precedence: 	ParserPrec::None,
             },
             TokenKind::Identifier => return ParserRule {
-                prefix: 	Some(Parser::variable), 
+                prefix: 	Some(Parser::variable_or_constant), 
                 infix: 		None, 
                 precedence: 	ParserPrec::None,
             },
@@ -199,6 +199,7 @@ impl<I: Tokenize> ParserRule<I> {
             // Keywords
             TokenKind::Break => return ParserRule::null(),
             TokenKind::Class => return ParserRule::null(),
+            TokenKind::Const => return ParserRule::null(),
             TokenKind::Continue => return ParserRule::null(),
             TokenKind::Debug => return ParserRule::null(),
             TokenKind::Else => return ParserRule::null(),

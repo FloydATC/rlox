@@ -1,5 +1,8 @@
 
 
+use crate::lox::common::IdentifierKind;
+
+
 use super::local::Local;
 use super::upvalue::Upvalue;
 
@@ -19,7 +22,7 @@ impl LocalSet {
     pub fn new(parent: Option<Box<LocalSet>>, with_receiver: bool) -> Self {
         let receiver = if with_receiver { "this" } else { "" };
         Self {
-            locals:	vec![Local::new(receiver,0)], // Reserve stack slot zero
+            locals:	vec![Local::new(receiver, 0, IdentifierKind::Variable)], // Reserve stack slot zero
             upvalues:	vec![],
             parent,
         }
@@ -30,8 +33,8 @@ impl LocalSet {
 // ======== Locals ========
 impl LocalSet {    
     // Declare local in this LocalSet
-    pub fn declare_local(&mut self, name: &str, depth: usize) {
-        self.locals.push(Local::new(name, depth));
+    pub fn declare_local(&mut self, name: &str, depth: usize, kind: IdentifierKind) {
+        self.locals.push(Local::new(name, depth, kind));
     }
     
     // Resolve local by name in this LocalSet
@@ -102,7 +105,7 @@ impl LocalSet {
     // a) a local (if is_local == true) or
     // b) an upvalue (if is_local == false)
     // in the parent LocalSet
-    pub fn add_upvalue(&mut self, id: usize, is_local: bool) -> usize {
+    pub fn add_upvalue(&mut self, id: usize, is_local: bool, kind: IdentifierKind) -> usize {
         //println!("LocalSet.add_upvalue() id={} is_local={}", id, is_local);
     
         // Scan existing upvalues
@@ -114,7 +117,7 @@ impl LocalSet {
         
         // Not found, create it now
         let i = self.upvalues.len();
-        self.upvalues.push(Upvalue::new(id, is_local));
+        self.upvalues.push(Upvalue::new(id, is_local, kind));
         return i;
     }
     
@@ -133,14 +136,18 @@ impl LocalSet {
                 // Check for local in parent LocalSet
                 let local = parent.resolve_local(name);
                 if let Some(id) = local {
-                    parent.local_mut_by_id(id).capture();
-                    return Some(self.add_upvalue(id, true));
+                    let local = parent.local_mut_by_id(id);
+                    let kind = local.kind().clone();
+                    local.capture();
+                    return Some(self.add_upvalue(id, true, kind));
                 }
             
                 // Check for upvalue in parent LocalSet    
                 let upvalue = parent.resolve_upvalue(name);
                 if let Some(id) = upvalue {
-                    return Some(self.add_upvalue(id, false));
+                    let upvalue = parent.upvalue_ref_by_id(id);
+                    let kind = upvalue.kind().clone();
+                    return Some(self.add_upvalue(id, false, kind));
                 }
             
                 return None;

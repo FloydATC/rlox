@@ -3,11 +3,8 @@ use log::{trace, debug};
 
 
 use crate::lox::compiler::{Class, CodeLoop, CompileError, c_error, ChunkWriter, Hierarchy, Scope, Token, Tokenize, TokenKind};
-use crate::lox::common::Function;
-use crate::lox::common::FunctionKind;
+use crate::lox::common::{Function, FunctionKind, OpCode, OpCodeSet, IdentifierKind, Value};
 use crate::lox::common::keyword::*;
-use crate::lox::common::{OpCode, OpCodeSet};
-use crate::lox::common::Value;
 
 
 use super::{ParserOutput, ParserPrec, ParserRule};
@@ -161,8 +158,8 @@ impl<I: Tokenize> Parser<I> {
             loop {
                 if arity == 255 { c_error!(format!("Can not have more than 255 parameters"), input.current()) }
                 arity = arity + 1;
-                let name_id = self.parse_variable("Expected parameter name", input, output)?;
-                self.define_variable(name_id, output);
+                let name_id = self.parse_identifier(IdentifierKind::Variable, "Expected parameter name", input, output)?;
+                self.define_initializer(name_id, output);
                 // Keep going?
                 if !input.advance_on(TokenKind::Comma) { break; }
                 if input.matches(TokenKind::RightParen) { break; } // That was a trailing comma
@@ -171,16 +168,16 @@ impl<I: Tokenize> Parser<I> {
         return Ok(arity);
     }
 
-    fn parse_variable(&mut self, errmsg: &str, input: &mut I, output: &mut ParserOutput) -> Result<usize, CompileError> {
+    fn parse_identifier(&mut self, kind: IdentifierKind, errmsg: &str, input: &mut I, output: &mut ParserOutput) -> Result<usize, CompileError> {
         
         self.consume(TokenKind::Identifier, errmsg, input, output)?;
         debug!("identifier={}", input.previous().lexeme());
         
-        self.declare_variable(input, output)?;
+        self.declare_identifier(kind.clone(), input, output)?;
         if let Some(_) = self.scope() { return Ok(0); }
         
         let name = input.previous().lexeme();
-        match output.globals.declare(name) {
+        match output.globals.declare(name, kind) {
             Err(mut compile_error) => {
                 compile_error.set_at(input.previous().get_at());
                 return Err(compile_error);
@@ -196,7 +193,7 @@ impl<I: Tokenize> Parser<I> {
         return output.writer.make_constant(name);
     }
  
-    fn declare_variable(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    fn declare_identifier(&mut self, kind: IdentifierKind, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         
         let scope = self.scope();
         match scope {
@@ -208,18 +205,19 @@ impl<I: Tokenize> Parser<I> {
 
                 // Verify variable is not already declared in this scope
                 if let Some(id) = output.locals.resolve_local(name) {
-                    if output.locals.local_ref_by_id(id).depth() == scope_depth {
-                        c_error!(format!("Variable named '{}' already declared in this scope", name), input.previous())
+                    let local = output.locals.local_ref_by_id(id);
+                    if local.depth() == scope_depth {
+                        c_error!(format!("{} named '{}' already declared in this scope", local.kind().as_str(), name), input.previous())
                     }
                 }
 
-                output.locals.declare_local(name, scope_depth); // Add local variable
+                output.locals.declare_local(name, scope_depth, kind); // Add local variable
                 Ok(())
             }
         }
     }
     
-    fn define_variable(&mut self, id: usize, output: &mut ParserOutput) {
+    fn define_initializer(&mut self, id: usize, output: &mut ParserOutput) {
         
         if let Some(_) = self.scope() {
             debug!("define as local");
@@ -245,7 +243,34 @@ impl<I: Tokenize> Parser<I> {
         }
     }
     
-    fn variable_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> Result<(OpCodeSet, OpCodeSet, usize), CompileError> {
+
+    fn identifier_is_mutable(&mut self, name_token: &Token, output: &mut ParserOutput) -> Result<bool, CompileError> {
+
+        if let Some(id) = output.locals.resolve_local(name_token.lexeme()) {
+            trace!("checking if local '{}' is mutable", name_token.lexeme());
+            let local = output.locals.local_ref_by_id(id);
+            return Ok(local.kind().is_mutable() || !local.is_defined());
+        }
+
+        if let Some(id) = output.locals.resolve_upvalue(name_token.lexeme()) {
+            trace!("checking if upvalue '{}' is mutable", name_token.lexeme());
+            let upvalue = output.locals.upvalue_ref_by_id(id);
+            // We have no way of telling at compile time if an outer identifier has been 
+            // initialized or not by the time we call a function referring to it 
+            // so all we can check is whether it is a Variable or a Constant.
+            return Ok(upvalue.kind().is_mutable());
+        }
+
+        if let Some(id) = self.resolve_global(name_token.lexeme(), output) {
+            trace!("checking if global '{}' is mutable", name_token.lexeme());
+            let global = output.globals.global_ref_by_id(id);
+            return Ok(global.kind().is_mutable() || !global.is_defined());
+        }
+
+        c_error!(format!("Undeclared variable '{}'", name_token.lexeme()))
+    }
+
+    fn identifier_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> Result<(OpCodeSet, OpCodeSet, usize), CompileError> {
         let mut result;
         
         result = output.locals.resolve_local(name_token.lexeme());
@@ -294,10 +319,10 @@ impl<I: Tokenize> Parser<I> {
         }
     }
     
-    fn named_variable(&mut self, name_token: &Token, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    fn identifier(&mut self, name_token: &Token, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         // Get opcodes for get/set and id of local, upvalue or global
         //let (get_ops, set_ops, id) = self.variable_opcodes(name_token, output);
-        match self.variable_opcodes(name_token, output) {
+        match self.identifier_opcodes(name_token, output) {
             Err(mut compile_error) => {
                 compile_error.set_at(input.previous().get_at());
                 Err(compile_error)
@@ -305,6 +330,9 @@ impl<I: Tokenize> Parser<I> {
             Ok((get_ops, set_ops, id)) => {
                 // Pick set or get based on context
                 if can_assign && input.advance_on(TokenKind::Equal) {
+                    if !self.identifier_is_mutable(name_token, output)? {
+                        c_error!(format!("Can not assign to constant {}", name_token.lexeme()))
+                    }
                     self.expression(input, output)?;
                     output.writer.emit_op_variant(&set_ops, id as u64);
                 } else {
@@ -643,8 +671,8 @@ impl<I: Tokenize> Parser<I> {
 
         // Single identifier or an anonymous array of identifiers, with or without a preceding KEYWORD_VAR
         // This will be the loop variable so we need the opcodeset and the name_id
-        let identifier = self.identifier(input, output)?;
-        let (_op_read, op_write, name_id) = self.variable_opcodes(&identifier, output)?;
+        let identifier = self.local_identifier(input, output)?;
+        let (_op_read, op_write, name_id) = self.identifier_opcodes(&identifier, output)?;
 
         self.consume(TokenKind::In, format!("Expected keyword '{}' after identifier", KEYWORD_IN).as_str(), input, output)?;
 
@@ -700,7 +728,7 @@ impl<I: Tokenize> Parser<I> {
 
     // Used by FOR..IN to reserve stack slots for iterator use
     fn make_internal_variable(&mut self, name: &str, output: &mut ParserOutput) {
-        output.locals.declare_local(name, self.scopes.len());
+        output.locals.declare_local(name, self.scopes.len(), IdentifierKind::Variable);
         output.locals.last_local().unwrap().define();        
         output.writer.emit_op(&OpCode::Null);
     }
@@ -714,12 +742,12 @@ impl<I: Tokenize> Parser<I> {
 
 
     // Used by FOR..IN to declare a local uninitialized variable if needed
-    fn identifier(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<Token, CompileError> {
+    fn local_identifier(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<Token, CompileError> {
         if input.advance_on(TokenKind::Var) {
             // New identifier
-            let name_id = self.parse_variable("Expected variable name", input, output)?;
+            let name_id = self.parse_identifier(IdentifierKind::Variable, "Expected variable name", input, output)?;
             output.writer.emit_op(&OpCode::Null);
-            self.define_variable(name_id, output);
+            self.define_initializer(name_id, output);
         } else {
             // Existing identifier
             // We will look up the proper opcode and id using input.previous() so there's nothing to do here            
@@ -811,6 +839,7 @@ impl<I: Tokenize> Parser<I> {
         debug!("begin compiling declaration");
         match input.current().kind() {
             TokenKind::Class 	=> self.class_declaration(input, output),
+            TokenKind::Const 	=> self.const_declaration(input, output),
             TokenKind::Fun 	    => self.fun_declaration(input, output),
             TokenKind::Var	    => self.var_declaration(input, output),
             _			        => self.statement(input, output),
@@ -819,17 +848,17 @@ impl<I: Tokenize> Parser<I> {
 
     fn class_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError>{
         input.advance(); // Consume Class token
-        let name_id = self.parse_variable("Expected class name", input, output)?;
+        let name_id = self.parse_identifier(IdentifierKind::Constant, "Expected class name", input, output)?;
         let name_token = input.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
         self.classes.push(name_token.lexeme(), Class::new(&name_token));
         output.writer.emit_op_variant(&OpCodeSet::class(), name_constant as u64);
-        self.define_variable(name_id, output); // At this point, the VM will have defined the (empty) class
+        self.define_initializer(name_id, output); // At this point, the VM will have defined the (empty) class
 
         // Check for superclass with syntax: class Name of Superclass {}
         if input.advance_on(TokenKind::Of) {
             self.consume(TokenKind::Identifier, "Expected superclass name", input, output)?;
-            self.variable(false, input, output)?; // Look up superclass by name, load it on the stack
+            self.variable_or_constant(false, input, output)?; // Look up superclass by name, load it on the stack
             let superclass_token = input.previous().clone();
             if name_token.lexeme() == superclass_token.lexeme() { 
                 c_error!(format!("Class '{}' can not inherit from itself", name_token.lexeme()), input.previous())
@@ -837,12 +866,12 @@ impl<I: Tokenize> Parser<I> {
             self.begin_scope();
 
             // Copy superclass from globals to a local variable 'super'
-            output.locals.declare_local(KEYWORD_SUPER, 0);
-            self.named_variable(&superclass_token, false, input, output)?;
-            self.define_variable(0, output);
+            output.locals.declare_local(KEYWORD_SUPER, 0, IdentifierKind::Constant);
+            self.identifier(&superclass_token, false, input, output)?;
+            self.define_initializer(0, output);
 
             // Load current class onto the stack and copy methods from parent
-            self.named_variable(&name_token, false, input, output)?;
+            self.identifier(&name_token, false, input, output)?;
             output.writer.emit_op(&OpCode::Inherit);
 
             // Mark the current class as having a parent            
@@ -850,7 +879,7 @@ impl<I: Tokenize> Parser<I> {
         }
 
         // At runtime, load the class onto the stack so we can manipulate it
-        self.named_variable(&name_token, false, input, output)?;
+        self.identifier(&name_token, false, input, output)?;
         self.consume(TokenKind::LeftCurly, "Expected '{' after class name", input, output)?;
         debug!("begin parsing methods");
         loop {
@@ -871,21 +900,30 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
+    fn const_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+        input.advance(); // Consume Const token
+        let name_id = self.parse_identifier(IdentifierKind::Constant, "Expected constant name", input, output)?;
+        self.identifier_initializer(input, output)?;
+        self.consume(TokenKind::Semicolon, "Expected ';' after variable declaration", input, output)?;
+        self.define_initializer(name_id, output);
+        Ok(())
+    } 
+
     fn fun_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         input.advance(); // Consume Fun token
-        let name_id = self.parse_variable("Expected function name", input, output)?;
+        let name_id = self.parse_identifier(IdentifierKind::Constant, "Expected function name", input, output)?;
         let name = input.previous().lexeme().to_string();
         self.function(&name, FunctionKind::Function, input, output)?;
-        self.define_variable(name_id, output);
+        self.define_initializer(name_id, output);
         Ok(())
     }
 
     fn var_declaration(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         input.advance(); // Consume Var token
-        let name_id = self.parse_variable("Expected variable name", input, output)?;
-        self.var_initializer(input, output)?;
+        let name_id = self.parse_identifier(IdentifierKind::Variable, "Expected variable name", input, output)?;
+        self.identifier_initializer(input, output)?;
         self.consume(TokenKind::Semicolon, "Expected ';' after variable declaration", input, output)?;
-        self.define_variable(name_id, output);
+        self.define_initializer(name_id, output);
         Ok(())
     } 
 
@@ -1084,8 +1122,8 @@ impl<I: Tokenize> Parser<I> {
         let name_token = input.previous().clone();
         let name_constant = self.identifier_constant(&name_token, output);
 
-        self.named_variable(&name_token.synthetic(KEYWORD_THIS, TokenKind::This), false, input, output)?;
-        self.named_variable(&name_token.synthetic(KEYWORD_SUPER, TokenKind::Super), false, input, output)?;
+        self.identifier(&name_token.synthetic(KEYWORD_THIS, TokenKind::This), false, input, output)?;
+        self.identifier(&name_token.synthetic(KEYWORD_SUPER, TokenKind::Super), false, input, output)?;
         output.writer.emit_op_variant(&OpCodeSet::get_super(), name_constant as u64);
         Ok(())
     }
@@ -1098,7 +1136,7 @@ impl<I: Tokenize> Parser<I> {
         if self.classes.current_name().is_none() { 
             c_error!(format!("Can not use '{}' outside of a class", KEYWORD_THIS), input.previous())
         }
-        self.variable(false, input, output)?;
+        self.variable_or_constant(false, input, output)?;
         Ok(())
     }
 
@@ -1115,25 +1153,25 @@ impl<I: Tokenize> Parser<I> {
         Ok(())
     }
 
-    pub(crate) fn variable(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    pub(crate) fn variable_or_constant(&mut self, can_assign: bool, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         let token = input.previous().clone();
-        self.named_variable(&token, can_assign, input, output)?;
+        self.identifier(&token, can_assign, input, output)?;
         Ok(())
     }
 
     // while() and for() loops can declare a single variable 
     // if the conditional expression starts with KEYWORD_VAR
     fn var_expression(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
-        let name_id = self.parse_variable("Expected variable name", input, output)?;
-        self.var_initializer(input, output)?;
+        let name_id = self.parse_identifier(IdentifierKind::Variable, "Expected variable name", input, output)?;
+        self.identifier_initializer(input, output)?;
         // Unlike a var declaration, a var expression must leave a copy of the assigned value on the stack
         output.writer.emit_op(&OpCode::Dup); 
-        self.define_variable(name_id, output);
+        self.define_initializer(name_id, output);
         Ok(())
     } 
 
 
-    fn var_initializer(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
+    fn identifier_initializer(&mut self, input: &mut I, output: &mut ParserOutput) -> Result<(), CompileError> {
         if input.advance_on(TokenKind::Equal) {
             self.expression(input, output)?;
         } else {

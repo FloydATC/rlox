@@ -1,5 +1,8 @@
 
 
+use crate::lox::common::IdentifierKind;
+
+
 use super::{local::Local, local_set::LocalSet, upvalue::Upvalue};
 
 
@@ -10,6 +13,7 @@ pub struct Locals {
 
 
 impl Locals {
+
     pub fn new(with_receiver: bool) -> Self {
         Self {
             current: Some(Box::new(LocalSet::new(None, with_receiver))),
@@ -39,8 +43,8 @@ impl Locals {
 impl Locals {
 
     // Declare a local variable in the current LocalSet
-    pub fn declare_local(&mut self, name: &str, depth: usize) {
-        self.current.as_mut().unwrap().declare_local(name, depth);
+    pub fn declare_local(&mut self, name: &str, depth: usize, kind: IdentifierKind) {
+        self.current.as_mut().unwrap().declare_local(name, depth, kind);
     } 
 
     // Resolve local variable name in the current LocalSet
@@ -75,6 +79,7 @@ impl Locals {
     pub fn pop_local(&mut self) {
         return self.current.as_mut().unwrap().pop_local();
     }
+    
 }
 
 // ======== Upvalues ========

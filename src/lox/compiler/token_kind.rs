@@ -50,6 +50,7 @@ pub enum TokenKind {
     // Keywords
     Break,
     Class,
+    Const,
     Continue,
     Debug,
     Else,

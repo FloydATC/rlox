@@ -208,6 +208,7 @@ impl<'a> Tokenizer<'a> {
         match lexeme.as_str() {
             KEYWORD_BREAK 	=> return Token::new_at(TokenKind::Break, &lexeme, &at),
             KEYWORD_CLASS 	=> return Token::new_at(TokenKind::Class, &lexeme, &at),
+            KEYWORD_CONST 	=> return Token::new_at(TokenKind::Const, &lexeme, &at),
             KEYWORD_CONTINUE 	=> return Token::new_at(TokenKind::Continue, &lexeme, &at),
             KEYWORD_DEBUG 	=> return Token::new_at(TokenKind::Debug, &lexeme, &at),
             KEYWORD_ELSE 	=> return Token::new_at(TokenKind::Else, &lexeme, &at),

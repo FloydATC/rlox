@@ -2,6 +2,7 @@
 
 pub const KEYWORD_BREAK:    &str = "break";
 pub const KEYWORD_CLASS:    &str = "class";
+pub const KEYWORD_CONST:    &str = "const";
 pub const KEYWORD_CONTINUE: &str = "continue";
 pub const KEYWORD_DEBUG:    &str = "debug";
 pub const KEYWORD_ELSE:     &str = "else";
