@@ -4,18 +4,11 @@ mod test;
 
 use log::{trace, debug};
 
-//use super::codeloop::CodeLoop;
 use super::{Class, CodeLoop, CompileError, c_error, ChunkWriter, Hierarchy, ParserOutput, Token, Tokenize, TokenKind};
-//use crate::lox::{CompileError, c_error};
-//use crate::lox::compiler::*;
-//use crate::lox::{Token, TokenKind};
 use crate::lox::common::Function;
 use crate::lox::common::FunctionKind;
-//use super::hierarchy::Hierarchy;
 use crate::lox::common::keyword::*;
-//use super::ParserOutput;
 use super::Scope;
-//use super::tokenizer::Tokenize;
 use crate::lox::common::{OpCode, OpCodeSet};
 use crate::lox::common::Value;
 
@@ -246,6 +239,7 @@ impl<I: Tokenize> Parser<I> {
     }
     
     fn define_global(&mut self, id: usize, output: &mut ParserOutput) {
+        output.globals.global_mutref_by_id(id).define();
         output.writer.emit_op_variant(&OpCodeSet::defglobal(), id as u64);
     }
 
@@ -291,6 +285,9 @@ impl<I: Tokenize> Parser<I> {
         result = self.resolve_global(name_token.lexeme(), output);
         match result {
             Some(id) => {
+                if !output.globals.global_ref_by_id(id).is_defined() {
+                    c_error!(format!("Can not read global variable in its own initializer"))
+                }
                 return Ok((
                     OpCodeSet::getglobal(),
                     OpCodeSet::setglobal(),

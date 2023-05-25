@@ -1,12 +1,10 @@
 
-#[cfg(test)]
-mod test;
 
 use std::collections::HashMap;
 
 
 use crate::lox::compiler::{CompileError, c_error};
-
+use super::Global;
 
 // The rlox compiler accesses variables by name =~ O(logN)
 // The rlox VM accesses variables by id == O(1)
@@ -15,12 +13,12 @@ use crate::lox::compiler::{CompileError, c_error};
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Globals<T> {
-    index: HashMap<String,usize>,	// Used at script compile time only
+    index: HashMap<String, Global>,	// Used at script compile time only
     values: Vec<Option<T>>,	
 }
 
 
-#[allow(dead_code)]
+//#[allow(dead_code)]
 impl<T> Globals<T> {
     pub fn new() -> Self {
         Self {
@@ -33,12 +31,12 @@ impl<T> Globals<T> {
     // Otherwise, return Err(String)
     // Note: Used at script compile time only
     pub fn declare(&mut self, name: &str) -> Result<usize, CompileError> {
-        let id = self.index.get(name);
-        match id {
+        let opt_global = self.index.get(name);
+        match opt_global {
             None => {
                 let id = self.values.len();
                 self.values.push(None);
-                self.index.insert(name.to_string(), id);
+                self.index.insert(name.to_string(), Global::new(id));
                 return Ok(id);
             }
             Some(_) => {
@@ -49,12 +47,14 @@ impl<T> Globals<T> {
 
     // Assign value to id
     // Panic if id is invalid
+    // Used at runtime
     pub fn define_by_id(&mut self, id: usize, value: T) {
         self.values[id] = Some(value);
     }
     
     // Return value associated with id (if any)
     // Panic if id is invalid
+    // Used at runtime
     pub fn value_by_id(&self, id: usize) -> Option<&T> {
         match &self.values[id] {
             Some(value) => return Some(&value),
@@ -68,8 +68,8 @@ impl<T> Globals<T> {
     pub fn id_by_name(&self, name: &str) -> Option<usize> {
         let res = self.index.get(name);
         match res {
-            Some(&id) => {
-                return Some(id as usize);
+            Some(global) => {
+                return Some(global.index());
             }
             None => {
                 return None;
@@ -81,16 +81,38 @@ impl<T> Globals<T> {
     // Panic if id is invalid
     // Note: Used only to generate error messages =~ O(N)
     pub fn name_by_id(&self, id: usize) -> &String {
-        for (name, &i) in &self.index {
-            if i == id as usize { return &name; }
+        for (name, global) in &self.index {
+            if global.index() == id { return &name; }
         }
         panic!("Id {} not found in index, length of vector is {}.", id, self.values.len());
     }
 
+
+    // Note: Used only at compile time =~ O(N)
+    pub fn global_ref_by_id(&self, id: usize) -> &Global {
+        for (_name, global) in &self.index {
+            if global.index() == id { return global; }
+        }
+        panic!("Id {} not found in index, length of vector is {}.", id, self.values.len());
+    }
+
+
+    // Note: Used only at compile time =~ O(N)
+    pub fn global_mutref_by_id(&mut self, id: usize) -> &mut Global {
+        for (_name, global) in &mut self.index {
+            if global.index() == id { return global; }
+        }
+        panic!("Id {} not found in index, length of vector is {}.", id, self.values.len());
+    }
+
+
     // Return the number of variables
+    // Only used in testing
+    #[cfg(test)]
     pub fn count(&self) -> usize {
         return self.values.len();
     }    
+
 }
 
 

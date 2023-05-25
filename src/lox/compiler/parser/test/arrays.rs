@@ -71,13 +71,12 @@ fn assign_three_strings() {
 
 #[test]
 fn assign_three_selves_in_global() {
-    let code = "var a=[a,a,a];"; // Global variable auto-initialized as null
+    let code = "var a=[a,a,a];"; // Global variable can't initialize itself
     println!("code={}", code);
     let res = test(code);
-    assert_eq!(res.is_ok(), true);
-    let bytecode = res.unwrap();
-    assert_eq!(bytecode.globals().count(), 1);
-    assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
+    assert_eq!(res.is_err(), true);
+    let error = res.unwrap_err();
+    assert_eq!(error.get_message(), "Can not read global variable in its own initializer");
 }
 
 #[test]

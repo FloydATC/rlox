@@ -318,13 +318,16 @@ fn parser_undeclared_local_bad() {
 }
 
 #[test]
-fn parser_self_initialize_global_ok() {
-    let code = "var v=v;"; // This is nonsense but globals are auto-initialized as Value::Null
+fn parser_self_initialize_global_bad() {
+    let code = "var v=v;"; // Globals can no longer self-initialize
     let res = test(code);
-    assert_eq!(res.is_ok(), true);
-    let bytecode = res.unwrap();
-    assert_eq!(bytecode.globals().count(), 1);
-    assert_eq!(bytecode.main().clone().kind().is_toplevel(), true);
+    assert_eq!(res.is_err(), true);
+    let error = res.unwrap_err();
+    assert_eq!(error.get_message(), "Can not read global variable in its own initializer");
+    assert_eq!(error.get_at().is_some(), true);
+    let at = error.get_at().unwrap();
+    assert_eq!(at.lineno(), 1);
+    assert_eq!(at.charno(), 7);
 }
 
 #[test]
