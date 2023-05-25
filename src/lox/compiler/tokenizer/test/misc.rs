@@ -1,16 +1,7 @@
 
 
+
 use crate::lox::compiler::{Scanner, Tokenizer, Tokenize, TokenKind};
-//use crate::lox::TokenKind;
-//use super::{Tokenizer, Tokenize};
-
-
-mod base2numbers;
-mod base8numbers;
-mod base10numbers;
-mod base16numbers;
-mod comments;
-mod directives;
 
 
 #[test]

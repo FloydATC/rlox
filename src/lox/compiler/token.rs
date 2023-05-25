@@ -139,3 +139,13 @@ impl std::fmt::Debug for TokenKind {
         }
     }
 }
+
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self.at {
+            Some(at) => write!(f, "Token::{:?}({:?} at {})", self.kind, self.lexeme, at),
+            None => write!(f, "Token::{:?}({:?})", self.kind, self.lexeme),
+        }
+    }
+}

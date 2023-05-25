@@ -1,10 +1,6 @@
 
-#[cfg(test)]
-mod test;
 
-
-use super::{Token, TokenKind};
-use super::{Scan, Scanner, Scanners};
+use crate::lox::compiler::{Scan, Scanner, Scanners, Token, Tokenize, TokenKind};
 use crate::lox::common::{At, keyword::*};
 
 
@@ -12,16 +8,6 @@ use crate::lox::common::{At, keyword::*};
 enum IncludeTimes {
     Once,
     Any,
-}
-
-
-pub trait Tokenize {
-    fn current(&self) -> &Token;
-    fn previous(&self) -> &Token;
-    fn eof(&self) -> bool;
-    fn advance(&mut self);
-    fn matches(&self, kind: TokenKind) -> bool;
-    fn advance_on(&mut self, kind: TokenKind) -> bool;
 }
 
 
@@ -320,6 +306,33 @@ impl<'a> Tokenizer<'a> {
     }
 
 
+    fn unicode_codepoint(&mut self) -> Result<String, String> {
+        if !self.scanner().matches('{') {
+            return Err(format!("Expected '{{' after '\\u', found '{}'", self.scanner().current()));
+        }
+        self.scanner().advance(); // Consume '{' character
+        let mut hex_digits = String::new();
+        while is_base16digit(self.scanner().current()) {
+            hex_digits.push(self.scanner().current());
+            self.scanner().advance();    
+        }
+        if !self.scanner().matches('}') {
+            return Err(format!("Expected '}}' after hex digits, found '{}'", self.scanner().current()));
+        }
+        self.scanner().advance(); // Consume '}' character
+        match u32::from_str_radix(&hex_digits, 16) {
+            Err(error) => Err(format!("Expected hexadecimal codepoint between '{{' and '}}'; {}", error)),
+            Ok(codepoint) => {
+                match char::from_u32(codepoint) {
+                    None => Err(format!("Invalid unicode codepoint 0x{:08x}", codepoint)),
+                    Some(ch) => Ok(String::from(ch)),
+                }
+        
+            }
+        }
+    }
+
+
     fn escape_sequence(&mut self) -> Result<String, String> {
         let c = self.scanner().current();
         self.scanner().advance(); // Consume c
@@ -327,11 +340,11 @@ impl<'a> Tokenizer<'a> {
             't'		=> return Ok("\t".to_string()),
             'n' 	=> return Ok("\n".to_string()),
             'r' 	=> return Ok("\r".to_string()),
+            'u'     => return self.unicode_codepoint(),
             '"' 	=> return Ok("\"".to_string()),
-            '\'' 	=> return Ok("'".to_string()),
             '\\' 	=> return Ok("\\".to_string()),
             _		=> {
-                return Err(format!("Character sequence not supported: '\\{}'", c));
+                return Err(format!("Character sequence not supported in double quoted strings: '\\{}'", c));
             }
         }
     }
@@ -346,8 +359,8 @@ impl<'a> Tokenizer<'a> {
             if self.scanner().eof() {
                 return Token::new_at(TokenKind::Error, "Unterminated string", &at);
             }
-            let c = self.scanner().current();
-            if c == '\\' {
+            let ch = self.scanner().current();
+            if quote == '\"' && ch == '\\' {
                 self.scanner().advance(); // Consume backslash
                 let result = self.escape_sequence();
                 match result {
@@ -358,9 +371,15 @@ impl<'a> Tokenizer<'a> {
                         return Token::new_at(TokenKind::Error, msg.as_str(), &at);
                     }
                 }
+            } else if quote == '\'' && ch == '\\' {
+                // Single quoted strings should include any escape sequences verbatim except \' which is parsed as '
+                self.scanner().advance(); // Consume backslash
+                if !self.scanner().matches('\'') { string.push('\\') } // Keep \ unless followed by '
+                string.push(self.scanner().current());
+                self.scanner().advance();
             } else {
-                string.push(c);
-                self.scanner().advance(); // Consume c
+                string.push(ch);
+                self.scanner().advance(); // Consume ch
             }
         }
         self.scanner().advance(); // Consume trailing quote

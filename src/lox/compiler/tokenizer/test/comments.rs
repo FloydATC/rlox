@@ -1,8 +1,6 @@
 
 
-use super::Scanner;
-use super::{Tokenizer, Tokenize};
-use super::TokenKind;
+use crate::lox::compiler::{Scanner, Tokenizer, Tokenize, TokenKind};
 
 
 #[test]
