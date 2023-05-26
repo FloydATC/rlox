@@ -262,7 +262,7 @@ fn parser_undeclared_local_bad() {
     let res = test(code);
     assert_eq!(res.is_err(), true);
     let error = res.unwrap_err();
-    assert_eq!(error.get_message(), "Undeclared variable 'v'");
+    assert_eq!(error.get_message(), "'v' not declared");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
     assert_eq!(at.lineno(), 1);
@@ -275,7 +275,7 @@ fn parser_self_initialize_global_bad() {
     let res = test(code);
     assert_eq!(res.is_err(), true);
     let error = res.unwrap_err();
-    assert_eq!(error.get_message(), "Can not read global variable in its own initializer");
+    assert_eq!(error.get_message(), "Can not use 'v' in its own initializer");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
     assert_eq!(at.lineno(), 1);
@@ -288,7 +288,7 @@ fn parser_self_initialize_local_bad() {
     let res = test(code);
     assert_eq!(res.is_err(), true);
     let error = res.unwrap_err();
-    assert_eq!(error.get_message(), "Can not read local variable in its own initializer");
+    assert_eq!(error.get_message(), "Can not use 'v' in its own initializer");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
     assert_eq!(at.lineno(), 1);
@@ -301,7 +301,7 @@ fn parser_initialize_local_using_same_global_impossible() {
     let res = test(code);
     assert_eq!(res.is_err(), true);
     let error = res.unwrap_err();
-    assert_eq!(error.get_message(), "Can not read local variable in its own initializer");
+    assert_eq!(error.get_message(), "Can not use 'v' in its own initializer");
     assert_eq!(error.get_at().is_some(), true);
     let at = error.get_at().unwrap();
     assert_eq!(at.lineno(), 1);

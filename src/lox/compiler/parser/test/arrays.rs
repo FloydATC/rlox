@@ -76,7 +76,7 @@ fn assign_three_selves_in_global() {
     let res = test(code);
     assert_eq!(res.is_err(), true);
     let error = res.unwrap_err();
-    assert_eq!(error.get_message(), "Can not read global variable in its own initializer");
+    assert_eq!(error.get_message(), "Can not use 'a' in its own initializer");
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn assign_three_selves_in_local() {
     let res = test(code);
     assert_eq!(res.is_err(), true);
     let error = res.unwrap_err();
-    assert_eq!(error.get_message(), "Can not read local variable in its own initializer");
+    assert_eq!(error.get_message(), "Can not use 'a' in its own initializer");
 }
 
 #[test]

@@ -267,7 +267,7 @@ impl<I: Tokenize> Parser<I> {
             return Ok(global.kind().is_mutable() || !global.is_defined());
         }
 
-        c_error!(format!("Undeclared variable '{}'", name_token.lexeme()))
+        c_error!(format!("'{}' not declared", name_token.lexeme()))
     }
 
     fn identifier_opcodes(&mut self, name_token: &Token, output: &mut ParserOutput) -> Result<(OpCodeSet, OpCodeSet, usize), CompileError> {
@@ -277,7 +277,7 @@ impl<I: Tokenize> Parser<I> {
         match result {
             Some(id) => {
                 if !output.locals.local_ref_by_id(id).is_defined() {
-                    c_error!(format!("Can not read local variable in its own initializer"))
+                    c_error!(format!("Can not use '{}' in its own initializer", name_token.lexeme()))
                 }
                 return Ok((
                     OpCodeSet::getlocal(),
@@ -305,7 +305,7 @@ impl<I: Tokenize> Parser<I> {
         match result {
             Some(id) => {
                 if !output.globals.global_ref_by_id(id).is_defined() {
-                    c_error!(format!("Can not read global variable in its own initializer"))
+                    c_error!(format!("Can not use '{}' in its own initializer", name_token.lexeme()))
                 }
                 return Ok((
                     OpCodeSet::getglobal(),
@@ -314,7 +314,7 @@ impl<I: Tokenize> Parser<I> {
                 ));
             }
             None => {
-                c_error!(format!("Undeclared variable '{}'", name_token.lexeme()))
+                c_error!(format!("'{}' not declared", name_token.lexeme()))
             }
         }
     }
@@ -331,7 +331,7 @@ impl<I: Tokenize> Parser<I> {
                 // Pick set or get based on context
                 if can_assign && input.advance_on(TokenKind::Equal) {
                     if !self.identifier_is_mutable(name_token, output)? {
-                        c_error!(format!("Can not assign to constant {}", name_token.lexeme()))
+                        c_error!(format!("Can not assign to immutable '{}'", name_token.lexeme()), input.previous())
                     }
                     self.expression(input, output)?;
                     output.writer.emit_op_variant(&set_ops, id as u64);
