@@ -41,13 +41,18 @@
                                                        */
 
 
-    2.2. Statements
+    2.2. Declarations
 
-        As a general rule, every statements must end with a semicolon ';' 
-        except when followed by a right curly brace '}',
-        ignoring whitespace and comments.
+        declaration → var_decl
+                    | const_decl
+                    | fun_decl
+                    | class_decl
+                    | statement ;
+
 
         2.2.1. Variable declarations
+
+            var_decl → "var" IDENTIFIER ( "=" expression )? ";" ;
 
             Named variables must be declared using the keyword 'var' before use.
             The variable type is automatically inferred and may change dynamically.
@@ -87,7 +92,12 @@
 
         2.2.2. Constant declarations
 
+            const_decl → "const" IDENTIFIER ( "=" expression )? ";" ;
+
             Named constants are special variables that can not be changed after they have been declared.
+            Notice that while you can technically have a const without an expression, this would
+            probably be pointless because you can't assign anything to it later. 
+            If you don't specify an expression, the constant will be defined as 'null'.
 
             const taxes = true;
             taxes = false; // <-- Compile error
@@ -109,6 +119,8 @@
 
 
         2.2.3. Function declaration
+
+            fun_decl → "fun" function ;
 
             A named function is a re-usable unit of compiled code that can be invoked by calling.
 
@@ -134,6 +146,8 @@
 
         2.2.4. Class declarations
 
+            class_decl → "class" IDENTIFIER ( "of" IDENTIFIER )? "{" function* "}" ;
+
             Object classes are declared using the keyword 'class', followed by the class name,
             then optionally the keyword 'of' and a superclass to inherit methods from, then 
             finally in curly braces each method is declared.
@@ -147,9 +161,9 @@
             }
 
 
-        2.2.5. Method declarations
+        2.2.5. Methods
 
-            Methods are declared on an object class but called on an object instance:
+            Methods are special functions declared on an object class but called on an object instance:
 
             class Animal {
                 speak() { 
@@ -219,13 +233,31 @@
 
     2.3. Statements
 
+        statement → expr_stmt
+                  | print_stmt
+                  | return_stmt
+                  | exit_stmt
+                  | if_stmt
+                  | while_stmt
+                  | for_stmt
+                  | block ;
+
+        As a general rule, every statements must end with a semicolon ';' 
+        except when followed by a right curly brace '}' or right parenthesis ')',
+        ignoring whitespace and comments.
+
+
         2.3.1. Print statement
+
+            print_stmt → "print" expression ";" ;
 
             You have already seen the 'print' statement, it works the same way as in most
             other programming languages; the expression that follows gets printed.
 
 
         2.3.2. Return statement
+
+            return_stmt → "return" expression? ";" ;
 
             Functions and methods can produce one or both of the following: 
             A side effect and/or a return value.
@@ -249,6 +281,8 @@
 
         2.3.3. Exit statement
 
+            exit_stmt → "exit" expression? ";" ;
+
             The exit statement immediately halts the script. Optionally. you can exit with an
             integer "result code" that can sometimes be interpreted by the operating system
             depending on the context.
@@ -258,6 +292,8 @@
 
 
         2.3.4. If statement
+
+            if_stmt → "if" "not"? "(" expression ")" statement ( "else" statement )? ;
 
             Referred to as "branching", 'if' statements let a script alter its behaviour based upon
             whether a conditional expression is 'true' or 'false'. In the following example, 
@@ -270,7 +306,7 @@
             The conditional expression must be enclosed in parenthesis.
 
 
-            2.3.4.1. If..Else statement
+            2.3.4.1. If..Else
 
                 A slight variation of the If statement is the If..Else statement, which lets you add
                 code that gets executed only if the conditional expression is 'false':
@@ -345,150 +381,178 @@
             they are all just variations of the same idea.
 
 
-        2.3.5.1. While loops
+            2.3.5.1. While loops
 
-            Similar to an 'if'-statement, a 'while'-loop differs in that the 'then' block is 
-            executed again and again for as long as the conditional expression remains true.
+                while_stmt → "while" "not"? "(" expression ")" statement ;
 
-            while (name == "Joshua") {
-                print "Shall we play a game?";
-            }
+                Similar to an 'if'-statement, a 'while'-loop differs in that the 'then' block is 
+                executed again and again for as long as the conditional expression remains true.
 
-            Because there is nothing to change the contents of 'name', the loop would
-            keep printing the same line over and over until the script is stopped, but let's say we
-            had some function that returns names from some outside source?
+                while (name == "Joshua") {
+                    print "Shall we play a game?";
+                }
 
-            var name;
-            while (name = get_next()) {
-                print "Shall we play a game?";
-            }
+                Because there is nothing to change the contents of 'name', the loop would
+                keep printing the same line over and over until the script is stopped, but let's say we
+                had some function that returns names from some outside source?
 
-            Now, for as long as the function returns a name, the loop will keep running but as soon as
-            our imaginary function 'get_next' returns something considered to be 'false', such as an 
-            empty string, the number 0, a boolean 'false' or 'null', the loop ends.
+                var name;
+                while (name = get_next()) {
+                    print "Shall we play a game?";
+                }
 
-
-            In the previous example, a variable named 'name' was declared immediately before
-            the 'while' loop. This may sometimes be what you want, perhaps you need that variable
-            in the code that follows after the 'while'-loop? Other times, you may want to use
-            a variable that only exists within the loop -- we call this a "locally scoped" variable:
-
-            while (var name = get_next()) {
-                print "Shall we play a game?";
-            }
-
-            Here, that's exactly what happens. The variable 'name' will now only exist within the loop.            
+                Now, for as long as the function returns a name, the loop will keep running but as soon as
+                our imaginary function 'get_next' returns something considered to be 'false', such as an 
+                empty string, the number 0, a boolean 'false' or 'null', the loop ends.
 
 
-            As with 'if'-statements, parenthesis are required around the conditional expression, 
-            and the curly braces are not strictly needed if there is only one statement:
+                In the previous example, a variable named 'name' was declared immediately before
+                the 'while' loop. This may sometimes be what you want, perhaps you need that variable
+                in the code that follows after the 'while'-loop? Other times, you may want to use
+                a variable that only exists within the loop -- we call this a "locally scoped" variable:
 
-            while (name = get_next()) print "Shall we play a game?";
+                while (var name = get_next()) {
+                    print "Shall we play a game?";
+                }
 
-            Unlike 'if'-statements however, 'while'-statements do not accept an 'else' block.
-
-
-            // 'true' will always be 'true' so this is an infinite loop
-            while (true) print "Waiting for the universe to go cold";
-
-
-        2.3.5.2. For loops (C-style) 
-
-            Be warned, the following is pretty dense so unless you're already familiar with C-style loops,
-            you may want to re-read this section a few times and perhaps come back to it later for reference.
-            Once you've cracked them, C-style loops are incredibly powerful and not really that different
-            from actual code using 'while'-loops.
-
-            Ahem. The exact grammar is:
-
-            for (INITIALIZER; CONDITIONAL; INCREMENT) STATEMENT;
-
-            Let's break it down:
-
-            Step 1: The INITIALIZER is a statement or block that, if present, runs exactly one time, before entering the loop.
-            Step 2: The CONDITIONAL is an expression which, if present, will terminate the loop if 'false'.
-            Step 3: The STATEMENT will then run once if the CONDITIONAL was 'true'.
-            Step 4: The INCREMENT statement or block, if present, will then run once.
-            Step 5: Loop back to step 2.
-
-            There are quite a few nuances here, so let's look at a minimal loop to see how it behaves (and why):
-
-            for (;;) print "Waiting for the universe to go cold";
-
-            Step 1: There is no INITIALIZER.
-            Step 2: There is no CONDITIONAL, so the loop does not terminate.
-            Step 3: Print "Waiting for the universe to go cold"
-            Step 4: There is no INCREMENT.
-            Step 5: Loop back to step 2.
-
-            See? That was just a slightly more complicated infinite loop! (But we saved 4 characters, yay!)
-
-            Let's do an example you're more likely to encounter in the real world:
-
-            for (var i=0; i<5; i=i+1) print i;
-
-            Step 1: var i=0; // Declare a variable 'i' and assign the number 0, initializing it.
-            Step 2: Compare 'i' to see if the number is smaller than 5. If not, terminate the loop.
-            Step 3: Print the number in the variable 'i'.
-            Step 4: i=i+1; // Increment the number in the variable 'i'.
-            Step 5: Loop back to step 2.
-
-            The result? The code would print the numbers 0, 1, 2, 3, 4 before terminating the loop.
+                Here, that's exactly what happens. The variable 'name' will now only exist within the loop.            
 
 
-            When you break it down, they're not really that hard but they do come with the risk of
-            not just infinite loops but also an entire class of software bugs commonly referred to 
-            as "off-by-one errors". 
-            
-            Which is why modern programming languages often come with a third type of loops.
+                As with 'if'-statements, parenthesis are required around the conditional expression, 
+                and the curly braces are not strictly needed if there is only one statement:
+
+                while (name = get_next()) print "Shall we play a game?";
+
+                Unlike 'if'-statements however, 'while'-statements do not accept an 'else' block.
 
 
-        2.3.5.3. For..In loops (Iterator style)
-
-            Iterator style loops are different from 'while'-loops and C-style loops in that they
-            are controlled by some type of input data that they are said to "iterate over".
-
-            RLOX can iterate over three different types of data: Arrays, lists and object instances.
-
-            var array = [123, 456, 789]; // Variable 'array' with three numbers in it
-            for var number in array {
-                print number;
-            }
-            
-            Before entering the loop, a variable named 'number' is declared. Just like in the 
-            'while'-loop example, this variable will only exist for as long as the loop executes.
-            The loop then takes each of the numbers in the array, assigns it to 'number' and
-            runs the print statement. The loop "knows" when to terminate; there's no risk of
-            accidentally looping forever or terminating the loop before all numbers have been printed.
-
-            We could write the same code using a list:
-
-            for var number in (123, 456, 789) {
-                print number;
-            }
-
-            The only difference here is that the numbers are listed directly in the code as
-            opposed to an array variable (which could have gotten the numbers from anywhere).
+                // 'true' will always be 'true' so this is an infinite loop
+                while (true) print "Waiting for the universe to go cold";
 
 
-            Finally, iterating over an object instance requires that the object has a method named 'next',
-            which takes exactly one argument: The previous value that was returned by next(), or 'null'.
-            The loop terminates when next() returns 'null'.
+            2.3.5.2. For loops
 
-            let foo = Bar(); // Bar must implement 'next' or this won't work.
-            for var item in foo {
-                print item;
-            }
+                for_stmt → "for" for_c_style | for_iter_style ;
+                
 
-            Notice that we don't actually mention next() anywhere. That's because all the 
-            stuff related to passing the previous value and checking for 'null' happens 
-            behind the scenes; all you have to worry about is make sure Bar implements
-            that method and each value will get assigned to the variable named 'item'
-            and then the loop body executes.
+                2.3.5.2.1 C-Style 'for'-loops
+
+                    for_c_style → "(" 
+                                  ( var_decl | expr_stmt | ";" )
+                                  expression? ";"
+                                  expression? 
+                                  ")" statement ;
+
+                    Be warned, the following is pretty dense so unless you're already familiar with C-style loops,
+                    you may want to re-read this section a few times and perhaps come back to it later for reference.
+                    Once you've cracked them, C-style loops are incredibly powerful and not really that different
+                    from actual code using 'while'-loops.
+
+                    Ahem. Let's rewrite the above grammar to something a little simpler, at the expense of some precision:
+
+                    for (INITIALIZER; CONDITIONAL; INCREMENT) STATEMENT;
+
+                    Let's break it down:
+
+                    Step 1: The INITIALIZER is a statement or block that, if present, runs exactly one time, before entering the loop.
+                    Step 2: The CONDITIONAL is an expression which, if present, will terminate the loop if 'false'.
+                    Step 3: The STATEMENT will then run once if the CONDITIONAL was 'true'.
+                    Step 4: The INCREMENT statement or block, if present, will then run once.
+                    Step 5: Loop back to step 2.
+
+                    There are quite a few nuances here, so let's look at a minimal loop to see how it behaves (and why):
+
+                    for (;;) print "Waiting for the universe to go cold";
+
+                    Step 1: There is no INITIALIZER.
+                    Step 2: There is no CONDITIONAL, so the loop does not terminate.
+                    Step 3: Print "Waiting for the universe to go cold"
+                    Step 4: There is no INCREMENT.
+                    Step 5: Loop back to step 2.
+
+                    See? That was just a slightly more complicated infinite loop! (But we saved 4 characters, yay!)
+
+                    Let's do an example you're more likely to encounter in the real world:
+
+                    for (var i=0; i<5; i=i+1) print i;
+
+                    Step 1: var i=0; // Declare a variable 'i' and assign the number 0, initializing it.
+                    Step 2: Compare 'i' to see if the number is smaller than 5. If not, terminate the loop.
+                    Step 3: Print the number in the variable 'i'.
+                    Step 4: i=i+1; // Increment the number in the variable 'i'.
+                    Step 5: Loop back to step 2.
+
+                    The result? The code would print the numbers 0, 1, 2, 3, 4 before terminating the loop.
+
+
+                    When you break it down, they're not really that hard but they do come with the risk of
+                    not just infinite loops but also an entire class of software bugs commonly referred to 
+                    as "off-by-one errors". 
+                    
+                    Which is why modern programming languages often come with a third type of loops.
+
+
+            2.3.5.2.2. Iterator style 'for'-loops
+
+                for_iter_style → ( var_decl | expr_stmt )
+                                 "in" ( expr_list | expression )
+                                 statement ;
+
+
+                Iterator style loops are different from 'while'-loops and C-style loops in that they
+                are controlled by some type of input data that they are said to "iterate over".
+
+                RLOX can iterate over three different types of data: Arrays, lists and object instances.
+
+                var array = [123, 456, 789]; // Variable 'array' with three numbers in it
+                for var number in array {
+                    print number;
+                }
+                
+                Before entering the loop, a variable named 'number' is declared. Just like in the 
+                'while'-loop example, this variable will only exist for as long as the loop executes.
+                The loop then takes each of the numbers in the array, assigns it to 'number' and
+                runs the print statement. The loop "knows" when to terminate; there's no risk of
+                accidentally looping forever or terminating the loop before all numbers have been printed.
+
+                We could write the same code using a list:
+
+                for var number in (123, 456, 789) {
+                    print number;
+                }
+
+                The only difference here is that the numbers are listed directly in the code as
+                opposed to an array variable (which could have gotten the numbers from anywhere).
+
+
+                Finally, iterating over an object instance requires that the object has a method named 'next',
+                which takes exactly one argument: The previous value that was returned by next(), or 'null'.
+                The loop terminates when next() returns 'null'.
+
+                let foo = Bar(); // Bar must implement 'next' or this won't work.
+                for var item in foo {
+                    print item;
+                }
+
+                Notice that we don't actually mention next() anywhere. That's because all the 
+                stuff related to passing the previous value and checking for 'null' happens 
+                behind the scenes; all you have to worry about is make sure Bar implements
+                that method and each value will get assigned to the variable named 'item'
+                and then the loop body executes.
 
 
     2.4. Expressions
 
-        todo
-        
+        expression → assignment ;
 
+        Expressions produce values. Values can be simple human things like numbers or text strings,
+        literal things like 'null', 'true' or 'false', but also things like functions, classes and
+        object instances. RLOX also lets you use arrays, which are like lists that can be 
+        manipulated and contain even more values.
+
+        Expressions can also be things like math formulae; 2+2 is an expression that produces the number 4.
+        
+        If you remember your math, you'll recall that 2*2+4 and 4+2*2 should both produce the number 8 
+        because of "precedence rules"; the multiplication sign '*' is said to have a higher precedence
+        than the addition sign '+' and should therefore be performed first. If we wanted the above 
+        to produce the number 12, we would have to put 2*(2+4) and (4+2)*2 respectively.
