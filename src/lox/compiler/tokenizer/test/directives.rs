@@ -1,6 +1,9 @@
 
 
-use crate::lox::compiler::{Scanner, Tokenizer, Tokenize, TokenKind};
+use scanner::Scanner;
+
+
+use crate::lox::compiler::{Tokenizer, Tokenize, TokenKind};
 
 
 const TESTLIB: &str = "src/lox/compiler/tokenizer/test/testlib/";

@@ -1,8 +1,9 @@
 
 
 use at::At;
+use scanner::{Scan, Scanner, Scanners};
 
-use crate::lox::compiler::{Scan, Scanner, Scanners, Token, Tokenize, TokenKind};
+use super::{Token, Tokenize, TokenKind};
 use crate::lox::common::keyword::*;
 
 

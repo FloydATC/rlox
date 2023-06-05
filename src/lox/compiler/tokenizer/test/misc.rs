@@ -1,7 +1,9 @@
 
 
+use scanner::Scanner;
 
-use crate::lox::compiler::{Scanner, Tokenizer, Tokenize, TokenKind};
+
+use crate::lox::compiler::{Tokenizer, Tokenize, TokenKind};
 
 
 #[test]

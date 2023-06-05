@@ -4,10 +4,12 @@ use std::marker::PhantomData;
 use log::{debug};
 
 
+use scanner::Scanner;
+
 use crate::lox::{common::{ByteCode, Function, FunctionKind, Globals}, compiler::Tokenize};
 
 
-use super::{ChunkWriter, CompileError, Locals, Parser, ParserOutput, Scanner, Tokenizer};
+use super::{ChunkWriter, CompileError, Locals, Parser, ParserOutput, Tokenizer};
 
 
 pub struct Compiler<R> {

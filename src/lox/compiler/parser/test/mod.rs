@@ -1,7 +1,10 @@
 
 
+use scanner::Scanner;
+
+
 use crate::lox::common::{ByteCode, Function, FunctionKind, Globals};
-use crate::lox::compiler::{ChunkWriter, CompileError, Locals, Scanner, Tokenizer};
+use crate::lox::compiler::{ChunkWriter, CompileError, Locals, Tokenizer};
 
 
 use super::Parser;

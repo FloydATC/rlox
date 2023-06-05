@@ -14,8 +14,6 @@ mod hierarchy;
 mod locals;
 mod parser;
 mod scope;
-mod token;
-mod token_kind;
 mod tokenizer;
 
 
@@ -27,8 +25,5 @@ pub use compile_error::{CompileError, c_error};
 pub use hierarchy::Hierarchy;
 pub use locals::Locals;
 pub use parser::{Parser, ParserOutput};
-pub use scanner::{Scanner, Scanners, Scan};
 pub use scope::Scope;
-pub use token::Token;
-pub use token_kind::TokenKind;
-pub use tokenizer::{Tokenizer, Tokenize};
+pub use tokenizer::{Token, TokenKind, Tokenizer, Tokenize};
