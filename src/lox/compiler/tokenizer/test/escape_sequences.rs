@@ -166,6 +166,28 @@ fn doublequoted_string_reject_invalid_unicode() {
     assert_eq!(tokenizer.current().kind(), TokenKind::Error);
 }
 
+#[test]
+fn doublequoted_null_character() {
+    let code = "\"\\0\""; // "\0" should parse as a string containing a single null character (ASCII 0x00)
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new("test", reader);
+    let tokenizer = Tokenizer::new(scanner);
+    println!("{}", tokenizer.current());
+    assert_eq!(tokenizer.current().kind(), TokenKind::String);
+    assert_eq!(tokenizer.current().lexeme(), "\0");
+}
+
+#[test]
+fn doublequoted_null_character_does_not_terminate_string() {
+    let code = "\"\\0Bar\""; // "\0Bar" should parse as a string containing a null character plus "Bar"
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new("test", reader);
+    let tokenizer = Tokenizer::new(scanner);
+    println!("{}", tokenizer.current());
+    assert_eq!(tokenizer.current().kind(), TokenKind::String);
+    assert_eq!(tokenizer.current().lexeme(), "\0Bar");
+}
+
 
 // In single quoted strings, escape sequences are included verbatim
 
@@ -244,5 +266,16 @@ fn singlequoted_string_unicode() {
     println!("{}", tokenizer.current());
     assert_eq!(tokenizer.current().kind(), TokenKind::String);
     assert_eq!(tokenizer.current().lexeme(), "\\u{0201}");
+}
+
+#[test]
+fn singlequoted_string_null_character() {
+    let code = "'\\0'"; // '\0' should parse literally
+    let reader = std::io::Cursor::new(code);    
+    let scanner = Scanner::new("test", reader);
+    let tokenizer = Tokenizer::new(scanner);
+    println!("{}", tokenizer.current());
+    assert_eq!(tokenizer.current().kind(), TokenKind::String);
+    assert_eq!(tokenizer.current().lexeme(), "\\0");
 }
 

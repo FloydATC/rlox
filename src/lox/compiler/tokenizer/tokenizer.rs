@@ -347,6 +347,7 @@ impl<'a> Tokenizer<'a> {
             'u'     => return self.unicode_codepoint(),
             '"' 	=> return Ok("\"".to_string()),
             '\\' 	=> return Ok("\\".to_string()),
+            '0' 	=> return Ok("\0".to_string()),
             _		=> {
                 return Err(format!("Character sequence not supported in double quoted strings: '\\{}'", c));
             }
