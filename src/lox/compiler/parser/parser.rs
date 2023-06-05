@@ -1010,11 +1010,11 @@ impl<I: Tokenize> Parser<I> {
         match operator {
             // Single symbol
             TokenKind::Greater		=> output.writer.emit_op(&OpCode::Greater),
-            TokenKind::Less		=> output.writer.emit_op(&OpCode::Less),
+            TokenKind::Less		    => output.writer.emit_op(&OpCode::Less),
             TokenKind::Minus		=> output.writer.emit_op(&OpCode::Sub),
             TokenKind::Percent		=> output.writer.emit_op(&OpCode::Mod),
-            TokenKind::Plus		=> output.writer.emit_op(&OpCode::Add),
-            TokenKind::Star		=> output.writer.emit_op(&OpCode::Mul),
+            TokenKind::Plus		    => output.writer.emit_op(&OpCode::Add),
+            TokenKind::Star		    => output.writer.emit_op(&OpCode::Mul),
             TokenKind::Slash		=> output.writer.emit_op(&OpCode::Div),
             
             // Double symbol
@@ -1024,8 +1024,8 @@ impl<I: Tokenize> Parser<I> {
             TokenKind::LessEqual	=> output.writer.emit_op(&OpCode::LessEqual),
 
             // Keyword
-            TokenKind::Is	=> output.writer.emit_op(&OpCode::Same),
-            TokenKind::Not  => {
+            TokenKind::Is	        => output.writer.emit_op(&OpCode::Same),
+            TokenKind::Not          => {
                 output.writer.emit_op(&OpCode::Same);
                 output.writer.emit_op(&OpCode::Negate);
             }
